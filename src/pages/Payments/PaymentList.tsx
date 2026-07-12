@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Search, Filter, Download, ArrowRightLeft, CheckCircle, XCircle, Clock, Receipt, RefreshCcw } from 'lucide-react';
+import { Search, Download, ArrowRightLeft, CheckCircle, XCircle, Clock, Receipt, RefreshCcw } from 'lucide-react';
 import SlideOver from '../../components/Shared/SlideOver';
 
 // Mock Data

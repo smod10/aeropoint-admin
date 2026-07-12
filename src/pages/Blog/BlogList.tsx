@@ -46,7 +46,7 @@ const getStatusBadge = (status: string) => {
 };
 
 export default function BlogList() {
-  const [posts, setPosts] = useState(mockPosts);
+  const [posts] = useState(mockPosts);
   const [isSlideOverOpen, setIsSlideOverOpen] = useState(false);
   const [editingPost, setEditingPost] = useState<any>(null);
 

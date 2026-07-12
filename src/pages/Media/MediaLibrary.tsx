@@ -1,5 +1,4 @@
-import { useState } from 'react';
-import { UploadCloud, Search, Filter, Image as ImageIcon, MoreVertical, Trash2, Link } from 'lucide-react';
+import { UploadCloud, Search, Filter, Trash2, Link } from 'lucide-react';
 
 const mockMedia = [
   { id: 1, name: 'dubai-skyline.jpg', size: '2.4 MB', date: '14 Jul 2026', url: 'https://images.unsplash.com/photo-1512453979798-5ea266f8880c?auto=format&fit=crop&w=400&q=80' },

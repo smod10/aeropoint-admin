@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Search, Plus, Edit2, Trash2, Image as ImageIcon, Check, X } from 'lucide-react';
+import { Search, Plus, Edit2, Trash2, Image as ImageIcon, Check } from 'lucide-react';
 import SlideOver from '../../components/Shared/SlideOver';
 
 // Mock Data

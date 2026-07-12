@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { Download, TrendingUp, DollarSign, Calendar, MapPin, Package, Building2, Plane } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
+import { Download, TrendingUp, DollarSign, Package, Building2, Plane } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 // Mock Data
 const revenueData = [

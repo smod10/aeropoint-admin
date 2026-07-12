@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Search, Filter, Download, Eye, Mail, Phone, ShoppingBag, MapPin, LifeBuoy, History } from 'lucide-react';
+import { Search, Filter, Download, Eye, Mail, Phone, ShoppingBag, MapPin, LifeBuoy } from 'lucide-react';
 import SlideOver from '../../components/Shared/SlideOver';
 
 // Mock Data
