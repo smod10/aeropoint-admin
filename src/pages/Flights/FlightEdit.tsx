@@ -369,7 +369,7 @@ export default function FlightEdit() {
       <div className="bg-[#eff6ff] rounded-xl shadow-sm border border-blue-100 p-6">
         <h3 className="text-sm font-bold text-blue-900 flex items-center gap-2 mb-4"><TrendingUp size={16}/> Journey Summary</h3>
         
-        {legs.map((leg, index) => (
+        {legs.map((leg) => (
           <div key={leg.id} className="bg-white border border-blue-100 rounded-lg p-3 flex justify-between items-center text-sm shadow-sm mb-2">
             <div className="flex items-center gap-3">
               <div className="w-3 h-3 rounded-full bg-blue-500"></div>

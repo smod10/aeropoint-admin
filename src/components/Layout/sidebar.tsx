@@ -2,9 +2,9 @@ import { useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { 
   LayoutDashboard, BookOpen, Plane, Building2, Package, 
-  FileText, Moon, Users, CreditCard, PenTool, 
+  FileText, Moon, Users, PenTool, 
   Image as ImageIcon, BarChart3, Settings, LogOut, 
-  PanelLeftClose, PanelLeftOpen, ChevronDown, ChevronRight, Grid
+  PanelLeftClose, PanelLeftOpen, ChevronDown, ChevronRight
 } from 'lucide-react';
 
 const navItems = [

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Columns, Plus, Edit2, Trash2, Globe } from 'lucide-react';
+import { Search, Plus, Edit2, Trash2, Globe } from 'lucide-react';
 
 const topDestinations = [
   'United Kingdom', 'United States', 'Canada', 'United Arab Emirates', 'Saudi Arabia', 

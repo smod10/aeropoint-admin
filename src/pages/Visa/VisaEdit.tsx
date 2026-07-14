@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Save, Info, DollarSign, FileText, Image as ImageIcon, Trash2, Plus, UploadCloud } from 'lucide-react';
-import { visaDictionary } from '../../data/visaSettings'; // The Bridge!
+import { visaDictionary } from '../../data/VisaSettings'; // The Bridge!
 
 // Top destinations to populate the dropdown
 const topDestinations = [
@@ -170,25 +170,25 @@ export default function VisaEdit() {
                         <div>
                           <label className="block text-xs font-medium text-gray-500 mb-1">Visa Type</label>
                           <select value={opt.type} onChange={(e) => updatePricing(opt.id, 'type', e.target.value)} className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none">
-                            {visaDictionary.types.map(t => <option key={t} value={t}>{t}</option>)}
+                            {visaDictionary.types.map((t: string) => <option key={t} value={t}>{t}</option>)}
                           </select>
                         </div>
                         <div>
                           <label className="block text-xs font-medium text-gray-500 mb-1">Processing</label>
                           <select value={opt.processing} onChange={(e) => updatePricing(opt.id, 'processing', e.target.value)} className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none">
-                            {visaDictionary.processing.map(t => <option key={t} value={t}>{t}</option>)}
+                            {visaDictionary.processing.map((t: string) => <option key={t} value={t}>{t}</option>)}
                           </select>
                         </div>
                         <div>
                           <label className="block text-xs font-medium text-gray-500 mb-1">Entry Type</label>
                           <select value={opt.entry} onChange={(e) => updatePricing(opt.id, 'entry', e.target.value)} className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none">
-                            {visaDictionary.entries.map(t => <option key={t} value={t}>{t}</option>)}
+                            {visaDictionary.entries.map((t: string) => <option key={t} value={t}>{t}</option>)}
                           </select>
                         </div>
                         <div>
                           <label className="block text-xs font-medium text-gray-500 mb-1">Duration</label>
                           <select value={opt.duration} onChange={(e) => updatePricing(opt.id, 'duration', e.target.value)} className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none">
-                            {visaDictionary.durations.map(t => <option key={t} value={t}>{t}</option>)}
+                            {visaDictionary.durations.map((t: string) => <option key={t} value={t}>{t}</option>)}
                           </select>
                         </div>
                       </div>

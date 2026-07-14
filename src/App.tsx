@@ -26,7 +26,7 @@ import PackageList from './pages/Packages/PackageList';
 import UmrahList from './pages/Umrah/UmrahList';
 import CustomerList from './pages/Customers/CustomerList';
 import PaymentList from './pages/Payments/PaymentList';
-import Modules from './pages/Integrations/Modules';
+import Modules from './pages/Integrations/modules';
 import BlogList from './pages/Blog/BlogList';
 import MediaLibrary from './pages/Media/MediaLibrary';
 import ReportsDashboard from './pages/Reports/ReportsDashboard';
