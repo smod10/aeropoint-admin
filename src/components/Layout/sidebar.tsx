@@ -2,9 +2,9 @@ import { useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { 
   LayoutDashboard, BookOpen, Plane, Building2, Package, 
-  FileText, Moon, Users, CreditCard, Plug, PenTool, 
+  FileText, Moon, Users, CreditCard, PenTool, 
   Image as ImageIcon, BarChart3, Settings, LogOut, 
-  PanelLeftClose, PanelLeftOpen, ChevronDown, ChevronRight
+  PanelLeftClose, PanelLeftOpen, ChevronDown, ChevronRight, Grid
 } from 'lucide-react';
 
 const navItems = [
@@ -21,21 +21,37 @@ const navItems = [
   },
   { name: 'Hotels', path: '/hotels', icon: Building2 },
   { name: 'Packages', path: '/packages', icon: Package },
-  { name: 'Visa', path: '/visa', icon: FileText },
+  { 
+    name: 'Visa', 
+    icon: FileText,
+    subItems: [
+      { name: 'All Visas', path: '/visa' },
+      { name: 'Visa Settings', path: '/visa/settings' }
+    ]
+  },
   { name: 'Umrah', path: '/umrah', icon: Moon },
   { name: 'Customers', path: '/customers', icon: Users },
-  { name: 'Payments', path: '/payments', icon: CreditCard },
-  { name: 'Integrations', path: '/integrations', icon: Plug },
   { name: 'Blog', path: '/blog', icon: PenTool },
   { name: 'Media', path: '/media', icon: ImageIcon },
   { name: 'Reports', path: '/reports', icon: BarChart3 },
-  { name: 'Settings', path: '/settings', icon: Settings },
+  { 
+    name: 'Settings', 
+    icon: Settings,
+    subItems: [
+      { name: 'General Settings', path: '/settings' },
+      { name: 'Payment Gateways', path: '/payments' },
+      { name: 'Modules', path: '/modules' } // Updated Name and Path
+    ]
+  },
 ];
 
 export default function Sidebar({ isExpanded, toggleSidebar }: { isExpanded: boolean, toggleSidebar: () => void }) {
   const location = useLocation();
+  
   const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({
-    Flights: location.pathname.includes('/flights')
+    Flights: location.pathname.includes('/flights'),
+    Visa: location.pathname.includes('/visa'), // Added Visa active state
+    Settings: ['/settings', '/payments', '/modules'].some(path => location.pathname.includes(path))
   });
 
   const toggleMenu = (name: string) => {
@@ -61,7 +77,6 @@ export default function Sidebar({ isExpanded, toggleSidebar }: { isExpanded: boo
           return (
             <div key={item.name} className="relative group">
               {item.subItems ? (
-                // Item with Submenu
                 <button
                   onClick={() => toggleMenu(item.name)}
                   className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg transition-colors ${
@@ -77,25 +92,27 @@ export default function Sidebar({ isExpanded, toggleSidebar }: { isExpanded: boo
                   )}
                 </button>
               ) : (
-                // Standard Item
                 <NavLink
                   to={item.path!}
-                  className={`flex items-center px-3 py-2.5 rounded-lg transition-colors ${
-                    isActive ? 'bg-primary-600 text-white shadow-sm' : 'hover:bg-slate-800 hover:text-white'
-                  } ${!isExpanded && 'justify-center'}`}
+                  end
+                  className={({ isActive }) =>
+                    `flex items-center px-3 py-2.5 rounded-lg transition-colors ${
+                      isActive ? 'bg-primary-600 text-white shadow-sm' : 'hover:bg-slate-800 hover:text-white'
+                    } ${!isExpanded && 'justify-center'}`
+                  }
                 >
                   <item.icon size={20} className="flex-shrink-0" />
                   {isExpanded && <span className="ml-3 text-sm font-medium truncate">{item.name}</span>}
                 </NavLink>
               )}
 
-              {/* Expanded Submenu (Accordion) */}
               {isExpanded && item.subItems && isOpen && (
-                <div className="mt-1 ml-4 pl-4 border-l border-slate-700 space-y-1">
+                <div className="mt-1 ml-4 pl-4 border-l border-slate-700 space-y-1 pb-2">
                   {item.subItems.map((sub) => (
                     <NavLink
                       key={sub.name}
                       to={sub.path}
+                      end
                       className={({ isActive }) =>
                         `block px-3 py-2 text-sm rounded-lg transition-colors ${
                           isActive ? 'bg-primary-600 text-white' : 'text-slate-400 hover:text-white hover:bg-slate-800'
@@ -108,22 +125,13 @@ export default function Sidebar({ isExpanded, toggleSidebar }: { isExpanded: boo
                 </div>
               )}
 
-              {/* Collapsed Hover Submenu (Flyout) */}
               {!isExpanded && (
                 <div className="absolute left-14 top-0 hidden group-hover:block bg-slate-800 text-white rounded-lg shadow-xl py-2 min-w-[160px] z-50 border border-slate-700">
                   {item.subItems ? (
                     <>
                       <div className="px-4 py-1 text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">{item.name}</div>
                       {item.subItems.map((sub) => (
-                        <NavLink
-                          key={sub.name}
-                          to={sub.path}
-                          className={({ isActive }) =>
-                            `block px-4 py-2 text-sm transition-colors ${
-                              isActive ? 'bg-primary-600' : 'hover:bg-slate-700'
-                            }`
-                          }
-                        >
+                        <NavLink key={sub.name} to={sub.path} end className={({ isActive }) => `block px-4 py-2 text-sm transition-colors ${isActive ? 'bg-primary-600' : 'hover:bg-slate-700'}`}>
                           {sub.name}
                         </NavLink>
                       ))}
