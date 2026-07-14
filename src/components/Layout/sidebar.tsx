@@ -1,14 +1,24 @@
-import { NavLink } from 'react-router-dom';
+import { useState } from 'react';
+import { NavLink, useLocation } from 'react-router-dom';
 import { 
   LayoutDashboard, BookOpen, Plane, Building2, Package, 
   FileText, Moon, Users, CreditCard, Plug, PenTool, 
-  Image as ImageIcon, BarChart3, Settings, LogOut, PanelLeftClose, PanelLeftOpen
+  Image as ImageIcon, BarChart3, Settings, LogOut, 
+  PanelLeftClose, PanelLeftOpen, ChevronDown, ChevronRight
 } from 'lucide-react';
 
 const navItems = [
   { name: 'Dashboard', path: '/', icon: LayoutDashboard },
   { name: 'Bookings', path: '/bookings', icon: BookOpen },
-  { name: 'Flights', path: '/flights', icon: Plane },
+  { 
+    name: 'Flights', 
+    icon: Plane,
+    subItems: [
+      { name: 'All Flights', path: '/flights' },
+      { name: 'Airlines', path: '/flights/airlines' },
+      { name: 'Airports', path: '/flights/airports' }
+    ]
+  },
   { name: 'Hotels', path: '/hotels', icon: Building2 },
   { name: 'Packages', path: '/packages', icon: Package },
   { name: 'Visa', path: '/visa', icon: FileText },
@@ -23,8 +33,19 @@ const navItems = [
 ];
 
 export default function Sidebar({ isExpanded, toggleSidebar }: { isExpanded: boolean, toggleSidebar: () => void }) {
+  const location = useLocation();
+  const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({
+    Flights: location.pathname.includes('/flights')
+  });
+
+  const toggleMenu = (name: string) => {
+    if (isExpanded) {
+      setOpenMenus(prev => ({ ...prev, [name]: !prev[name] }));
+    }
+  };
+
   return (
-    <aside className={`bg-sidebar text-slate-300 flex flex-col h-screen fixed left-0 top-0 overflow-y-auto transition-all duration-300 z-50 ${isExpanded ? 'w-64' : 'w-20'}`}>
+    <aside className={`bg-sidebar text-slate-300 flex flex-col h-screen fixed left-0 top-0 overflow-y-visible transition-all duration-300 z-50 ${isExpanded ? 'w-64' : 'w-20'}`}>
       <div className="p-4 flex items-center justify-between h-16 border-b border-slate-800">
         {isExpanded && <h1 className="text-xl font-bold text-white tracking-tight truncate pr-2">Aeropoint<span className="text-primary-500">.</span></h1>}
         <button onClick={toggleSidebar} className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition-colors mx-auto">
@@ -32,28 +53,89 @@ export default function Sidebar({ isExpanded, toggleSidebar }: { isExpanded: boo
         </button>
       </div>
       
-      <nav className="flex-1 px-3 py-4 space-y-1">
-        {navItems.map((item) => (
-          <NavLink
-            key={item.name}
-            to={item.path}
-            className={({ isActive }) =>
-              `flex items-center px-3 py-2.5 rounded-lg transition-colors group relative ${
-                isActive ? 'bg-primary-600 text-white' : 'hover:bg-slate-800 hover:text-white'
-              } ${!isExpanded && 'justify-center'}`
-            }
-          >
-            <item.icon size={20} className="flex-shrink-0" />
-            {isExpanded && <span className="ml-3 text-sm font-medium truncate">{item.name}</span>}
-            
-            {/* Tooltip for collapsed state */}
-            {!isExpanded && (
-              <div className="absolute left-14 bg-slate-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap z-50 shadow-lg">
-                {item.name}
-              </div>
-            )}
-          </NavLink>
-        ))}
+      <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto overflow-x-visible hide-scrollbar">
+        {navItems.map((item) => {
+          const isActive = location.pathname === item.path || (item.subItems && item.subItems.some(sub => location.pathname === sub.path));
+          const isOpen = openMenus[item.name];
+
+          return (
+            <div key={item.name} className="relative group">
+              {item.subItems ? (
+                // Item with Submenu
+                <button
+                  onClick={() => toggleMenu(item.name)}
+                  className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg transition-colors ${
+                    isActive ? 'bg-primary-900/50 text-white' : 'hover:bg-slate-800 hover:text-white'
+                  } ${!isExpanded && 'justify-center'}`}
+                >
+                  <div className="flex items-center">
+                    <item.icon size={20} className={`flex-shrink-0 ${isActive ? 'text-primary-500' : ''}`} />
+                    {isExpanded && <span className="ml-3 text-sm font-medium truncate">{item.name}</span>}
+                  </div>
+                  {isExpanded && (
+                    isOpen ? <ChevronDown size={16} className="text-slate-500" /> : <ChevronRight size={16} className="text-slate-500" />
+                  )}
+                </button>
+              ) : (
+                // Standard Item
+                <NavLink
+                  to={item.path!}
+                  className={`flex items-center px-3 py-2.5 rounded-lg transition-colors ${
+                    isActive ? 'bg-primary-600 text-white shadow-sm' : 'hover:bg-slate-800 hover:text-white'
+                  } ${!isExpanded && 'justify-center'}`}
+                >
+                  <item.icon size={20} className="flex-shrink-0" />
+                  {isExpanded && <span className="ml-3 text-sm font-medium truncate">{item.name}</span>}
+                </NavLink>
+              )}
+
+              {/* Expanded Submenu (Accordion) */}
+              {isExpanded && item.subItems && isOpen && (
+                <div className="mt-1 ml-4 pl-4 border-l border-slate-700 space-y-1">
+                  {item.subItems.map((sub) => (
+                    <NavLink
+                      key={sub.name}
+                      to={sub.path}
+                      className={({ isActive }) =>
+                        `block px-3 py-2 text-sm rounded-lg transition-colors ${
+                          isActive ? 'bg-primary-600 text-white' : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                        }`
+                      }
+                    >
+                      {sub.name}
+                    </NavLink>
+                  ))}
+                </div>
+              )}
+
+              {/* Collapsed Hover Submenu (Flyout) */}
+              {!isExpanded && (
+                <div className="absolute left-14 top-0 hidden group-hover:block bg-slate-800 text-white rounded-lg shadow-xl py-2 min-w-[160px] z-50 border border-slate-700">
+                  {item.subItems ? (
+                    <>
+                      <div className="px-4 py-1 text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">{item.name}</div>
+                      {item.subItems.map((sub) => (
+                        <NavLink
+                          key={sub.name}
+                          to={sub.path}
+                          className={({ isActive }) =>
+                            `block px-4 py-2 text-sm transition-colors ${
+                              isActive ? 'bg-primary-600' : 'hover:bg-slate-700'
+                            }`
+                          }
+                        >
+                          {sub.name}
+                        </NavLink>
+                      ))}
+                    </>
+                  ) : (
+                    <div className="px-4 py-2 text-sm">{item.name}</div>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
       </nav>
       
       <div className="p-3 mt-auto border-t border-slate-800">

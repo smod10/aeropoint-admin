@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { Plus, Edit2, Trash2, Eye, LayoutIcon, Check } from 'lucide-react';
-import SlideOver from '../../components/Shared/SlideOver';
+import { useNavigate } from 'react-router-dom';
+import { LayoutIcon, Plus, Eye, Edit2, Trash2 } from 'lucide-react';
 
-// Mock Data matching the provided screenshot style
+// Mock Data matching the inventory-style screenshot
 const initialFlights = [
   { id: 1, status: true, flightNumber: 'PK304', airline: 'AST Pakistan Airways', origin: 'Lahore', destination: 'Dubai', time: '06:00:00', type: 'recurring', adult: '155.00 USD', child: '116.00 USD', infant: '39.00 USD' },
   { id: 2, status: true, flightNumber: 'LH778', airline: 'Lufthansa', origin: 'Frankfurt', destination: 'Singapore', time: '22:05:00', type: 'fixed', adult: '730.00 USD', child: '547.50 USD', infant: '73.00 USD' },
@@ -15,22 +15,11 @@ const initialFlights = [
 
 export default function FlightList() {
   const [flights, setFlights] = useState(initialFlights);
-  const [isSlideOverOpen, setIsSlideOverOpen] = useState(false);
-  const [editingFlight, setEditingFlight] = useState<any>(null);
+  const navigate = useNavigate();
 
   // Toggle the active/inactive status switch
   const toggleStatus = (id: number) => {
     setFlights(flights.map(f => f.id === id ? { ...f, status: !f.status } : f));
-  };
-
-  const openAddForm = () => {
-    setEditingFlight(null);
-    setIsSlideOverOpen(true);
-  };
-
-  const openEditForm = (flight: any) => {
-    setEditingFlight(flight);
-    setIsSlideOverOpen(true);
   };
 
   const handleDelete = (id: number) => {
@@ -40,8 +29,8 @@ export default function FlightList() {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header Matching Screenshot */}
+    <div className="space-y-6 animate-in fade-in duration-300">
+      {/* Header */}
       <div className="bg-white p-6 rounded-xl shadow-soft border border-gray-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h2 className="text-xl font-bold text-gray-800">Flights Management</h2>
@@ -53,7 +42,7 @@ export default function FlightList() {
             View Columns
           </button>
           <button 
-            onClick={openAddForm}
+            onClick={() => navigate('/flights/edit/new')}
             className="flex items-center gap-2 bg-primary-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary-700 transition-colors shadow-sm"
           >
             <Plus size={16} />
@@ -111,13 +100,25 @@ export default function FlightList() {
                   
                   {/* Actions Column */}
                   <td className="px-4 py-3 text-center space-x-1">
-                    <button className="inline-flex p-1.5 text-gray-400 hover:text-primary-600 border border-gray-200 rounded hover:bg-gray-50 transition-colors" title="View">
+                    <button 
+                      onClick={() => navigate(`/flights/view/${flight.flightNumber}`)} 
+                      className="inline-flex p-1.5 text-gray-400 hover:text-primary-600 border border-gray-200 rounded hover:bg-gray-50 transition-colors" 
+                      title="View"
+                    >
                       <Eye size={14} />
                     </button>
-                    <button onClick={() => openEditForm(flight)} className="inline-flex p-1.5 text-gray-400 hover:text-blue-600 border border-gray-200 rounded hover:bg-gray-50 transition-colors" title="Edit">
+                    <button 
+                      onClick={() => navigate(`/flights/edit/${flight.flightNumber}`)} 
+                      className="inline-flex p-1.5 text-gray-400 hover:text-blue-600 border border-gray-200 rounded hover:bg-gray-50 transition-colors" 
+                      title="Edit"
+                    >
                       <Edit2 size={14} />
                     </button>
-                    <button onClick={() => handleDelete(flight.id)} className="inline-flex p-1.5 text-gray-400 hover:text-red-600 border border-gray-200 rounded hover:bg-gray-50 transition-colors" title="Delete">
+                    <button 
+                      onClick={() => handleDelete(flight.id)} 
+                      className="inline-flex p-1.5 text-gray-400 hover:text-red-600 border border-gray-200 rounded hover:bg-gray-50 transition-colors" 
+                      title="Delete"
+                    >
                       <Trash2 size={14} />
                     </button>
                   </td>
@@ -127,78 +128,6 @@ export default function FlightList() {
           </table>
         </div>
       </div>
-
-      {/* Add / Edit Slide-Over */}
-      <SlideOver 
-        isOpen={isSlideOverOpen} 
-        onClose={() => setIsSlideOverOpen(false)} 
-        title={editingFlight ? "Edit Flight Configuration" : "Create New Flight"}
-      >
-        <form className="space-y-5 pb-24" onSubmit={(e) => e.preventDefault()}>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Flight Number</label>
-              <input type="text" defaultValue={editingFlight?.flightNumber || ''} className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-sm focus:ring-primary-500 outline-none" placeholder="e.g. EK382" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Airline</label>
-              <input type="text" defaultValue={editingFlight?.airline || ''} className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-sm focus:ring-primary-500 outline-none" placeholder="e.g. Emirates" />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Origin Airport</label>
-              <input type="text" defaultValue={editingFlight?.origin || ''} className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-sm focus:ring-primary-500 outline-none" placeholder="City or IATA code" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Destination Airport</label>
-              <input type="text" defaultValue={editingFlight?.destination || ''} className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-sm focus:ring-primary-500 outline-none" placeholder="City or IATA code" />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Departure Time</label>
-              <input type="time" defaultValue={editingFlight?.time || ''} className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-sm focus:ring-primary-500 outline-none" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Flight Type</label>
-              <select className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-sm focus:ring-primary-500 outline-none">
-                <option value="fixed" selected={editingFlight?.type === 'fixed'}>Fixed</option>
-                <option value="recurring" selected={editingFlight?.type === 'recurring'}>Recurring</option>
-              </select>
-            </div>
-          </div>
-
-          <div className="bg-gray-50 p-4 rounded-xl border border-gray-100 space-y-4 mt-4">
-            <h4 className="text-sm font-semibold text-gray-900">Pricing Configuration (Economy)</h4>
-            <div className="grid grid-cols-3 gap-3">
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Adult Price</label>
-                <input type="text" defaultValue={editingFlight?.adult || ''} className="w-full bg-white border border-gray-200 rounded-lg px-3 py-1.5 text-sm outline-none" placeholder="0.00 USD" />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Child Price</label>
-                <input type="text" defaultValue={editingFlight?.child || ''} className="w-full bg-white border border-gray-200 rounded-lg px-3 py-1.5 text-sm outline-none" placeholder="0.00 USD" />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Infant Price</label>
-                <input type="text" defaultValue={editingFlight?.infant || ''} className="w-full bg-white border border-gray-200 rounded-lg px-3 py-1.5 text-sm outline-none" placeholder="0.00 USD" />
-              </div>
-            </div>
-          </div>
-
-          <div className="pt-4 flex gap-3">
-            <button type="button" onClick={() => setIsSlideOverOpen(false)} className="flex-1 bg-white border border-gray-200 text-gray-700 px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors">
-              Cancel
-            </button>
-            <button type="button" onClick={() => setIsSlideOverOpen(false)} className="flex-1 flex items-center justify-center gap-2 bg-primary-600 text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-primary-700 transition-colors">
-              <Check size={16} /> Save Flight
-            </button>
-          </div>
-        </form>
-      </SlideOver>
     </div>
   );
 }

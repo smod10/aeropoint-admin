@@ -7,7 +7,15 @@ import Login from './pages/Auth/Login';
 // Pages
 import DashboardHome from './pages/Dashboard/DashboardHome';
 import BookingList from './pages/Bookings/BookingList';
+
+// Flights Module
 import FlightList from './pages/Flights/FlightList';
+import FlightView from './pages/Flights/FlightView';
+import FlightEdit from './pages/Flights/FlightEdit';
+import AirlinesList from './pages/Flights/AirlinesList';
+import AirportsList from './pages/Flights/AirportsList';
+
+// Other Modules
 import HotelList from './pages/Hotels/HotelList';
 import PackageList from './pages/Packages/PackageList';
 import VisaList from './pages/Visa/VisaList';
@@ -33,9 +41,17 @@ function App() {
           {/* Main Dashboard */}
           <Route index element={<DashboardHome />} />
           
-          {/* Core Booking Modules */}
+          {/* Core Booking Master List */}
           <Route path="bookings" element={<BookingList />} />
+          
+          {/* Nested Flights Management */}
           <Route path="flights" element={<FlightList />} />
+          <Route path="flights/view/:id" element={<FlightView />} />
+          <Route path="flights/edit/:id" element={<FlightEdit />} />
+          <Route path="flights/airlines" element={<AirlinesList />} />
+          <Route path="flights/airports" element={<AirportsList />} />
+          
+          {/* Other Modules */}
           <Route path="hotels" element={<HotelList />} />
           <Route path="packages" element={<PackageList />} />
           <Route path="visa" element={<VisaList />} />
