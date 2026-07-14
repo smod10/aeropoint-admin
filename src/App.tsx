@@ -4,9 +4,13 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import AdminLayout from './components/Layout/AdminLayout';
 import Login from './pages/Auth/Login';
 
-// Pages
+// Dashboard
 import DashboardHome from './pages/Dashboard/DashboardHome';
+
+// Bookings Module
 import BookingList from './pages/Bookings/BookingList';
+import BookingEdit from './pages/Bookings/BookingEdit';
+import InvoiceView from './pages/Bookings/InvoiceView';
 
 // Flights Module
 import FlightList from './pages/Flights/FlightList';
@@ -16,15 +20,18 @@ import AirlinesList from './pages/Flights/AirlinesList';
 import AirportsList from './pages/Flights/AirportsList';
 
 // Visa Module
-import VisaList from './pages/Visa/VisaList';           // New Main Page
-import VisaEdit from './pages/Visa/VisaEdit';           // New Add/Edit form
-import VisaSettings from './pages/Visa/VisaSettings';   // Formerly your old VisaList.tsx
+import VisaList from './pages/Visa/VisaList';           
+import VisaEdit from './pages/Visa/VisaEdit';           
+import VisaSettings from './pages/Visa/VisaSettings';   
+
+// Users Module (Replaced Customers)
+import UserList from './pages/Users/UserList';
+import UserEdit from './pages/Users/UserEdit';
 
 // Other Modules
 import HotelList from './pages/Hotels/HotelList';
 import PackageList from './pages/Packages/PackageList';
 import UmrahList from './pages/Umrah/UmrahList';
-import CustomerList from './pages/Customers/CustomerList';
 import PaymentList from './pages/Payments/PaymentList';
 import Modules from './pages/Integrations/modules';
 import BlogList from './pages/Blog/BlogList';
@@ -40,23 +47,34 @@ function App() {
 
         <Route path="/" element={<AdminLayout />}>
           <Route index element={<DashboardHome />} />
-          <Route path="bookings" element={<BookingList />} />
           
+          {/* Dynamic Bookings Routing */}
+          <Route path="bookings" element={<BookingList />} />
+          <Route path="bookings/type/:moduleType" element={<BookingList />} />
+          <Route path="bookings/edit/:id" element={<BookingEdit />} />
+          <Route path="bookings/view/:id" element={<InvoiceView />} />
+          
+          {/* Flights Routing */}
           <Route path="flights" element={<FlightList />} />
           <Route path="flights/view/:id" element={<FlightView />} />
           <Route path="flights/edit/:id" element={<FlightEdit />} />
           <Route path="flights/airlines" element={<AirlinesList />} />
           <Route path="flights/airports" element={<AirportsList />} />
           
-          {/* New Nested Visa Routes */}
+          {/* Visa Routing */}
           <Route path="visa" element={<VisaList />} />
           <Route path="visa/edit/:id" element={<VisaEdit />} />
           <Route path="visa/settings" element={<VisaSettings />} />
+
+          {/* Dynamic Users Routing */}
+          <Route path="users" element={<UserList />} />
+          <Route path="users/role/:role" element={<UserList />} />
+          <Route path="users/edit/:id" element={<UserEdit />} />
           
+          {/* Global/Other Routing */}
           <Route path="hotels" element={<HotelList />} />
           <Route path="packages" element={<PackageList />} />
           <Route path="umrah" element={<UmrahList />} />
-          <Route path="customers" element={<CustomerList />} />
           <Route path="payments" element={<PaymentList />} />
           <Route path="modules" element={<Modules />} /> 
           <Route path="blog" element={<BlogList />} />
@@ -64,6 +82,7 @@ function App() {
           <Route path="reports" element={<ReportsDashboard />} />
           <Route path="settings" element={<SettingsPage />} />
           
+          {/* Fallback 404 for Dashboard */}
           <Route path="*" element={
             <div className="flex items-center justify-center h-64 text-gray-500 bg-white rounded-xl border border-gray-100 shadow-soft">
               This module could not be found or is currently under construction.

@@ -1,15 +1,39 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { 
   LayoutDashboard, BookOpen, Plane, Building2, Package, 
-  FileText, Moon, Users, PenTool, 
-  Image as ImageIcon, BarChart3, Settings, LogOut, 
-  PanelLeftClose, PanelLeftOpen, ChevronDown, ChevronRight
+  FileText, Moon, Users, PenTool, Image as ImageIcon, 
+  BarChart3, Settings, LogOut, PanelLeftClose, 
+  PanelLeftOpen, ChevronDown, ChevronRight
 } from 'lucide-react';
 
 const navItems = [
   { name: 'Dashboard', path: '/', icon: LayoutDashboard },
-  { name: 'Bookings', path: '/bookings', icon: BookOpen },
+  { 
+    name: 'Bookings', 
+    icon: BookOpen,
+    subItems: [
+      { name: 'All Bookings', path: '/bookings' },
+      { name: 'Flights Bookings', path: '/bookings/type/flights' },
+      { name: 'Stays Bookings', path: '/bookings/type/stays' },
+      { name: 'Tours Bookings', path: '/bookings/type/tours' },
+      { name: 'Visa Bookings', path: '/bookings/type/visa' },
+      { name: 'Umrah Bookings', path: '/bookings/type/umrah' },
+      { name: 'Bus Bookings', path: '/bookings/type/bus' }
+    ]
+  },
+  { 
+    name: 'Users', 
+    icon: Users,
+    subItems: [
+      { name: 'All Users', path: '/users' },
+      { name: 'Admin', path: '/users/role/admin' },
+      { name: 'Supplier', path: '/users/role/supplier' },
+      { name: 'Employee', path: '/users/role/employee' },
+      { name: 'Customer', path: '/users/role/customer' },
+      { name: 'Agent', path: '/users/role/agent' }
+    ]
+  },
   { 
     name: 'Flights', 
     icon: Plane,
@@ -30,7 +54,6 @@ const navItems = [
     ]
   },
   { name: 'Umrah', path: '/umrah', icon: Moon },
-  { name: 'Customers', path: '/customers', icon: Users },
   { name: 'Blog', path: '/blog', icon: PenTool },
   { name: 'Media', path: '/media', icon: ImageIcon },
   { name: 'Reports', path: '/reports', icon: BarChart3 },
@@ -40,23 +63,26 @@ const navItems = [
     subItems: [
       { name: 'General Settings', path: '/settings' },
       { name: 'Payment Gateways', path: '/payments' },
-      { name: 'Modules', path: '/modules' } // Updated Name and Path
+      { name: 'Modules', path: '/modules' }
     ]
   },
 ];
 
 export default function Sidebar({ isExpanded, toggleSidebar }: { isExpanded: boolean, toggleSidebar: () => void }) {
   const location = useLocation();
-  
-  const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({
-    Flights: location.pathname.includes('/flights'),
-    Visa: location.pathname.includes('/visa'), // Added Visa active state
-    Settings: ['/settings', '/payments', '/modules'].some(path => location.pathname.includes(path))
-  });
+  const [openMenu, setOpenMenu] = useState<string | null>(null);
+
+  // Set initial active menu based on URL and enforce accordion behavior
+  useEffect(() => {
+    const activeItem = navItems.find(item => 
+      item.subItems && item.subItems.some(sub => location.pathname.includes(sub.path))
+    );
+    if (activeItem) setOpenMenu(activeItem.name);
+  }, [location.pathname]);
 
   const toggleMenu = (name: string) => {
     if (isExpanded) {
-      setOpenMenus(prev => ({ ...prev, [name]: !prev[name] }));
+      setOpenMenu(prev => prev === name ? null : name);
     }
   };
 
@@ -72,7 +98,7 @@ export default function Sidebar({ isExpanded, toggleSidebar }: { isExpanded: boo
       <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto overflow-x-visible hide-scrollbar">
         {navItems.map((item) => {
           const isActive = location.pathname === item.path || (item.subItems && item.subItems.some(sub => location.pathname === sub.path));
-          const isOpen = openMenus[item.name];
+          const isOpen = openMenu === item.name;
 
           return (
             <div key={item.name} className="relative group">
