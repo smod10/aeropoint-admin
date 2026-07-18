@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, BookOpen, Plane, Building2, Package, 
   FileText, Moon, Users, PenTool, Image as ImageIcon, 
@@ -70,6 +70,7 @@ const navItems = [
 
 export default function Sidebar({ isExpanded, toggleSidebar }: { isExpanded: boolean, toggleSidebar: () => void }) {
   const location = useLocation();
+  const navigate = useNavigate();
   const [openMenu, setOpenMenu] = useState<string | null>(null);
 
   // Set initial active menu based on URL and enforce accordion behavior
@@ -80,9 +81,24 @@ export default function Sidebar({ isExpanded, toggleSidebar }: { isExpanded: boo
     if (activeItem) setOpenMenu(activeItem.name);
   }, [location.pathname]);
 
-  const toggleMenu = (name: string) => {
+  // Handle click on a parent item with a dropdown
+  const handleParentClick = (item: typeof navItems[0]) => {
     if (isExpanded) {
-      setOpenMenu(prev => prev === name ? null : name);
+      if (openMenu === item.name) {
+        // Close if clicking the currently open menu
+        setOpenMenu(null);
+      } else {
+        // Open the menu AND navigate to its first sub-item by default
+        setOpenMenu(item.name);
+        if (item.subItems && item.subItems.length > 0) {
+          navigate(item.subItems[0].path);
+        }
+      }
+    } else {
+      // If sidebar is collapsed, clicking the icon should still navigate
+      if (item.subItems && item.subItems.length > 0) {
+        navigate(item.subItems[0].path);
+      }
     }
   };
 
@@ -97,14 +113,14 @@ export default function Sidebar({ isExpanded, toggleSidebar }: { isExpanded: boo
       
       <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto overflow-x-visible hide-scrollbar">
         {navItems.map((item) => {
-          const isActive = location.pathname === item.path || (item.subItems && item.subItems.some(sub => location.pathname === sub.path));
+          const isActive = location.pathname === item.path || (item.subItems && item.subItems.some(sub => location.pathname.includes(sub.path)));
           const isOpen = openMenu === item.name;
 
           return (
             <div key={item.name} className="relative group">
               {item.subItems ? (
                 <button
-                  onClick={() => toggleMenu(item.name)}
+                  onClick={() => handleParentClick(item)}
                   className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg transition-colors ${
                     isActive ? 'bg-primary-900/50 text-white' : 'hover:bg-slate-800 hover:text-white'
                   } ${!isExpanded && 'justify-center'}`}

@@ -5,8 +5,9 @@ import {
   CreditCard, AlignLeft, Wallet, Save, XCircle, 
   CheckCircle2, Columns, Image as ImageIcon, ChevronDown, 
   MapPin, Shield, Building 
-} from 'lucide-react'; // Shield and Building are safer fallbacks for older lucide versions
+} from 'lucide-react'; 
 import { mockUsers } from '../../data/mockUsers';
+import { countries } from '../../data/countries'; // Import Global Countries
 
 type TabType = 'profile' | 'information' | 'activity' | 'bookings' | 'transactions' | 'notes';
 
@@ -14,14 +15,12 @@ export default function UserEdit() {
   const navigate = useNavigate();
   const { id } = useParams();
   
-  // Safe fallback if user isn't found
   const user = mockUsers.find(u => u.id === Number(id)) || mockUsers[0];
   const isNew = id === 'new' || !id;
 
   const [activeTab, setActiveTab] = useState<TabType>('profile');
 
-  // Safe phone split logic so the page doesn't crash if formatting is off
-  const phoneParts = user?.phone ? user.phone.split(' ') : ['+1', ''];
+  const phoneParts = user?.phone ? user.phone.split(' ') : ['+234', ''];
   const phonePrefix = phoneParts[0];
   const phoneNumber = phoneParts.slice(1).join(' ');
 
@@ -117,10 +116,12 @@ export default function UserEdit() {
                     <div>
                       <label className="block text-xs font-medium text-gray-700 mb-1">Phone</label>
                       <div className="flex gap-2">
-                        <select className="w-24 bg-white border border-gray-200 rounded-lg px-2 py-2 text-sm outline-none">
-                          <option selected={phonePrefix.includes('+92')}>PK +92</option>
-                          <option selected={phonePrefix.includes('+1')}>US +1</option>
-                          <option selected={phonePrefix.includes('+234')}>NG +234</option>
+                        <select className="w-28 bg-white border border-gray-200 rounded-lg px-2 py-2 text-sm outline-none" defaultValue={isNew ? '+234' : phonePrefix}>
+                          {countries.map((c, idx) => (
+                            <option key={`phone-${c.code}-${idx}`} value={c.dialCode}>
+                              {c.code} {c.dialCode}
+                            </option>
+                          ))}
                         </select>
                         <input type="text" defaultValue={phoneNumber} className="flex-1 bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-primary-500" />
                       </div>

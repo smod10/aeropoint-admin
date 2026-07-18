@@ -1,12 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Save, Info, DollarSign, FileText, Image as ImageIcon, Trash2, Plus, UploadCloud } from 'lucide-react';
-import { visaDictionary } from '../../data/VisaSettings'; // The Bridge!
-
-// Top destinations to populate the dropdown
-const topDestinations = [
-  'United Kingdom', 'United States', 'Canada', 'United Arab Emirates', 'Saudi Arabia', 'South Africa', 'Egypt', 'Kenya', 'Qatar', 'Turkey', 'Singapore', 'Malaysia', 'China', 'India', 'France', 'Germany', 'Italy', 'Spain', 'Netherlands', 'Australia', 'Brazil', 'Japan'
-];
+import { countries } from '../../data/countries'; 
+import { globalVisaProfiles } from '../../data/visaProfiles';
 
 export default function VisaEdit() {
   const navigate = useNavigate();
@@ -15,31 +11,103 @@ export default function VisaEdit() {
 
   const [activeTab, setActiveTab] = useState<'general' | 'pricing' | 'requirements' | 'gallery'>('general');
 
-  // Dynamic Pricing Options based on Settings
-  const [pricingOptions, setPricingOptions] = useState(isNew ? [] : [
-    { id: 1, type: 'Tourist Visa', processing: 'Standard (7-10 Days)', entry: 'Single Entry', duration: '6 Months', baseFee: '120000', markup: '30000' }
-  ]);
+  // Form States
+  const [destinationCountry, setDestinationCountry] = useState(isNew ? '' : 'United Kingdom');
+  const [description, setDescription] = useState('');
+  const [pricingOptions, setPricingOptions] = useState<any[]>([]);
+  const [requirements, setRequirements] = useState<string[]>([]);
+  
+  // Track which Visa Option is currently being edited in the dropdown
+  const [activeOptionId, setActiveOptionId] = useState<number | null>(null);
 
-  const [requirements, setRequirements] = useState([
-    'Valid Nigerian passport (minimum 6 months validity)',
-    'Completed visa application form',
-    'Two recent passport-sized photographs',
-    'Flight itinerary (round trip)',
-    'Hotel bookings or proof of accommodation',
-    'Bank statements (last 6 months stamped by bank)',
-    'Certificate of employment or CAC documents for business owners',
-  ]);
+  // 1. Define dropdown options safely and dynamically
+  const currentProfile = globalVisaProfiles.find(p => p.country === destinationCountry);
+  
+  const allVisaTypes = Array.from(new Set([
+    ...(currentProfile ? currentProfile.options.map(o => o.type) : []),
+    'Tourist Visa', 'Business Visa', 'Student Visa', 'Work Visa', 'Transit Visa', 
+    'Family Reunion Visa', 'Digital Nomad Visa', 'Medical Treatment Visa', 'e-Visa',
+    'Standard Visitor Visa', 'Temporary Resident Visa', 'Residence Visa'
+  ]));
+
+  const processingOptions = Array.from(new Set([
+    ...(currentProfile ? currentProfile.options.map(o => o.processingSpeed) : []),
+    'Standard (7-10 Days)', 'Express (3-5 Days)', 'Rush (1-2 Days)', 
+    'Embassy Dependent', '2-4 Business Days', '15-30 Business Days'
+  ]));
+
+  const durationOptions = Array.from(new Set([
+    ...(currentProfile ? currentProfile.options.map(o => o.duration) : []),
+    '14 Days', '30 Days', '60 Days', '90 Days', '6 Months', '1 Year', '2 Years', '5 Years', 'Course Duration'
+  ]));
+
+  const entryOptions = ['Single Entry', 'Multiple Entry', 'Double Entry', 'Transit'];
+
+  // 2. Load Country Profile Automation
+  const loadCountryProfile = (countryName: string) => {
+    const profile = globalVisaProfiles.find(p => p.country === countryName);
+    
+    if (profile) {
+      setDescription(profile.description);
+      const mappedOptions = profile.options.map((opt, index) => ({
+        id: Date.now() + index, 
+        type: opt.type,
+        processing: opt.processingSpeed,
+        entry: 'Multiple Entry',
+        duration: opt.duration,
+        baseFee: opt.suggestedBaseFeeNGN.toString(),
+        markup: opt.suggestedMarkupNGN.toString()
+      }));
+      setPricingOptions(mappedOptions);
+      setActiveOptionId(mappedOptions.length > 0 ? mappedOptions[0].id : null);
+      
+      setRequirements(profile.options[0]?.requirements || [
+        'Valid passport (minimum 6 months validity)',
+        'Completed visa application form',
+        'Two recent passport-sized photographs'
+      ]);
+    } else {
+      setDescription('');
+      setPricingOptions([]);
+      setActiveOptionId(null);
+      setRequirements([]);
+    }
+  };
+
+  useEffect(() => {
+    if (!isNew && destinationCountry === 'United Kingdom') {
+      loadCountryProfile('United Kingdom');
+    }
+  }, [isNew, destinationCountry]);
+
+  const handleCountryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const selected = e.target.value;
+    setDestinationCountry(selected);
+    loadCountryProfile(selected);
+  };
 
   // Pricing Handlers
   const addPricingOption = () => {
+    const newId = Date.now();
     setPricingOptions([...pricingOptions, { 
-      id: Date.now(), type: visaDictionary.types[0], processing: visaDictionary.processing[0], 
-      entry: visaDictionary.entries[0], duration: visaDictionary.durations[0], baseFee: '', markup: '' 
+      id: newId, 
+      type: allVisaTypes[0], 
+      processing: processingOptions[0], 
+      entry: entryOptions[0], 
+      duration: durationOptions[0], 
+      baseFee: '', 
+      markup: '' 
     }]);
+    setActiveOptionId(newId); // Focus the newly created option
   };
 
   const removePricingOption = (idToRemove: number) => {
-    setPricingOptions(pricingOptions.filter(opt => opt.id !== idToRemove));
+    const filteredOptions = pricingOptions.filter(opt => opt.id !== idToRemove);
+    setPricingOptions(filteredOptions);
+    // If we deleted the currently active option, switch to the first available one
+    if (activeOptionId === idToRemove) {
+      setActiveOptionId(filteredOptions.length > 0 ? filteredOptions[0].id : null);
+    }
   };
 
   const updatePricing = (id: number, field: string, value: string) => {
@@ -54,6 +122,9 @@ export default function VisaEdit() {
     newReqs[index] = value;
     setRequirements(newReqs);
   };
+
+  // Find the currently active option to render its specific form
+  const activeOption = pricingOptions.find(opt => opt.id === activeOptionId);
 
   return (
     <form className="space-y-6 max-w-5xl animate-in fade-in duration-300" onSubmit={(e) => { e.preventDefault(); navigate('/visa'); }}>
@@ -101,17 +172,19 @@ export default function VisaEdit() {
               <div className="grid grid-cols-2 gap-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Departure Country *</label>
-                  <select className="w-full bg-white border border-gray-200 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary-500">
-                    <option value="Nigeria" selected>Nigeria</option>
+                  <select className="w-full bg-white border border-gray-200 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary-500" defaultValue="Nigeria">
+                    {countries.map(c => <option key={`dep-${c.code}`} value={c.name}>{c.name}</option>)}
                   </select>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Destination Country *</label>
-                  <select className="w-full bg-white border border-gray-200 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary-500">
-                    <option value="">Select Destination</option>
-                    {topDestinations.map(country => (
-                      <option key={country} value={country} selected={!isNew && country === 'United Kingdom'}>{country}</option>
-                    ))}
+                  <select 
+                    value={destinationCountry}
+                    onChange={handleCountryChange}
+                    className="w-full bg-white border border-gray-200 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary-500"
+                  >
+                    <option value="" disabled>Select Destination</option>
+                    {countries.map(c => <option key={`dest-${c.code}`} value={c.name}>{c.name}</option>)}
                   </select>
                 </div>
               </div>
@@ -120,8 +193,9 @@ export default function VisaEdit() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">Country Visa Description</label>
                 <textarea 
                   rows={4} 
-                  defaultValue={!isNew ? "Comprehensive visa processing for Nigerian citizens traveling to the UK. Includes biometric appointment scheduling and document vetting." : ""}
-                  placeholder="Enter a general description that will show on the frontend..."
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="Select a destination country to auto-populate, or type a custom description..."
                   className="w-full bg-white border border-gray-200 rounded-lg px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary-500 resize-none"
                 />
               </div>
@@ -139,13 +213,16 @@ export default function VisaEdit() {
             </div>
           )}
 
-          {/* TAB: PRICING & VISAS (Connected to Settings) */}
+          {/* TAB: PRICING & VISAS */}
           {activeTab === 'pricing' && (
             <div className="space-y-6 max-w-4xl animate-in fade-in">
               <div className="flex justify-between items-center border-b border-gray-100 pb-3 mb-6">
-                <h3 className="text-sm font-bold text-gray-800 flex items-center gap-2">
-                  <DollarSign size={16} className="text-primary-500" /> Configured Visa Types for this Country
-                </h3>
+                <div>
+                  <h3 className="text-sm font-bold text-gray-800 flex items-center gap-2">
+                    <DollarSign size={16} className="text-primary-500" /> Configured Visa Types for {destinationCountry || 'this Country'}
+                  </h3>
+                  <p className="text-xs text-gray-500 mt-1">Select a specific visa track from the dropdown to edit its properties.</p>
+                </div>
                 <button type="button" onClick={addPricingOption} className="text-sm font-medium text-primary-600 hover:text-primary-700 flex items-center gap-1 bg-primary-50 px-3 py-1.5 rounded-lg">
                   <Plus size={16} /> Add Visa Option
                 </button>
@@ -153,65 +230,83 @@ export default function VisaEdit() {
 
               {pricingOptions.length === 0 ? (
                 <div className="text-center py-12 border-2 border-dashed border-gray-200 rounded-xl">
-                  <p className="text-gray-500 text-sm">No visa types configured for this country yet.</p>
+                  <p className="text-gray-500 text-sm mb-4">No visa types configured for this country yet.</p>
+                  <button type="button" onClick={addPricingOption} className="text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 px-4 py-2 rounded-lg inline-flex items-center gap-2 transition-colors">
+                    <Plus size={16} /> Add First Visa Option
+                  </button>
                 </div>
               ) : (
-                <div className="space-y-6">
-                  {pricingOptions.map((opt, index) => (
-                    <div key={opt.id} className="bg-gray-50 border border-gray-200 rounded-xl p-5 relative">
-                      <div className="absolute top-4 right-4">
-                        <button type="button" onClick={() => removePricingOption(opt.id)} className="text-red-400 hover:text-red-600"><Trash2 size={16}/></button>
-                      </div>
-                      
-                      <h4 className="font-bold text-gray-800 mb-4 text-sm">Option {index + 1}</h4>
-                      
-                      {/* Dropdowns dynamically pulling from visaDictionary */}
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                <div className="bg-gray-50 border border-gray-200 rounded-xl p-6">
+                  
+                  {/* Master Dropdown Selector */}
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 border-b border-gray-200 pb-6">
+                    <div className="flex-1 max-w-sm">
+                      <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Select Visa Option to Edit</label>
+                      <select 
+                        value={activeOptionId || ''} 
+                        onChange={(e) => setActiveOptionId(Number(e.target.value))}
+                        className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary-500 font-bold text-primary-700 shadow-sm cursor-pointer"
+                      >
+                        {pricingOptions.map(opt => (
+                          <option key={opt.id} value={opt.id}>{opt.type || 'Unnamed Visa Option'}</option>
+                        ))}
+                      </select>
+                    </div>
+                    {activeOptionId && (
+                      <button type="button" onClick={() => removePricingOption(activeOptionId)} className="text-red-500 hover:bg-red-50 px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors self-start md:self-end">
+                        <Trash2 size={16} /> Delete Option
+                      </button>
+                    )}
+                  </div>
+                  
+                  {/* Detailed Form for the Active Option */}
+                  {activeOption && (
+                    <div className="animate-in fade-in duration-200">
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-6">
                         <div>
-                          <label className="block text-xs font-medium text-gray-500 mb-1">Visa Type</label>
-                          <select value={opt.type} onChange={(e) => updatePricing(opt.id, 'type', e.target.value)} className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none">
-                            {visaDictionary.types.map((t: string) => <option key={t} value={t}>{t}</option>)}
+                          <label className="block text-xs font-bold text-gray-500 uppercase mb-1.5">Visa Type Name</label>
+                          <select value={activeOption.type} onChange={(e) => updatePricing(activeOption.id, 'type', e.target.value)} className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-primary-500 cursor-pointer">
+                            {allVisaTypes.map(t => <option key={t} value={t}>{t}</option>)}
                           </select>
                         </div>
                         <div>
-                          <label className="block text-xs font-medium text-gray-500 mb-1">Processing</label>
-                          <select value={opt.processing} onChange={(e) => updatePricing(opt.id, 'processing', e.target.value)} className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none">
-                            {visaDictionary.processing.map((t: string) => <option key={t} value={t}>{t}</option>)}
+                          <label className="block text-xs font-bold text-gray-500 uppercase mb-1.5">Processing Speed</label>
+                          <select value={activeOption.processing} onChange={(e) => updatePricing(activeOption.id, 'processing', e.target.value)} className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-primary-500 cursor-pointer">
+                            {processingOptions.map(t => <option key={t} value={t}>{t}</option>)}
                           </select>
                         </div>
                         <div>
-                          <label className="block text-xs font-medium text-gray-500 mb-1">Entry Type</label>
-                          <select value={opt.entry} onChange={(e) => updatePricing(opt.id, 'entry', e.target.value)} className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none">
-                            {visaDictionary.entries.map((t: string) => <option key={t} value={t}>{t}</option>)}
+                          <label className="block text-xs font-bold text-gray-500 uppercase mb-1.5">Entry Type</label>
+                          <select value={activeOption.entry} onChange={(e) => updatePricing(activeOption.id, 'entry', e.target.value)} className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-primary-500 cursor-pointer">
+                            {entryOptions.map(t => <option key={t} value={t}>{t}</option>)}
                           </select>
                         </div>
                         <div>
-                          <label className="block text-xs font-medium text-gray-500 mb-1">Duration</label>
-                          <select value={opt.duration} onChange={(e) => updatePricing(opt.id, 'duration', e.target.value)} className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none">
-                            {visaDictionary.durations.map((t: string) => <option key={t} value={t}>{t}</option>)}
+                          <label className="block text-xs font-bold text-gray-500 uppercase mb-1.5">Duration</label>
+                          <select value={activeOption.duration} onChange={(e) => updatePricing(activeOption.id, 'duration', e.target.value)} className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-primary-500 cursor-pointer">
+                            {durationOptions.map(t => <option key={t} value={t}>{t}</option>)}
                           </select>
                         </div>
                       </div>
 
-                      {/* Pricing Fields specific to NGN */}
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t border-gray-200">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 bg-white p-5 rounded-xl border border-gray-100 shadow-sm">
                         <div>
-                          <label className="block text-xs font-medium text-gray-500 mb-1">Base Fee (NGN)</label>
-                          <input type="number" value={opt.baseFee} onChange={(e) => updatePricing(opt.id, 'baseFee', e.target.value)} placeholder="0.00" className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none" />
+                          <label className="block text-xs font-bold text-gray-500 uppercase mb-1.5">Base Fee (NGN)</label>
+                          <input type="number" value={activeOption.baseFee} onChange={(e) => updatePricing(activeOption.id, 'baseFee', e.target.value)} placeholder="0.00" className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:bg-white focus:border-primary-500 transition-colors" />
                         </div>
                         <div>
-                          <label className="block text-xs font-medium text-gray-500 mb-1">Markup/Profit (NGN)</label>
-                          <input type="number" value={opt.markup} onChange={(e) => updatePricing(opt.id, 'markup', e.target.value)} placeholder="0.00" className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none" />
+                          <label className="block text-xs font-bold text-gray-500 uppercase mb-1.5">Markup/Profit (NGN)</label>
+                          <input type="number" value={activeOption.markup} onChange={(e) => updatePricing(activeOption.id, 'markup', e.target.value)} placeholder="0.00" className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:bg-white focus:border-primary-500 transition-colors" />
                         </div>
                         <div>
-                          <label className="block text-xs font-medium text-gray-800 mb-1">Total Price (NGN)</label>
-                          <div className="w-full bg-gray-200 border border-gray-300 rounded-lg px-3 py-2 text-sm font-bold text-primary-700 flex items-center">
-                            ₦ {(Number(opt.baseFee) + Number(opt.markup)).toLocaleString()}
+                          <label className="block text-xs font-bold text-gray-800 uppercase mb-1.5">Total Price (NGN)</label>
+                          <div className="w-full bg-primary-50 border border-primary-100 rounded-lg px-3 py-2.5 text-lg font-black text-primary-700 flex items-center">
+                            ₦ {(Number(activeOption.baseFee) + Number(activeOption.markup)).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                           </div>
                         </div>
                       </div>
                     </div>
-                  ))}
+                  )}
                 </div>
               )}
             </div>
@@ -221,15 +316,33 @@ export default function VisaEdit() {
           {activeTab === 'requirements' && (
             <div className="space-y-6 max-w-3xl animate-in fade-in">
               <div className="flex justify-between items-center border-b border-gray-100 pb-3 mb-6">
-                <h3 className="text-sm font-bold text-gray-800 flex items-center gap-2">
-                  <FileText size={16} className="text-primary-500" /> Destination Requirements
-                </h3>
+                <div>
+                  <h3 className="text-sm font-bold text-gray-800 flex items-center gap-2">
+                    <FileText size={16} className="text-primary-500" /> Destination Requirements
+                  </h3>
+                  <p className="text-xs text-gray-500 mt-1">These requirements are auto-populated based on standard documentation requested by the destination country.</p>
+                </div>
               </div>
+              
+              {requirements.length === 0 && (
+                 <div className="text-center py-8 border-2 border-dashed border-gray-200 rounded-xl">
+                   <p className="text-gray-500 text-sm">Select a destination country to view requirements, or add them manually.</p>
+                 </div>
+              )}
+
               <div className="space-y-3">
                 {requirements.map((req, index) => (
-                  <div key={index} className="flex items-center gap-3">
-                    <input type="text" value={req} onChange={(e) => updateRequirement(index, e.target.value)} placeholder="Enter requirement..." className="flex-1 bg-white border border-gray-200 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary-500"/>
-                    <button type="button" onClick={() => removeRequirement(index)} className="p-2.5 bg-gray-100 text-gray-400 rounded-lg hover:bg-red-50 hover:text-red-600 transition-colors flex-shrink-0"><Trash2 size={16} /></button>
+                  <div key={index} className="flex items-start gap-3">
+                    <textarea 
+                      value={req} 
+                      onChange={(e) => updateRequirement(index, e.target.value)} 
+                      placeholder="Enter requirement..." 
+                      rows={2}
+                      className="flex-1 bg-white border border-gray-200 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary-500 resize-none"
+                    />
+                    <button type="button" onClick={() => removeRequirement(index)} className="p-2.5 bg-gray-100 text-gray-400 rounded-lg hover:bg-red-50 hover:text-red-600 transition-colors flex-shrink-0 mt-1">
+                      <Trash2 size={16} />
+                    </button>
                   </div>
                 ))}
               </div>
