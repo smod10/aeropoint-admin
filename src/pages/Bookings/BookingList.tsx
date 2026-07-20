@@ -1,15 +1,33 @@
-import { useState, useEffect } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Search, Columns, Edit2, Trash2, ArrowUpRight, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, Columns, Edit2, Trash2, ArrowUpRight, ChevronDown, ChevronLeft, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { mockBookings } from '../../data/mockBookings'; 
+import { useCurrency } from '../../context/CurrencyContext';
+
+type BookingColumn = 'invoice' | 'module' | 'booking' | 'payment' | 'price' | 'customer' | 'ref' | 'createdAt';
+type BookingSortKey = BookingColumn;
 
 export default function BookingList() {
   const navigate = useNavigate();
   const { moduleType } = useParams(); 
+  const { convertFromAndFormat } = useCurrency();
   
   // Pagination & Filter States
   const [rowsPerPage, setRowsPerPage] = useState(25);
   const [currentPage, setCurrentPage] = useState(1);
+  const [sortKey, setSortKey] = useState<BookingSortKey>('createdAt');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+  const [isColumnMenuOpen, setIsColumnMenuOpen] = useState(false);
+  const [visibleColumns, setVisibleColumns] = useState<Record<BookingColumn, boolean>>({
+    invoice: true,
+    module: true,
+    booking: true,
+    payment: true,
+    price: true,
+    customer: true,
+    ref: true,
+    createdAt: true,
+  });
 
   // Reset to page 1 whenever the module type (URL) changes
   useEffect(() => {
@@ -21,14 +39,46 @@ export default function BookingList() {
     ? mockBookings.filter(b => b.moduleType === moduleType) 
     : mockBookings;
 
+  const sortedBookings = useMemo(() => {
+    return [...filteredBookings].sort((left, right) => {
+      const leftValue = sortKey === 'invoice' ? left.invoice
+        : sortKey === 'module' ? left.moduleType
+        : sortKey === 'booking' ? left.booking
+        : sortKey === 'payment' ? left.payment
+        : sortKey === 'price' ? Number(left.price)
+        : sortKey === 'customer' ? left.user
+        : sortKey === 'ref' ? left.ref
+        : left.createdAt;
+
+      const rightValue = sortKey === 'invoice' ? right.invoice
+        : sortKey === 'module' ? right.moduleType
+        : sortKey === 'booking' ? right.booking
+        : sortKey === 'payment' ? right.payment
+        : sortKey === 'price' ? Number(right.price)
+        : sortKey === 'customer' ? right.user
+        : sortKey === 'ref' ? right.ref
+        : right.createdAt;
+
+      if (sortKey === 'price') {
+        return sortDirection === 'asc'
+          ? Number(left.price) - Number(right.price)
+          : Number(right.price) - Number(left.price);
+      }
+
+      return sortDirection === 'asc'
+        ? String(leftValue).localeCompare(String(rightValue))
+        : String(rightValue).localeCompare(String(leftValue));
+    });
+  }, [filteredBookings, sortDirection, sortKey]);
+
   // 2. Calculate Pagination Math
-  const totalItems = filteredBookings.length;
+  const totalItems = sortedBookings.length;
   const totalPages = Math.ceil(totalItems / rowsPerPage);
   const startIndex = (currentPage - 1) * rowsPerPage;
   const endIndex = startIndex + rowsPerPage;
   
   // 3. Slice the data for the current page
-  const paginatedBookings = filteredBookings.slice(startIndex, endIndex);
+  const paginatedBookings = sortedBookings.slice(startIndex, endIndex);
 
   // Dynamic Handlers
   const handleRowsChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -46,6 +96,43 @@ export default function BookingList() {
 
   // Generate an array of page numbers to render the pagination buttons
   const pageNumbers = Array.from({ length: totalPages }, (_, i) => i + 1);
+
+  const toggleColumn = (column: BookingColumn) => {
+    setVisibleColumns(prev => ({ ...prev, [column]: !prev[column] }));
+  };
+
+  const handleSort = (key: BookingSortKey) => {
+    if (sortKey === key) {
+      setSortDirection(previous => previous === 'asc' ? 'desc' : 'asc');
+      return;
+    }
+
+    setSortKey(key);
+    setSortDirection('asc');
+  };
+
+  const sortIcon = (key: BookingSortKey) => {
+    if (sortKey !== key) {
+      return <ArrowUpDown size={12} className="text-gray-300" />;
+    }
+
+    return sortDirection === 'asc'
+      ? <ArrowUp size={12} className="text-primary-600" />
+      : <ArrowDown size={12} className="text-primary-600" />;
+  };
+
+  const showAllColumns = () => {
+    setVisibleColumns({
+      invoice: true,
+      module: true,
+      booking: true,
+      payment: true,
+      price: true,
+      customer: true,
+      ref: true,
+      createdAt: true,
+    });
+  };
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
@@ -93,9 +180,42 @@ export default function BookingList() {
             <span className="text-gray-500">entries</span>
           </div>
 
-          <button className="flex items-center gap-2 bg-white border border-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50">
-            <Columns size={16} /> View Columns <ChevronDown size={14} className="text-gray-400 ml-1" />
-          </button>
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setIsColumnMenuOpen(prev => !prev)}
+              className="flex items-center gap-2 bg-white border border-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50"
+            >
+              <Columns size={16} /> View Columns <ChevronDown size={14} className="text-gray-400 ml-1" />
+            </button>
+            {isColumnMenuOpen && (
+              <div className="absolute right-0 mt-2 w-56 bg-white border border-gray-200 rounded-lg shadow-lg z-20 p-2">
+                <button type="button" onClick={showAllColumns} className="w-full text-left text-xs font-semibold text-primary-600 hover:bg-primary-50 rounded px-2 py-1.5 mb-1">
+                  Show All Columns
+                </button>
+                {[
+                  { key: 'invoice', label: 'Invoice' },
+                  { key: 'module', label: 'Module' },
+                  { key: 'booking', label: 'Booking' },
+                  { key: 'payment', label: 'Payment' },
+                  { key: 'price', label: 'Price' },
+                  { key: 'customer', label: 'Customer' },
+                  { key: 'ref', label: 'Ref / PNR' },
+                  { key: 'createdAt', label: 'Created At' },
+                ].map(col => (
+                  <label key={col.key} className="flex items-center gap-2 text-sm text-gray-700 px-2 py-1.5 rounded hover:bg-gray-50 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={visibleColumns[col.key as BookingColumn]}
+                      onChange={() => toggleColumn(col.key as BookingColumn)}
+                      className="rounded border-gray-300"
+                    />
+                    <span>{col.label}</span>
+                  </label>
+                ))}
+              </div>
+            )}
+          </div>
           
           <div className="flex relative">
             <input type="text" placeholder="Search records..." className="bg-white border border-gray-200 rounded-l-lg px-4 py-2 text-sm outline-none focus:border-primary-500 w-48" />
@@ -114,14 +234,14 @@ export default function BookingList() {
               <tr>
                 <th className="px-4 py-4 w-10 text-center"><input type="checkbox" className="rounded border-gray-300" /></th>
                 <th className="px-4 py-4 w-10">#</th>
-                <th className="px-4 py-4">Invoice</th>
-                <th className="px-4 py-4">Module</th>
-                <th className="px-4 py-4">Booking</th>
-                <th className="px-4 py-4">Payment</th>
-                <th className="px-4 py-4">Price</th>
-                <th className="px-4 py-4">Customer</th>
-                <th className="px-4 py-4 text-center">Ref / PNR</th>
-                <th className="px-4 py-4">Created At</th>
+                {visibleColumns.invoice && <th className="px-4 py-4"><button type="button" onClick={() => handleSort('invoice')} className="inline-flex items-center gap-1 hover:text-primary-600">Invoice {sortIcon('invoice')}</button></th>}
+                {visibleColumns.module && <th className="px-4 py-4"><button type="button" onClick={() => handleSort('module')} className="inline-flex items-center gap-1 hover:text-primary-600">Module {sortIcon('module')}</button></th>}
+                {visibleColumns.booking && <th className="px-4 py-4"><button type="button" onClick={() => handleSort('booking')} className="inline-flex items-center gap-1 hover:text-primary-600">Booking {sortIcon('booking')}</button></th>}
+                {visibleColumns.payment && <th className="px-4 py-4"><button type="button" onClick={() => handleSort('payment')} className="inline-flex items-center gap-1 hover:text-primary-600">Payment {sortIcon('payment')}</button></th>}
+                {visibleColumns.price && <th className="px-4 py-4"><button type="button" onClick={() => handleSort('price')} className="inline-flex items-center gap-1 hover:text-primary-600">Price {sortIcon('price')}</button></th>}
+                {visibleColumns.customer && <th className="px-4 py-4"><button type="button" onClick={() => handleSort('customer')} className="inline-flex items-center gap-1 hover:text-primary-600">Customer {sortIcon('customer')}</button></th>}
+                {visibleColumns.ref && <th className="px-4 py-4 text-center"><button type="button" onClick={() => handleSort('ref')} className="inline-flex items-center gap-1 hover:text-primary-600 justify-center">Ref / PNR {sortIcon('ref')}</button></th>}
+                {visibleColumns.createdAt && <th className="px-4 py-4"><button type="button" onClick={() => handleSort('createdAt')} className="inline-flex items-center gap-1 hover:text-primary-600">Created At {sortIcon('createdAt')}</button></th>}
                 <th className="px-4 py-4 text-center">Actions</th>
               </tr>
             </thead>
@@ -132,18 +252,18 @@ export default function BookingList() {
                     <td className="px-4 py-3 text-center"><input type="checkbox" className="rounded border-gray-300" /></td>
                     <td className="px-4 py-3 text-gray-500">{startIndex + i + 1}</td>
                     
-                    <td className="px-4 py-3">
+                    {visibleColumns.invoice && <td className="px-4 py-3">
                       <button onClick={() => navigate(`/bookings/view/${b.invoice}`)} className="text-primary-600 hover:text-primary-800 font-medium flex items-center gap-1">
                         {b.invoice} <ArrowUpRight size={14} />
                       </button>
-                    </td>
+                    </td>}
 
-                    <td className="px-4 py-3">
+                    {visibleColumns.module && <td className="px-4 py-3">
                       <div className="font-bold text-gray-800">{b.moduleName.split('\n')[0]}</div>
                       <div className="text-xs text-gray-500">{b.moduleName.split('\n')[1]}</div>
-                    </td>
+                    </td>}
 
-                    <td className="px-4 py-3 space-y-1">
+                    {visibleColumns.booking && <td className="px-4 py-3 space-y-1">
                       <span className={`block w-max px-2.5 py-1 text-[10px] uppercase font-bold rounded 
                         ${b.booking.includes('CONFIRMED') ? 'bg-emerald-100 text-emerald-700' : 
                           b.booking.includes('CANCELLED') ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-600 border border-gray-200'}`}>
@@ -154,28 +274,28 @@ export default function BookingList() {
                           Cancel Requested
                         </span>
                       )}
-                    </td>
+                    </td>}
 
-                    <td className="px-4 py-3">
+                    {visibleColumns.payment && <td className="px-4 py-3">
                       <span className={`px-2.5 py-1 text-[10px] uppercase font-bold rounded border 
                         ${b.payment === 'PAID' ? 'bg-emerald-100 text-emerald-700 border-emerald-200' : 
                           b.payment === 'REFUNDED' ? 'bg-purple-100 text-purple-700 border-purple-200' : 'bg-gray-50 text-gray-600 border-gray-200'}`}>
                         {b.payment}
                       </span>
-                    </td>
+                    </td>}
 
-                    <td className="px-4 py-3">
-                      <div className="font-bold text-gray-900">USD {b.price}</div>
-                      <div className="text-xs font-semibold text-emerald-600">Earn USD {b.earning}</div>
-                    </td>
+                    {visibleColumns.price && <td className="px-4 py-3">
+                      <div className="font-bold text-gray-900">{convertFromAndFormat(Number(b.price), 'USD')}</div>
+                      <div className="text-xs font-semibold text-emerald-600">Earn {convertFromAndFormat(Number(b.earning), 'USD')}</div>
+                    </td>}
 
-                    <td className="px-4 py-3">
+                    {visibleColumns.customer && <td className="px-4 py-3">
                       <div className="font-bold text-gray-900">{b.user.split('\n')[0]}</div>
                       <div className="text-xs text-gray-500">{b.user.split('\n')[1]}</div>
-                    </td>
+                    </td>}
 
-                    <td className="px-4 py-3 text-center text-gray-400 italic text-xs font-mono">{b.ref}</td>
-                    <td className="px-4 py-3 text-gray-800 text-sm font-medium">{b.createdAt}</td>
+                    {visibleColumns.ref && <td className="px-4 py-3 text-center text-gray-400 italic text-xs font-mono">{b.ref}</td>}
+                    {visibleColumns.createdAt && <td className="px-4 py-3 text-gray-800 text-sm font-medium">{b.createdAt}</td>}
                     
                     <td className="px-4 py-3 text-center space-x-1">
                       <button onClick={() => navigate(`/bookings/edit/${b.invoice}`)} className="inline-flex p-1.5 text-gray-400 hover:text-blue-600 border border-gray-200 rounded hover:bg-gray-50 transition-colors" title="Edit">

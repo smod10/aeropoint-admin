@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { CurrencyProvider } from './context/CurrencyContext'; 
 
 // Layouts & Auth
 import AdminLayout from './components/Layout/AdminLayout';
@@ -24,73 +25,100 @@ import VisaList from './pages/Visa/VisaList';
 import VisaEdit from './pages/Visa/VisaEdit';           
 import VisaSettings from './pages/Visa/VisaSettings';   
 
-// Users Module (Replaced Customers)
+// Users Module
 import UserList from './pages/Users/UserList';
 import UserEdit from './pages/Users/UserEdit';
 
+// Packages Module
+import PackageList from './pages/Packages/PackageList';
+import PackageEdit from './pages/Packages/PackageEdit';
+import UmrahList from './pages/Umrah/UmrahList';
+
+// Blog Module
+import BlogList from './pages/Blog/BlogList';
+import BlogEdit from './pages/Blog/BlogEdit';
+import BlogCategories from './pages/Blog/BlogCategories';
+
+// Reports Module
+import BookingReports from './pages/Reports/BookingReports';
+import UserReports from './pages/Reports/UserReports';
+import TransactionReports from './pages/Reports/TransactionReports';
+import TransactionView from './pages/Reports/TransactionView';
+
 // Other Modules
 import HotelList from './pages/Hotels/HotelList';
-import PackageList from './pages/Packages/PackageList';
-import UmrahList from './pages/Umrah/UmrahList';
 import PaymentList from './pages/Payments/PaymentList';
-import Modules from './pages/Integrations/modules';
-import BlogList from './pages/Blog/BlogList';
+import Modules from './pages/Integrations/Modules';
 import MediaLibrary from './pages/Media/MediaLibrary';
-import ReportsDashboard from './pages/Reports/ReportsDashboard';
 import SettingsPage from './pages/Settings/SettingsPage';
 
 function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/login" element={<Login />} />
+    <CurrencyProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/login" element={<Login />} />
 
-        <Route path="/" element={<AdminLayout />}>
-          <Route index element={<DashboardHome />} />
-          
-          {/* Dynamic Bookings Routing */}
-          <Route path="bookings" element={<BookingList />} />
-          <Route path="bookings/type/:moduleType" element={<BookingList />} />
-          <Route path="bookings/edit/:id" element={<BookingEdit />} />
-          <Route path="bookings/view/:id" element={<InvoiceView />} />
-          
-          {/* Flights Routing */}
-          <Route path="flights" element={<FlightList />} />
-          <Route path="flights/view/:id" element={<FlightView />} />
-          <Route path="flights/edit/:id" element={<FlightEdit />} />
-          <Route path="flights/airlines" element={<AirlinesList />} />
-          <Route path="flights/airports" element={<AirportsList />} />
-          
-          {/* Visa Routing */}
-          <Route path="visa" element={<VisaList />} />
-          <Route path="visa/edit/:id" element={<VisaEdit />} />
-          <Route path="visa/settings" element={<VisaSettings />} />
+          <Route path="/" element={<AdminLayout />}>
+            <Route index element={<DashboardHome />} />
+            
+            {/* Bookings */}
+            <Route path="bookings" element={<BookingList />} />
+            <Route path="bookings/type/:moduleType" element={<BookingList />} />
+            <Route path="bookings/edit/:id" element={<BookingEdit />} />
+            <Route path="bookings/view/:id" element={<InvoiceView />} />
+            
+            {/* Flights */}
+            <Route path="flights" element={<FlightList />} />
+            <Route path="flights/view/:id" element={<FlightView />} />
+            <Route path="flights/edit/:id" element={<FlightEdit />} />
+            <Route path="flights/airlines" element={<AirlinesList />} />
+            <Route path="flights/airports" element={<AirportsList />} />
+            
+            {/* Visas */}
+            <Route path="visa" element={<VisaList />} />
+            <Route path="visa/edit/:id" element={<VisaEdit />} />
+            <Route path="visa/settings" element={<VisaSettings />} />
 
-          {/* Dynamic Users Routing */}
-          <Route path="users" element={<UserList />} />
-          <Route path="users/role/:role" element={<UserList />} />
-          <Route path="users/edit/:id" element={<UserEdit />} />
-          
-          {/* Global/Other Routing */}
-          <Route path="hotels" element={<HotelList />} />
-          <Route path="packages" element={<PackageList />} />
-          <Route path="umrah" element={<UmrahList />} />
-          <Route path="payments" element={<PaymentList />} />
-          <Route path="modules" element={<Modules />} /> 
-          <Route path="blog" element={<BlogList />} />
-          <Route path="media" element={<MediaLibrary />} />
-          <Route path="reports" element={<ReportsDashboard />} />
-          <Route path="settings" element={<SettingsPage />} />
-          
-          {/* Fallback 404 for Dashboard */}
-          <Route path="*" element={
-            <div className="flex items-center justify-center h-64 text-gray-500 bg-white rounded-xl border border-gray-100 shadow-soft">
-              This module could not be found or is currently under construction.
-            </div>
-          } />
-        </Route>
-      </Routes>
-    </BrowserRouter>
+            {/* Users */}
+            <Route path="users" element={<UserList />} />
+            <Route path="users/role/:role" element={<UserList />} />
+            <Route path="users/edit/:id" element={<UserEdit />} />
+            
+            {/* Packages / Umrah */}
+            <Route path="packages" element={<PackageList />} />
+            <Route path="packages/edit/:id" element={<PackageEdit />} />
+            
+            <Route path="umrah" element={<UmrahList />} />
+            <Route path="umrah/edit/:id" element={<PackageEdit />} />
+            
+            {/* Blogs */}
+            <Route path="blog" element={<BlogList />} />
+            <Route path="blog/edit/:id" element={<BlogEdit />} />
+            <Route path="blog/categories" element={<BlogCategories />} />
+
+            {/* Reports */}
+            <Route path="reports/bookings" element={<BookingReports />} />
+            <Route path="reports/users" element={<UserReports />} />
+            <Route path="reports/transactions" element={<TransactionReports />} />
+            <Route path="reports/transactions/:id" element={<TransactionView />} />
+            
+            {/* Misc */}
+            <Route path="hotels" element={<HotelList />} />
+            <Route path="payments" element={<PaymentList />} />
+            <Route path="modules" element={<Modules />} /> 
+            <Route path="media" element={<MediaLibrary />} />
+            <Route path="settings" element={<SettingsPage />} />
+            
+            <Route path="*" element={
+              <div className="flex items-center justify-center h-64 text-gray-500 bg-white rounded-xl border border-gray-100 shadow-soft">
+                This module could not be found or is currently under construction.
+              </div>
+            } />
+          </Route>
+        </Routes>
+      </BrowserRouter>
+    </CurrencyProvider>
   );
 }
 

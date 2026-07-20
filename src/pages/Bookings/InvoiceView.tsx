@@ -5,10 +5,12 @@ import {
   Flag, FileCheck, Moon, Bus, CheckCircle2
 } from 'lucide-react';
 import { mockBookings } from '../../data/mockBookings'; 
+import { useCurrency } from '../../context/CurrencyContext';
 
 export default function InvoiceView() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { convertFromAndFormat } = useCurrency();
 
   // Find the booking in our DB
   const booking = mockBookings.find(b => b.invoice === id) || mockBookings[0];
@@ -235,7 +237,7 @@ export default function InvoiceView() {
                     <div key={i} className="flex justify-between items-center p-4 bg-gray-50/80 border border-gray-100 rounded-lg">
                       <div><p className="text-sm font-bold text-gray-800">{a.name}</p><p className="text-xs text-gray-500 mt-0.5">Applied to booking</p></div>
                       <span className="font-medium text-gray-900 bg-white px-3 py-1 rounded border border-gray-200">
-                        {a.price === 'Included' ? 'Included' : `USD ${a.price}`}
+                        {a.price === 'Included' ? 'Included' : convertFromAndFormat(Number(a.price), 'USD')}
                       </span>
                     </div>
                   ))}
@@ -264,13 +266,13 @@ export default function InvoiceView() {
             </div>
 
             <div className="space-y-3 text-sm mb-6 border-b border-gray-100 pb-6">
-              <div className="flex justify-between"><span className="text-gray-500">Base Fare:</span><span className="font-medium text-gray-900">USD {(Number(booking.price) - 5).toFixed(2)}</span></div>
-              <div className="flex justify-between"><span className="text-gray-500">Taxes & Fees:</span><span className="font-medium text-gray-900">USD 5.00</span></div>
+              <div className="flex justify-between"><span className="text-gray-500">Base Fare:</span><span className="font-medium text-gray-900">{convertFromAndFormat(Number(booking.price) - 5, 'USD')}</span></div>
+              <div className="flex justify-between"><span className="text-gray-500">Taxes & Fees:</span><span className="font-medium text-gray-900">{convertFromAndFormat(5, 'USD')}</span></div>
             </div>
 
             <div className="flex justify-between items-end mb-8">
               <span className="font-bold text-gray-800">Total Amount:</span>
-              <span className="text-2xl font-black text-gray-900">USD {booking.price}</span>
+              <span className="text-2xl font-black text-gray-900">{convertFromAndFormat(Number(booking.price), 'USD')}</span>
             </div>
 
             <div className="space-y-3">

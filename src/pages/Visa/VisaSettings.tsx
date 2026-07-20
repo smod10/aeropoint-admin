@@ -34,9 +34,20 @@ const durationTypes = [
 ];
 
 type TabType = 'visa_type' | 'processing_speed' | 'entry_type' | 'duration_type';
+type VisaSettingColumn = 'status' | 'name' | 'value' | 'icon' | 'description' | 'order' | 'type';
 
 export default function VisaSettings() {
   const [activeTab, setActiveTab] = useState<TabType>('visa_type');
+  const [isColumnMenuOpen, setIsColumnMenuOpen] = useState(false);
+  const [visibleColumns, setVisibleColumns] = useState<Record<VisaSettingColumn, boolean>>({
+    status: true,
+    name: true,
+    value: true,
+    icon: true,
+    description: true,
+    order: true,
+    type: true,
+  });
 
   const getActiveData = () => {
     switch (activeTab) {
@@ -49,6 +60,10 @@ export default function VisaSettings() {
   };
 
   const currentData = getActiveData();
+
+  const toggleColumn = (column: VisaSettingColumn) => {
+    setVisibleColumns(prev => ({ ...prev, [column]: !prev[column] }));
+  };
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300 max-w-7xl">
@@ -97,9 +112,29 @@ export default function VisaSettings() {
             </div>
             
             <div className="flex flex-wrap items-center gap-3">
-              <button className="flex items-center justify-between gap-2 bg-white border border-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50">
-                <Columns size={16} /> View Columns <span className="text-gray-400 text-xs ml-1">▼</span>
-              </button>
+              <div className="relative">
+                <button type="button" onClick={() => setIsColumnMenuOpen(prev => !prev)} className="flex items-center justify-between gap-2 bg-white border border-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50">
+                  <Columns size={16} /> View Columns <span className="text-gray-400 text-xs ml-1">▼</span>
+                </button>
+                {isColumnMenuOpen && (
+                  <div className="absolute right-0 mt-2 w-52 bg-white border border-gray-200 rounded-lg shadow-lg z-20 p-2">
+                    {[
+                      { key: 'status', label: 'Status' },
+                      { key: 'name', label: 'Name' },
+                      { key: 'value', label: 'Value' },
+                      { key: 'icon', label: 'Icon' },
+                      { key: 'description', label: 'Description' },
+                      { key: 'order', label: 'Order' },
+                      { key: 'type', label: 'Type' },
+                    ].map(col => (
+                      <label key={col.key} className="flex items-center gap-2 text-sm text-gray-700 px-2 py-1.5 rounded hover:bg-gray-50 cursor-pointer">
+                        <input type="checkbox" checked={visibleColumns[col.key as VisaSettingColumn]} onChange={() => toggleColumn(col.key as VisaSettingColumn)} className="rounded border-gray-300" />
+                        <span>{col.label}</span>
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </div>
               <button className="flex items-center justify-between gap-2 bg-white border border-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50">
                 All Columns <span className="text-gray-400 text-xs ml-1">▼</span>
               </button>
@@ -119,13 +154,13 @@ export default function VisaSettings() {
                   <tr>
                     <th className="px-6 py-4 w-12 text-center"><input type="checkbox" className="rounded border-gray-300" /></th>
                     <th className="px-6 py-4 w-12">#</th>
-                    <th className="px-6 py-4 w-24">Status</th>
-                    <th className="px-6 py-4">Name</th>
-                    <th className="px-6 py-4">Value</th>
-                    <th className="px-6 py-4 text-center">Icon</th>
-                    <th className="px-6 py-4">Description</th>
-                    <th className="px-6 py-4 text-center">Order</th>
-                    <th className="px-6 py-4">Type</th>
+                    {visibleColumns.status && <th className="px-6 py-4 w-24">Status</th>}
+                    {visibleColumns.name && <th className="px-6 py-4">Name</th>}
+                    {visibleColumns.value && <th className="px-6 py-4">Value</th>}
+                    {visibleColumns.icon && <th className="px-6 py-4 text-center">Icon</th>}
+                    {visibleColumns.description && <th className="px-6 py-4">Description</th>}
+                    {visibleColumns.order && <th className="px-6 py-4 text-center">Order</th>}
+                    {visibleColumns.type && <th className="px-6 py-4">Type</th>}
                     <th className="px-6 py-4 text-center">Actions</th>
                   </tr>
                 </thead>
@@ -135,30 +170,30 @@ export default function VisaSettings() {
                       <td className="px-6 py-3 text-center"><input type="checkbox" className="rounded border-gray-300 text-primary-600" /></td>
                       <td className="px-6 py-3 text-gray-500">{index + 1}</td>
                       
-                      <td className="px-6 py-3">
+                      {visibleColumns.status && <td className="px-6 py-3">
                         <button className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${item.status ? 'bg-primary-600' : 'bg-gray-200'}`}>
                           <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${item.status ? 'translate-x-4' : 'translate-x-1'}`} />
                         </button>
-                      </td>
+                      </td>}
 
-                      <td className="px-6 py-3 font-medium text-gray-900">{item.name}</td>
+                      {visibleColumns.name && <td className="px-6 py-3 font-medium text-gray-900">{item.name}</td>}
                       
-                      <td className="px-6 py-3">
+                      {visibleColumns.value && <td className="px-6 py-3">
                         <span className="px-2.5 py-1 text-xs font-medium bg-gray-100 text-gray-600 rounded-md font-mono tracking-tight">{item.value}</span>
-                      </td>
+                      </td>}
                       
-                      <td className="px-6 py-3 text-center">
+                      {visibleColumns.icon && <td className="px-6 py-3 text-center">
                         <div className="inline-flex items-center justify-center w-8 h-8 rounded bg-gray-50 border border-gray-100 text-gray-500">
                           {item.icon ? <item.icon size={16} /> : <span className="text-xs font-bold">{item.label}</span>}
                         </div>
-                      </td>
+                      </td>}
 
-                      <td className="px-6 py-3 text-gray-500">{item.desc}</td>
-                      <td className="px-6 py-3 text-center font-medium text-gray-700">{item.order}</td>
+                      {visibleColumns.description && <td className="px-6 py-3 text-gray-500">{item.desc}</td>}
+                      {visibleColumns.order && <td className="px-6 py-3 text-center font-medium text-gray-700">{item.order}</td>}
                       
-                      <td className="px-6 py-3">
+                      {visibleColumns.type && <td className="px-6 py-3">
                         <span className="px-2.5 py-1 text-xs font-medium bg-indigo-50 text-indigo-600 rounded-md tracking-tight">{item.type}</span>
-                      </td>
+                      </td>}
                       
                       <td className="px-6 py-3 text-center space-x-1">
                         <button className="inline-flex p-1.5 text-gray-400 hover:text-blue-600 border border-gray-200 rounded hover:bg-gray-50 transition-colors" title="Edit">

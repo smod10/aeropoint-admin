@@ -14,16 +14,26 @@ type Gateway = {
   credentials: Record<string, string>;
 };
 
+type GatewayColumn = 'status' | 'default' | 'name' | 'currency' | 'devMode';
+
 const initialGateways: Gateway[] = [
-  { id: 5, name: 'Paystack', type: 'Credit_card', status: false, isDefault: false, currency: 'USD', devMode: true, order: 5, credentials: { publicKey: '', secretKey: '' } },
-  { id: 6, name: 'Flutterwave', type: 'Credit_card', status: false, isDefault: false, currency: 'USD', devMode: true, order: 6, credentials: { publicKey: 'FLWPUBK_TEST-fe4f5...', secretKey: 'FLWSECK_TEST-c297...', encryptionKey: 'FLWSECK_TESTe82f...' } },
-  { id: 8, name: 'Stripe', type: 'Credit_card', status: true, isDefault: true, currency: 'USD', devMode: true, order: 8, credentials: { publishableKey: 'pk_test_51...', secretKey: 'sk_test_51...', webhookSecret: 'whsec_...' } },
-  { id: 9, name: 'PayPal', type: 'Digital_wallet', status: true, isDefault: false, currency: 'USD', devMode: true, order: 9, credentials: { clientId: '', clientSecret: '' } },
+  { id: 5, name: 'Paystack', type: 'Credit_card', status: false, isDefault: false, currency: 'NGN', devMode: true, order: 5, credentials: { publicKey: '', secretKey: '' } },
+  { id: 6, name: 'Flutterwave', type: 'Credit_card', status: false, isDefault: false, currency: 'NGN', devMode: true, order: 6, credentials: { publicKey: 'FLWPUBK_TEST-fe4f5...', secretKey: 'FLWSECK_TEST-c297...', encryptionKey: 'FLWSECK_TESTe82f...' } },
+  { id: 8, name: 'Stripe', type: 'Credit_card', status: true, isDefault: true, currency: 'NGN', devMode: true, order: 8, credentials: { publishableKey: 'pk_test_51...', secretKey: 'sk_test_51...', webhookSecret: 'whsec_...' } },
+  { id: 9, name: 'PayPal', type: 'Digital_wallet', status: true, isDefault: false, currency: 'NGN', devMode: true, order: 9, credentials: { clientId: '', clientSecret: '' } },
 ];
 
 export default function PaymentGateways() {
   const [gateways, setGateways] = useState<Gateway[]>(initialGateways);
   const [editingId, setEditingId] = useState<number | null>(null);
+  const [isColumnMenuOpen, setIsColumnMenuOpen] = useState(false);
+  const [visibleColumns, setVisibleColumns] = useState<Record<GatewayColumn, boolean>>({
+    status: true,
+    default: true,
+    name: true,
+    currency: true,
+    devMode: true,
+  });
 
   const activeGateway = gateways.find(g => g.id === editingId);
 
@@ -62,6 +72,10 @@ export default function PaymentGateways() {
   const updateCredential = (key: string, value: string) => {
     if (!editingId) return;
     setGateways(gateways.map(g => g.id === editingId ? { ...g, credentials: { ...g.credentials, [key]: value } } : g));
+  };
+
+  const toggleColumn = (column: GatewayColumn) => {
+    setVisibleColumns(prev => ({ ...prev, [column]: !prev[column] }));
   };
 
   // ----------------------------------------------------------------------
@@ -192,10 +206,10 @@ export default function PaymentGateways() {
                   onChange={(e) => updateGatewayField('currency', e.target.value)}
                   className="w-full bg-white border border-gray-200 rounded-lg px-4 py-2.5 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 appearance-none"
                 >
+                  <option value="NGN">NGN - Nigerian Naira</option>
                   <option value="USD">USD - United States</option>
                   <option value="GBP">GBP - British Pound</option>
                   <option value="EUR">EUR - Euro</option>
-                  <option value="NGN">NGN - Nigerian Naira</option>
                 </select>
                 <p className="text-xs text-gray-500 mt-2">Select the primary currency for this payment gateway</p>
               </div>
@@ -285,9 +299,27 @@ export default function PaymentGateways() {
           <p className="text-sm text-gray-500 mt-1">Total: {gateways.length} records</p>
         </div>
         <div className="flex gap-3 w-full sm:w-auto">
-          <button className="flex items-center justify-between gap-2 bg-white border border-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50">
-            <LayoutIcon size={16} /> View Columns <span className="text-gray-400 text-xs ml-2">▼</span>
-          </button>
+          <div className="relative">
+            <button type="button" onClick={() => setIsColumnMenuOpen(prev => !prev)} className="flex items-center justify-between gap-2 bg-white border border-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50">
+              <LayoutIcon size={16} /> View Columns <span className="text-gray-400 text-xs ml-2">▼</span>
+            </button>
+            {isColumnMenuOpen && (
+              <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-20 p-2">
+                {[
+                  { key: 'status', label: 'Status' },
+                  { key: 'default', label: 'Default' },
+                  { key: 'name', label: 'Name' },
+                  { key: 'currency', label: 'Currency' },
+                  { key: 'devMode', label: 'Dev Mode' },
+                ].map(col => (
+                  <label key={col.key} className="flex items-center gap-2 text-sm text-gray-700 px-2 py-1.5 rounded hover:bg-gray-50 cursor-pointer">
+                    <input type="checkbox" checked={visibleColumns[col.key as GatewayColumn]} onChange={() => toggleColumn(col.key as GatewayColumn)} className="rounded border-gray-300" />
+                    <span>{col.label}</span>
+                  </label>
+                ))}
+              </div>
+            )}
+          </div>
           <button className="flex items-center justify-between gap-2 bg-white border border-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50">
             All Columns <span className="text-gray-400 text-xs ml-2">▼</span>
           </button>
@@ -307,11 +339,11 @@ export default function PaymentGateways() {
             <thead className="text-[11px] text-gray-500 uppercase bg-gray-50 border-b border-gray-200 font-semibold tracking-wider">
               <tr>
                 <th className="px-6 py-4 w-12">#</th>
-                <th className="px-6 py-4 w-24">STATUS</th>
-                <th className="px-6 py-4 w-24">DEFAULT</th>
-                <th className="px-6 py-4">NAME</th>
-                <th className="px-6 py-4">CURRENCY</th>
-                <th className="px-6 py-4">DEV MODE</th>
+                {visibleColumns.status && <th className="px-6 py-4 w-24">STATUS</th>}
+                {visibleColumns.default && <th className="px-6 py-4 w-24">DEFAULT</th>}
+                {visibleColumns.name && <th className="px-6 py-4">NAME</th>}
+                {visibleColumns.currency && <th className="px-6 py-4">CURRENCY</th>}
+                {visibleColumns.devMode && <th className="px-6 py-4">DEV MODE</th>}
                 <th className="px-6 py-4 text-center">ACTIONS</th>
               </tr>
             </thead>
@@ -321,36 +353,36 @@ export default function PaymentGateways() {
                   <td className="px-6 py-4 text-gray-500">{index + 1}</td>
                   
                   {/* Status Toggle */}
-                  <td className="px-6 py-4">
+                  {visibleColumns.status && <td className="px-6 py-4">
                     <button 
                       onClick={() => handleStatusToggle(gateway.id)}
                       className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${gateway.status ? 'bg-primary-600' : 'bg-gray-200'}`}
                     >
                       <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${gateway.status ? 'translate-x-4' : 'translate-x-1'}`} />
                     </button>
-                  </td>
+                  </td>}
 
                   {/* Default Toggle */}
-                  <td className="px-6 py-4">
+                  {visibleColumns.default && <td className="px-6 py-4">
                     <button 
                       onClick={() => handleDefaultToggle(gateway.id)}
                       className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${gateway.isDefault ? 'bg-orange-500' : 'bg-gray-200'}`}
                     >
                       <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${gateway.isDefault ? 'translate-x-4' : 'translate-x-1'}`} />
                     </button>
-                  </td>
+                  </td>}
 
-                  <td className="px-6 py-4 text-gray-900">{gateway.name}</td>
-                  <td className="px-6 py-4 text-gray-900">{gateway.currency}</td>
+                  {visibleColumns.name && <td className="px-6 py-4 text-gray-900">{gateway.name}</td>}
+                  {visibleColumns.currency && <td className="px-6 py-4 text-gray-900">{gateway.currency}</td>}
                   
                   {/* Dev Mode Badge */}
-                  <td className="px-6 py-4">
+                  {visibleColumns.devMode && <td className="px-6 py-4">
                     <span className={`px-2.5 py-1 text-xs font-semibold rounded ${
                       gateway.devMode ? 'bg-[#d1e7dd] text-[#0f5132]' : 'bg-[#e2e3e5] text-[#41464b]'
                     }`}>
                       {gateway.devMode ? 'ENABLED' : 'DISABLED'}
                     </span>
-                  </td>
+                  </td>}
 
                   <td className="px-6 py-4 text-center">
                     <button 

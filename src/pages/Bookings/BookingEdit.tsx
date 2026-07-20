@@ -1,10 +1,12 @@
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, CheckCircle2, FileText, Ban, RotateCcw, AlertTriangle, ShieldCheck, CreditCard, XCircle, User, Settings, Calendar, Banknote } from 'lucide-react';
 import { mockBookings } from '../../data/mockBookings';
+import { useCurrency } from '../../context/CurrencyContext';
 
 export default function BookingEdit() {
   const navigate = useNavigate();
   const { id } = useParams();
+  const { convertFromAndFormat } = useCurrency();
   
   const booking = mockBookings.find(b => b.invoice === id) || mockBookings[0];
   const refTitle = booking.moduleType === 'flights' ? 'PNR Number' : booking.moduleType === 'visa' ? 'Application ID' : 'Booking Reference';
@@ -90,9 +92,9 @@ export default function BookingEdit() {
         <div className="grid grid-cols-2 md:grid-cols-5 gap-6">
           <div><label className="block text-xs font-medium text-gray-700 mb-1">Booking Status <span className="text-red-500">*</span></label><select className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none"><option>{booking.booking.split('\n')[0]}</option><option>CONFIRMED</option><option>CANCELLED</option></select></div>
           <div><label className="block text-xs font-medium text-gray-700 mb-1">Payment Status <span className="text-red-500">*</span></label><select className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none"><option>{booking.payment}</option><option>PAID</option></select></div>
-          <div><label className="block text-xs font-medium text-gray-700 mb-1">Original Price <span className="text-red-500">*</span></label><input type="text" defaultValue={`USD ${(Number(booking.price) - Number(booking.earning)).toFixed(2)}`} className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none" /></div>
-          <div><label className="block text-xs font-medium text-gray-700 mb-1">Final Price</label><input type="text" defaultValue={`USD ${booking.price}`} className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none" /></div>
-          <div><label className="block text-xs font-medium text-gray-700 mb-1">Commission</label><input type="text" defaultValue={`USD ${booking.earning}`} className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none font-bold text-emerald-600" /></div>
+          <div><label className="block text-xs font-medium text-gray-700 mb-1">Original Price <span className="text-red-500">*</span></label><input type="text" defaultValue={convertFromAndFormat(Number(booking.price) - Number(booking.earning), 'USD')} className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none" /></div>
+          <div><label className="block text-xs font-medium text-gray-700 mb-1">Final Price</label><input type="text" defaultValue={convertFromAndFormat(Number(booking.price), 'USD')} className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none" /></div>
+          <div><label className="block text-xs font-medium text-gray-700 mb-1">Commission</label><input type="text" defaultValue={convertFromAndFormat(Number(booking.earning), 'USD')} className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none font-bold text-emerald-600" /></div>
         </div>
       </div>
 

@@ -54,9 +54,24 @@ const navItems = [
     ]
   },
   { name: 'Umrah', path: '/umrah', icon: Moon },
-  { name: 'Blog', path: '/blog', icon: PenTool },
+  { 
+    name: 'Blogs', 
+    icon: PenTool,
+    subItems: [
+      { name: 'Blogs', path: '/blog' },
+      { name: 'Blog Categories', path: '/blog/categories' }
+    ]
+  },
   { name: 'Media', path: '/media', icon: ImageIcon },
-  { name: 'Reports', path: '/reports', icon: BarChart3 },
+  { 
+    name: 'Reports', 
+    icon: BarChart3,
+    subItems: [
+      { name: 'Booking Reports', path: '/reports/bookings' },
+      { name: 'Users Reports', path: '/reports/users' },
+      { name: 'Transactions Reports', path: '/reports/transactions' }
+    ]
+  },
   { 
     name: 'Settings', 
     icon: Settings,
@@ -73,29 +88,28 @@ export default function Sidebar({ isExpanded, toggleSidebar }: { isExpanded: boo
   const navigate = useNavigate();
   const [openMenu, setOpenMenu] = useState<string | null>(null);
 
-  // Set initial active menu based on URL and enforce accordion behavior
+  // Set initial active menu based on STRICT URL matching and enforce accordion behavior
   useEffect(() => {
     const activeItem = navItems.find(item => 
-      item.subItems && item.subItems.some(sub => location.pathname.includes(sub.path))
+      item.subItems && item.subItems.some(sub => {
+        if (sub.path === '/') return location.pathname === '/';
+        return location.pathname === sub.path || location.pathname.startsWith(`${sub.path}/`);
+      })
     );
     if (activeItem) setOpenMenu(activeItem.name);
   }, [location.pathname]);
 
-  // Handle click on a parent item with a dropdown
   const handleParentClick = (item: typeof navItems[0]) => {
     if (isExpanded) {
       if (openMenu === item.name) {
-        // Close if clicking the currently open menu
         setOpenMenu(null);
       } else {
-        // Open the menu AND navigate to its first sub-item by default
         setOpenMenu(item.name);
         if (item.subItems && item.subItems.length > 0) {
           navigate(item.subItems[0].path);
         }
       }
     } else {
-      // If sidebar is collapsed, clicking the icon should still navigate
       if (item.subItems && item.subItems.length > 0) {
         navigate(item.subItems[0].path);
       }
@@ -105,7 +119,7 @@ export default function Sidebar({ isExpanded, toggleSidebar }: { isExpanded: boo
   return (
     <aside className={`bg-sidebar text-slate-300 flex flex-col h-screen fixed left-0 top-0 overflow-y-visible transition-all duration-300 z-50 ${isExpanded ? 'w-64' : 'w-20'}`}>
       <div className="p-4 flex items-center justify-between h-16 border-b border-slate-800">
-        {isExpanded && <h1 className="text-xl font-bold text-white tracking-tight truncate pr-2">Aeropoint<span className="text-primary-500">.</span></h1>}
+        {isExpanded && <h1 className="text-xl font-bold text-white tracking-tight truncate pr-2">Aeropoint<span className="text-[#0d6efd]">.</span></h1>}
         <button onClick={toggleSidebar} className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition-colors mx-auto">
           {isExpanded ? <PanelLeftClose size={20} /> : <PanelLeftOpen size={20} />}
         </button>
@@ -113,7 +127,11 @@ export default function Sidebar({ isExpanded, toggleSidebar }: { isExpanded: boo
       
       <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto overflow-x-visible hide-scrollbar">
         {navItems.map((item) => {
-          const isActive = location.pathname === item.path || (item.subItems && item.subItems.some(sub => location.pathname.includes(sub.path)));
+          // STRICT checking to prevent cross-contamination of active states
+          const isActive = location.pathname === item.path || (item.subItems && item.subItems.some(sub => {
+            if (sub.path === '/') return location.pathname === '/';
+            return location.pathname === sub.path || location.pathname.startsWith(`${sub.path}/`);
+          }));
           const isOpen = openMenu === item.name;
 
           return (
@@ -122,11 +140,11 @@ export default function Sidebar({ isExpanded, toggleSidebar }: { isExpanded: boo
                 <button
                   onClick={() => handleParentClick(item)}
                   className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg transition-colors ${
-                    isActive ? 'bg-primary-900/50 text-white' : 'hover:bg-slate-800 hover:text-white'
+                    isActive ? 'bg-[#0d6efd]/20 text-white' : 'hover:bg-slate-800 hover:text-white'
                   } ${!isExpanded && 'justify-center'}`}
                 >
                   <div className="flex items-center">
-                    <item.icon size={20} className={`flex-shrink-0 ${isActive ? 'text-primary-500' : ''}`} />
+                    <item.icon size={20} className={`flex-shrink-0 ${isActive ? 'text-[#0d6efd]' : ''}`} />
                     {isExpanded && <span className="ml-3 text-sm font-medium truncate">{item.name}</span>}
                   </div>
                   {isExpanded && (
@@ -139,7 +157,7 @@ export default function Sidebar({ isExpanded, toggleSidebar }: { isExpanded: boo
                   end
                   className={({ isActive }) =>
                     `flex items-center px-3 py-2.5 rounded-lg transition-colors ${
-                      isActive ? 'bg-primary-600 text-white shadow-sm' : 'hover:bg-slate-800 hover:text-white'
+                      isActive ? 'bg-[#0d6efd] text-white shadow-sm' : 'hover:bg-slate-800 hover:text-white'
                     } ${!isExpanded && 'justify-center'}`
                   }
                 >
@@ -157,7 +175,7 @@ export default function Sidebar({ isExpanded, toggleSidebar }: { isExpanded: boo
                       end
                       className={({ isActive }) =>
                         `block px-3 py-2 text-sm rounded-lg transition-colors ${
-                          isActive ? 'bg-primary-600 text-white' : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                          isActive ? 'bg-[#0d6efd] text-white' : 'text-slate-400 hover:text-white hover:bg-slate-800'
                         }`
                       }
                     >
@@ -167,13 +185,14 @@ export default function Sidebar({ isExpanded, toggleSidebar }: { isExpanded: boo
                 </div>
               )}
 
+              {/* Tooltip/Flyout for collapsed sidebar */}
               {!isExpanded && (
                 <div className="absolute left-14 top-0 hidden group-hover:block bg-slate-800 text-white rounded-lg shadow-xl py-2 min-w-[160px] z-50 border border-slate-700">
                   {item.subItems ? (
                     <>
                       <div className="px-4 py-1 text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">{item.name}</div>
                       {item.subItems.map((sub) => (
-                        <NavLink key={sub.name} to={sub.path} end className={({ isActive }) => `block px-4 py-2 text-sm transition-colors ${isActive ? 'bg-primary-600' : 'hover:bg-slate-700'}`}>
+                        <NavLink key={sub.name} to={sub.path} end className={({ isActive }) => `block px-4 py-2 text-sm transition-colors ${isActive ? 'bg-[#0d6efd]' : 'hover:bg-slate-700'}`}>
                           {sub.name}
                         </NavLink>
                       ))}

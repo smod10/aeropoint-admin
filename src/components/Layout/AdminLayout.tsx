@@ -12,9 +12,9 @@ export default function AdminLayout() {
         isExpanded={isSidebarOpen} 
         toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} 
       />
-      <div className={`flex-1 flex flex-col min-h-screen transition-all duration-300 ${isSidebarOpen ? 'ml-64' : 'ml-20'}`}>
+      <div className={`flex-1 flex flex-col min-h-screen min-w-0 transition-all duration-300 ${isSidebarOpen ? 'ml-64' : 'ml-20'}`}>
         <Header />
-        <main className="flex-1 p-8">
+        <main className="flex-1 p-8 min-w-0 overflow-x-hidden">
           <Outlet />
         </main>
       </div>

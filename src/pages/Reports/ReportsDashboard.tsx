@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Download, TrendingUp, DollarSign, Package, Building2, Plane } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { useCurrency } from '../../context/CurrencyContext';
 
 // Mock Data
 const revenueData = [
@@ -14,14 +15,15 @@ const revenueData = [
 ];
 
 const topDestinations = [
-  { rank: 1, city: 'Dubai, UAE', bookings: 142, revenue: '$124,500' },
-  { rank: 2, city: 'London, UK', bookings: 98, revenue: '$89,200' },
-  { rank: 3, city: 'Paris, France', bookings: 85, revenue: '$76,400' },
-  { rank: 4, city: 'Mecca, KSA', bookings: 72, revenue: '$105,000' },
+  { rank: 1, city: 'Dubai, UAE', bookings: 142, revenueUSD: 124500 },
+  { rank: 2, city: 'London, UK', bookings: 98, revenueUSD: 89200 },
+  { rank: 3, city: 'Paris, France', bookings: 85, revenueUSD: 76400 },
+  { rank: 4, city: 'Mecca, KSA', bookings: 72, revenueUSD: 105000 },
 ];
 
 export default function ReportsDashboard() {
   const [timeframe, setTimeframe] = useState('This Year');
+  const { convertFromAndFormat } = useCurrency();
 
   return (
     <div className="space-y-6">
@@ -54,7 +56,7 @@ export default function ReportsDashboard() {
           <div className="flex justify-between items-start">
             <div>
               <p className="text-sm font-medium text-gray-500">Total Revenue</p>
-              <h3 className="text-2xl font-bold text-gray-900 mt-2">$342,800.00</h3>
+              <h3 className="text-2xl font-bold text-gray-900 mt-2">{convertFromAndFormat(342800, 'USD')}</h3>
             </div>
             <div className="p-2 bg-emerald-50 rounded-lg text-emerald-600"><DollarSign size={20} /></div>
           </div>
@@ -142,7 +144,7 @@ export default function ReportsDashboard() {
                     <p className="text-xs text-gray-500">{dest.bookings} Bookings</p>
                   </div>
                 </div>
-                <div className="font-semibold text-emerald-600">{dest.revenue}</div>
+                <div className="font-semibold text-emerald-600">{convertFromAndFormat(dest.revenueUSD, 'USD')}</div>
               </div>
             ))}
           </div>

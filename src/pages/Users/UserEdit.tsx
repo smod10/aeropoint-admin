@@ -7,22 +7,51 @@ import {
   MapPin, Shield, Building 
 } from 'lucide-react'; 
 import { mockUsers } from '../../data/mockUsers';
-import { countries } from '../../data/countries'; // Import Global Countries
+import { countries } from '../../data/countries';
+import { useCurrency } from '../../context/CurrencyContext';
 
 type TabType = 'profile' | 'information' | 'activity' | 'bookings' | 'transactions' | 'notes';
+type ActivityColumn = 'recordId' | 'details' | 'date';
+type TransactionColumn = 'trxId' | 'type' | 'amount' | 'currency' | 'gatewayId' | 'description' | 'date';
 
 export default function UserEdit() {
   const navigate = useNavigate();
   const { id } = useParams();
+  const { convertFromAndFormat } = useCurrency();
   
-  const user = mockUsers.find(u => u.id === Number(id)) || mockUsers[0];
   const isNew = id === 'new' || !id;
+  // If it's a new user, return null instead of falling back to the first mock user
+  const user = isNew ? null : (mockUsers.find(u => u.id === Number(id)) || mockUsers[0]);
 
   const [activeTab, setActiveTab] = useState<TabType>('profile');
+  const [isColumnMenuOpen, setIsColumnMenuOpen] = useState(false);
+  const [visibleActivityColumns, setVisibleActivityColumns] = useState<Record<ActivityColumn, boolean>>({
+    recordId: true,
+    details: true,
+    date: true,
+  });
+  const [visibleTransactionColumns, setVisibleTransactionColumns] = useState<Record<TransactionColumn, boolean>>({
+    trxId: true,
+    type: true,
+    amount: true,
+    currency: true,
+    gatewayId: true,
+    description: true,
+    date: true,
+  });
 
+  // Handle phone splitting gracefully for both new and existing users
   const phoneParts = user?.phone ? user.phone.split(' ') : ['+234', ''];
   const phonePrefix = phoneParts[0];
   const phoneNumber = phoneParts.slice(1).join(' ');
+
+  const toggleActivityColumn = (column: ActivityColumn) => {
+    setVisibleActivityColumns(prev => ({ ...prev, [column]: !prev[column] }));
+  };
+
+  const toggleTransactionColumn = (column: TransactionColumn) => {
+    setVisibleTransactionColumns(prev => ({ ...prev, [column]: !prev[column] }));
+  };
 
   return (
     <div className="space-y-6 max-w-6xl animate-in fade-in duration-300 pb-10">
@@ -45,26 +74,26 @@ export default function UserEdit() {
         <div className="flex gap-4 w-full md:w-auto">
           <div>
             <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Status</label>
-            <select className="bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none w-full md:w-32">
-              <option value="active" selected={user?.status}>Active</option>
-              <option value="inactive" selected={!user?.status}>Inactive</option>
+            <select defaultValue={isNew ? 'active' : (user?.status ? 'active' : 'inactive')} className="bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none w-full md:w-32">
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
             </select>
           </div>
           <div>
             <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Role</label>
-            <select className="bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none w-full md:w-32 capitalize">
-              <option value={user?.role}>{user?.role}</option>
+            <select defaultValue={user?.role || 'customer'} className="bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none w-full md:w-32 capitalize">
               <option value="admin">Admin</option>
               <option value="agent">Agent</option>
               <option value="supplier">Supplier</option>
               <option value="employee">Employee</option>
+              <option value="customer">Customer</option>
             </select>
           </div>
           <div>
             <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Banned Status</label>
-            <select className="bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none w-full md:w-32">
-              <option value="no" selected={!user?.banned}>No</option>
-              <option value="yes" selected={user?.banned}>Yes</option>
+            <select defaultValue={isNew ? 'no' : (user?.banned ? 'yes' : 'no')} className="bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none w-full md:w-32">
+              <option value="no">No</option>
+              <option value="yes">Yes</option>
             </select>
           </div>
         </div>
@@ -82,7 +111,7 @@ export default function UserEdit() {
               { id: 'profile', label: 'Profile', icon: UserIcon },
               { id: 'information', label: 'Information', icon: Info },
               { id: 'activity', label: 'Activity', icon: History },
-              { id: 'bookings', label: 'Bookings', icon: Bookmark, badge: '1' },
+              { id: 'bookings', label: 'Bookings', icon: Bookmark, badge: isNew ? '0' : '1' },
               { id: 'transactions', label: 'Transactions', icon: CreditCard },
               { id: 'notes', label: 'Notes', icon: AlignLeft }
             ].map((tab) => (
@@ -108,11 +137,11 @@ export default function UserEdit() {
                 <div>
                   <h3 className="text-sm font-bold text-gray-800 flex items-center gap-2 mb-4"><UserIcon size={16} className="text-gray-500"/> Personal Information</h3>
                   <div className="grid grid-cols-2 gap-6 mb-4">
-                    <div><label className="block text-xs font-medium text-gray-700 mb-1">First Name</label><input type="text" defaultValue={user?.firstName || ''} className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-primary-500" /></div>
-                    <div><label className="block text-xs font-medium text-gray-700 mb-1">Last Name</label><input type="text" defaultValue={user?.lastName || ''} className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-primary-500" /></div>
+                    <div><label className="block text-xs font-medium text-gray-700 mb-1">First Name</label><input type="text" defaultValue={user?.firstName || ''} placeholder="Enter first name" className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-primary-500" /></div>
+                    <div><label className="block text-xs font-medium text-gray-700 mb-1">Last Name</label><input type="text" defaultValue={user?.lastName || ''} placeholder="Enter last name" className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-primary-500" /></div>
                   </div>
                   <div className="grid grid-cols-2 gap-6">
-                    <div><label className="block text-xs font-medium text-gray-700 mb-1">Email</label><input type="email" defaultValue={user?.email || ''} className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-primary-500" /></div>
+                    <div><label className="block text-xs font-medium text-gray-700 mb-1">Email</label><input type="email" defaultValue={user?.email || ''} placeholder="email@example.com" className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-primary-500" /></div>
                     <div>
                       <label className="block text-xs font-medium text-gray-700 mb-1">Phone</label>
                       <div className="flex gap-2">
@@ -123,7 +152,7 @@ export default function UserEdit() {
                             </option>
                           ))}
                         </select>
-                        <input type="text" defaultValue={phoneNumber} className="flex-1 bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-primary-500" />
+                        <input type="text" defaultValue={phoneNumber || ''} placeholder="Phone number" className="flex-1 bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-primary-500" />
                       </div>
                     </div>
                   </div>
@@ -132,16 +161,16 @@ export default function UserEdit() {
                 <div className="bg-orange-50/50 border border-orange-100 rounded-xl p-6">
                   <h3 className="text-sm font-bold text-orange-800 flex items-center gap-2 mb-4"><Shield size={16} /> Security</h3>
                   <label className="block text-xs font-medium text-gray-700 mb-1">Password (leave blank to keep current password)</label>
-                  <input type="password" placeholder="Enter new password to change" className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-primary-500" />
+                  <input type="password" placeholder={isNew ? "Create a secure password" : "Enter new password to change"} className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-primary-500" />
                 </div>
 
                 <div>
                   <h3 className="text-sm font-bold text-gray-800 flex items-center gap-2 mb-4"><MapPin size={16} className="text-gray-500"/> Address Information</h3>
                   <label className="block text-xs font-medium text-gray-700 mb-1">Address</label>
-                  <textarea rows={3} className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-primary-500 resize-none mb-4" />
+                  <textarea rows={3} placeholder="Street address..." className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-primary-500 resize-none mb-4" />
                   <div className="grid grid-cols-2 gap-6">
-                    <div><label className="block text-xs font-medium text-gray-700 mb-1">City</label><input type="text" className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-primary-500" /></div>
-                    <div><label className="block text-xs font-medium text-gray-700 mb-1">State</label><input type="text" className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-primary-500" /></div>
+                    <div><label className="block text-xs font-medium text-gray-700 mb-1">City</label><input type="text" placeholder="City" className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-primary-500" /></div>
+                    <div><label className="block text-xs font-medium text-gray-700 mb-1">State</label><input type="text" placeholder="State/Province" className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-primary-500" /></div>
                   </div>
                 </div>
               </div>
@@ -155,11 +184,11 @@ export default function UserEdit() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="bg-gray-50 border border-gray-100 rounded-xl p-4">
                     <p className="text-[10px] font-bold text-gray-400 uppercase mb-1">USER ID</p>
-                    <p className="text-sm font-mono text-gray-800">{user?.uid}</p>
+                    <p className="text-sm font-mono text-gray-800">{isNew ? 'Pending Creation' : user?.uid}</p>
                   </div>
                   <div className="bg-gray-50 border border-gray-100 rounded-xl p-4">
                     <p className="text-[10px] font-bold text-gray-400 uppercase mb-1">EMAIL VERIFIED</p>
-                    {user?.verified ? (
+                    {!isNew && user?.verified ? (
                       <p className="text-sm font-medium text-emerald-600 flex items-center gap-1"><CheckCircle2 size={14}/> Verified</p>
                     ) : (
                       <p className="text-sm font-medium text-red-500 flex items-center gap-1"><XCircle size={14}/> Not Verified</p>
@@ -167,7 +196,9 @@ export default function UserEdit() {
                   </div>
                   <div className="bg-gray-50 border border-gray-100 rounded-xl p-4">
                     <p className="text-[10px] font-bold text-gray-400 uppercase mb-1">ACCOUNT STATUS</p>
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${user?.status ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>{user?.status ? 'Active' : 'Inactive'}</span>
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${isNew || user?.status ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
+                      {isNew || user?.status ? 'Active' : 'Inactive'}
+                    </span>
                   </div>
                   <div className="bg-gray-50 border border-gray-100 rounded-xl p-4">
                     <p className="text-[10px] font-bold text-gray-400 uppercase mb-1">LOGIN ATTEMPTS</p>
@@ -175,11 +206,11 @@ export default function UserEdit() {
                   </div>
                   <div className="bg-gray-50 border border-gray-100 rounded-xl p-4">
                     <p className="text-[10px] font-bold text-gray-400 uppercase mb-1">CREATED AT</p>
-                    <p className="text-sm font-medium text-gray-800">{user?.createdAt}</p>
+                    <p className="text-sm font-medium text-gray-800">{isNew ? 'Not Created Yet' : user?.createdAt}</p>
                   </div>
                   <div className="bg-gray-50 border border-gray-100 rounded-xl p-4">
                     <p className="text-[10px] font-bold text-gray-400 uppercase mb-1">UPDATED AT</p>
-                    <p className="text-sm font-medium text-gray-800">{user?.createdAt}</p>
+                    <p className="text-sm font-medium text-gray-800">{isNew ? 'Not Updated Yet' : user?.createdAt}</p>
                   </div>
                   <div className="bg-gray-50 border border-gray-100 rounded-xl p-4">
                     <p className="text-[10px] font-bold text-gray-400 uppercase mb-1">LAST LOGIN</p>
@@ -201,15 +232,46 @@ export default function UserEdit() {
                     <h3 className="text-lg font-bold text-gray-800 capitalize">{activeTab} Logs</h3>
                     <p className="text-sm text-gray-500">Total: 0 records</p>
                   </div>
-                  <button className="flex items-center gap-2 bg-white border border-gray-200 text-gray-700 px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-gray-50">
-                    <Columns size={14} /> View Columns <ChevronDown size={14} />
-                  </button>
+                  <div className="relative">
+                    <button type="button" onClick={() => setIsColumnMenuOpen(prev => !prev)} className="flex items-center gap-2 bg-white border border-gray-200 text-gray-700 px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-gray-50">
+                      <Columns size={14} /> View Columns <ChevronDown size={14} />
+                    </button>
+                    {isColumnMenuOpen && (
+                      <div className="absolute right-0 mt-2 w-56 bg-white border border-gray-200 rounded-lg shadow-lg z-20 p-2">
+                        {activeTab === 'transactions' && [
+                          { key: 'trxId', label: 'TRX ID' },
+                          { key: 'type', label: 'Type' },
+                          { key: 'amount', label: 'Amount' },
+                          { key: 'currency', label: 'Currency' },
+                          { key: 'gatewayId', label: 'Gateway ID' },
+                          { key: 'description', label: 'Description' },
+                          { key: 'date', label: 'Date' },
+                        ].map(col => (
+                          <label key={col.key} className="flex items-center gap-2 text-sm text-gray-700 px-2 py-1.5 rounded hover:bg-gray-50 cursor-pointer">
+                            <input type="checkbox" checked={visibleTransactionColumns[col.key as TransactionColumn]} onChange={() => toggleTransactionColumn(col.key as TransactionColumn)} className="rounded border-gray-300" />
+                            <span>{col.label}</span>
+                          </label>
+                        ))}
+
+                        {activeTab !== 'transactions' && [
+                          { key: 'recordId', label: 'Record ID' },
+                          { key: 'details', label: 'Details' },
+                          { key: 'date', label: 'Date' },
+                        ].map(col => (
+                          <label key={col.key} className="flex items-center gap-2 text-sm text-gray-700 px-2 py-1.5 rounded hover:bg-gray-50 cursor-pointer">
+                            <input type="checkbox" checked={visibleActivityColumns[col.key as ActivityColumn]} onChange={() => toggleActivityColumn(col.key as ActivityColumn)} className="rounded border-gray-300" />
+                            <span>{col.label}</span>
+                          </label>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
                 
                 <table className="w-full text-left text-sm text-gray-600 whitespace-nowrap mb-8 border-b border-gray-100">
                   <thead className="text-[10px] text-gray-400 uppercase bg-white border-b border-gray-100 font-bold tracking-wider">
-                    {activeTab === 'transactions' && <tr><th className="px-4 py-3 w-10">#</th><th className="px-4 py-3">TRX ID</th><th className="px-4 py-3">TYPE</th><th className="px-4 py-3">AMOUNT</th><th className="px-4 py-3">CURRENCY</th><th className="px-4 py-3">GATEWAY ID</th><th className="px-4 py-3">DESCRIPTION</th><th className="px-4 py-3">DATE</th></tr>}
-                    {activeTab !== 'transactions' && <tr><th className="px-4 py-3 w-10">#</th><th className="px-4 py-3">RECORD ID</th><th className="px-4 py-3">DETAILS</th><th className="px-4 py-3">DATE</th></tr>}
+                    {activeTab === 'transactions' && <tr><th className="px-4 py-3 w-10">#</th>{visibleTransactionColumns.trxId && <th className="px-4 py-3">TRX ID</th>}{visibleTransactionColumns.type && <th className="px-4 py-3">TYPE</th>}{visibleTransactionColumns.amount && <th className="px-4 py-3">AMOUNT</th>}{visibleTransactionColumns.currency && <th className="px-4 py-3">CURRENCY</th>}{visibleTransactionColumns.gatewayId && <th className="px-4 py-3">GATEWAY ID</th>}{visibleTransactionColumns.description && <th className="px-4 py-3">DESCRIPTION</th>}{visibleTransactionColumns.date && <th className="px-4 py-3">DATE</th>}</tr>}
+                    {activeTab !== 'transactions' && <tr><th className="px-4 py-3 w-10">#</th>{visibleActivityColumns.recordId && <th className="px-4 py-3">RECORD ID</th>}{visibleActivityColumns.details && <th className="px-4 py-3">DETAILS</th>}{visibleActivityColumns.date && <th className="px-4 py-3">DATE</th>}</tr>}
                   </thead>
                 </table>
 
@@ -238,11 +300,11 @@ export default function UserEdit() {
             <div className="absolute top-0 right-0 w-32 h-32 bg-white opacity-5 rounded-bl-full transform translate-x-10 -translate-y-10"></div>
             <div className="flex items-center gap-3 mb-8">
               <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center backdrop-blur-sm"><Wallet size={20}/></div>
-              <div><h4 className="text-sm font-bold">Digital Wallet</h4><p className="text-xs text-blue-100">{user?.id}</p></div>
+              <div><h4 className="text-sm font-bold">Digital Wallet</h4><p className="text-xs text-blue-100">{isNew ? 'Pending Creation' : user?.id}</p></div>
             </div>
             <div className="mb-6">
               <p className="text-xs text-blue-100 mb-1">Available Balance</p>
-              <h2 className="text-3xl font-black">USD {user?.balance || '0.00'}</h2>
+              <h2 className="text-3xl font-black">{convertFromAndFormat(Number(isNew ? '0.00' : (user?.balance || '0.00')), 'USD')}</h2>
             </div>
             <button className="w-full flex items-center justify-center gap-2 bg-white/20 hover:bg-white/30 transition-colors backdrop-blur-sm border border-white/10 text-white py-2.5 rounded-lg text-sm font-bold">
               <Building size={16} /> Manage Funds
@@ -254,7 +316,7 @@ export default function UserEdit() {
             <div className="grid grid-cols-2 gap-4">
               <div className="bg-blue-50/50 border border-blue-100 rounded-xl p-4 flex flex-col justify-between h-24">
                 <div className="flex items-center gap-2 text-blue-600"><Bookmark size={16}/> <span className="text-xs font-bold uppercase">Bookings</span></div>
-                <span className="text-2xl font-black text-blue-900">1</span>
+                <span className="text-2xl font-black text-blue-900">{isNew ? '0' : '1'}</span>
               </div>
               <div className="bg-orange-50/50 border border-orange-100 rounded-xl p-4 flex flex-col justify-between h-24">
                 <div className="flex items-center gap-2 text-orange-600"><History size={16}/> <span className="text-xs font-bold uppercase">Activities</span></div>

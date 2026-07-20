@@ -3,9 +3,11 @@ import {
   XCircle, Banknote, UserMinus, BookOpen, Plane, Building2, Flag, FileText, BarChart3, Settings, PenTool
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useCurrency } from '../../context/CurrencyContext';
 
 export default function DashboardHome() {
   const navigate = useNavigate();
+  const { convertFromAndFormat } = useCurrency();
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300 pb-10">
@@ -35,7 +37,7 @@ export default function DashboardHome() {
           </div>
           <div onClick={() => navigate('/reports')} className="border border-gray-100 rounded-xl p-5 flex items-center gap-4 bg-gray-50/50 cursor-pointer hover:bg-gray-100 hover:shadow-sm transition-all group">
             <div className="w-12 h-12 rounded-xl bg-teal-50 text-teal-600 flex items-center justify-center group-hover:bg-teal-600 group-hover:text-white transition-colors"><Landmark size={24} /></div>
-            <div><p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">This Month Revenue</p><h4 className="text-2xl font-bold text-gray-900">USD 114</h4></div>
+            <div><p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">This Month Revenue</p><h4 className="text-2xl font-bold text-gray-900">{convertFromAndFormat(114, 'USD')}</h4></div>
           </div>
         </div>
       </div>
@@ -117,7 +119,7 @@ export default function DashboardHome() {
             </div>
             <div className="bg-emerald-50/50 border border-emerald-100 rounded-xl p-4">
               <p className="text-xs font-medium text-emerald-600 flex items-center gap-1 mb-1"><Banknote size={12}/> Revenue</p>
-              <p className="text-2xl font-bold text-gray-900">USD 113.92</p>
+              <p className="text-2xl font-bold text-gray-900">{convertFromAndFormat(113.92, 'USD')}</p>
             </div>
           </div>
           <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">By Module</p>
@@ -149,7 +151,7 @@ export default function DashboardHome() {
             </div>
             <div className="bg-emerald-50/50 border border-emerald-100 rounded-xl p-4">
               <p className="text-xs font-medium text-emerald-600 flex items-center gap-1 mb-1"><Banknote size={12}/> Revenue</p>
-              <p className="text-2xl font-bold text-gray-900">USD 0.00</p>
+              <p className="text-2xl font-bold text-gray-900">{convertFromAndFormat(0, 'USD')}</p>
             </div>
           </div>
           <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">By Module</p>

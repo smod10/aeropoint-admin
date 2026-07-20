@@ -1,147 +1,222 @@
-import { useState } from 'react';
-import { Search, Plus, Edit2, Trash2, Image as ImageIcon, Check } from 'lucide-react';
-import SlideOver from '../../components/Shared/SlideOver';
+import { useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Search, Plus, Edit2, Trash2, Columns, ChevronDown } from 'lucide-react';
+import { mockPackages } from '../../data/mockPackages';
+import { useCurrency } from '../../context/CurrencyContext';
+import { ChevronLeft, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 
-// Mock Data
-const initialPackages = [
-  {
-    id: 'PKG-001',
-    name: 'Maldives Honeymoon Escape',
-    destination: 'Maldives',
-    duration: '7 Days / 6 Nights',
-    price: '$2,899.00',
-    status: 'Published',
-    inclusions: ['Flight', 'Hotel', 'Breakfast', 'Transfer'],
-    exclusions: ['Visa', 'Travel Insurance']
-  },
-  {
-    id: 'PKG-002',
-    name: 'Bali Cultural Explorer',
-    destination: 'Bali, Indonesia',
-    duration: '10 Days / 9 Nights',
-    price: '$1,450.00',
-    status: 'Draft',
-    inclusions: ['Hotel', 'Tours', 'Breakfast'],
-    exclusions: ['Flight', 'Dinner']
-  },
-  {
-    id: 'PKG-003',
-    name: 'Swiss Alps Winter Wonderland',
-    destination: 'Zurich, Switzerland',
-    duration: '5 Days / 4 Nights',
-    price: '$3,100.00',
-    status: 'Published',
-    inclusions: ['Flight', 'Hotel', 'Ski Pass', 'Breakfast'],
-    exclusions: ['Lunch', 'Dinner', 'Gear Rental']
-  }
-];
+type PackageColumn = 'status' | 'image' | 'name' | 'location' | 'duration' | 'price' | 'tourType';
+type PackageSortKey = 'status' | 'name' | 'location' | 'duration' | 'price' | 'tourType';
 
 export default function PackageList() {
-  const [packages, setPackages] = useState(initialPackages);
-  const [isSlideOverOpen, setIsSlideOverOpen] = useState(false);
-  const [editingPackage, setEditingPackage] = useState<any>(null);
+  const navigate = useNavigate();
+  const { convertAndFormat } = useCurrency(); // Global Currency Hook
+  const [packages, setPackages] = useState(mockPackages);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [isColumnMenuOpen, setIsColumnMenuOpen] = useState(false);
+  const [sortKey, setSortKey] = useState<PackageSortKey>('name');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  const [visibleColumns, setVisibleColumns] = useState<Record<PackageColumn, boolean>>({
+    status: true,
+    image: true,
+    name: true,
+    location: true,
+    duration: true,
+    price: true,
+    tourType: true,
+  });
 
-  const openAddForm = () => {
-    setEditingPackage(null);
-    setIsSlideOverOpen(true);
+  const toggleStatus = (id: number) => {
+    setPackages(packages.map(p => p.id === id ? { ...p, isActive: !p.isActive } : p));
   };
 
-  const openEditForm = (pkg: any) => {
-    setEditingPackage(pkg);
-    setIsSlideOverOpen(true);
+  const sortedPackages = useMemo(() => {
+    return [...packages].sort((left, right) => {
+      const leftValue = sortKey === 'name' ? left.title
+        : sortKey === 'status' ? left.isActive
+        : sortKey === 'location' ? left.location
+        : sortKey === 'duration' ? left.days * 10 + left.nights
+        : sortKey === 'price' ? left.basePriceNGN
+        : left.tourType;
+
+      const rightValue = sortKey === 'name' ? right.title
+        : sortKey === 'status' ? right.isActive
+        : sortKey === 'location' ? right.location
+        : sortKey === 'duration' ? right.days * 10 + right.nights
+        : sortKey === 'price' ? right.basePriceNGN
+        : right.tourType;
+
+      if (sortKey === 'status') {
+        return sortDirection === 'asc'
+          ? Number(left.isActive) - Number(right.isActive)
+          : Number(right.isActive) - Number(left.isActive);
+      }
+
+      if (sortKey === 'price') {
+        return sortDirection === 'asc'
+          ? Number(left.basePriceNGN) - Number(right.basePriceNGN)
+          : Number(right.basePriceNGN) - Number(left.basePriceNGN);
+      }
+
+      if (sortKey === 'duration') {
+        return sortDirection === 'asc'
+          ? (left.days * 10 + left.nights) - (right.days * 10 + right.nights)
+          : (right.days * 10 + right.nights) - (left.days * 10 + left.nights);
+      }
+
+      return sortDirection === 'asc'
+        ? String(leftValue).localeCompare(String(rightValue))
+        : String(rightValue).localeCompare(String(leftValue));
+    });
+  }, [packages, sortDirection, sortKey]);
+
+  const totalItems = sortedPackages.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / rowsPerPage));
+  const startIndex = (currentPage - 1) * rowsPerPage;
+  const endIndex = startIndex + rowsPerPage;
+  const paginatedPackages = sortedPackages.slice(startIndex, endIndex);
+  const pageNumbers = Array.from({ length: totalPages }, (_, index) => index + 1);
+
+  const handleRowsChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    setRowsPerPage(Number(event.target.value));
+    setCurrentPage(1);
   };
 
-  const handleDelete = (id: string) => {
-    if (confirm('Are you sure you want to delete this package?')) {
-      setPackages(packages.filter(p => p.id !== id));
+  const handleSort = (key: PackageSortKey) => {
+    if (sortKey === key) {
+      setSortDirection(previous => previous === 'asc' ? 'desc' : 'asc');
+      return;
     }
+
+    setSortKey(key);
+    setSortDirection('asc');
+  };
+
+  const sortIcon = (key: PackageSortKey) => {
+    if (sortKey !== key) {
+      return <ArrowUpDown size={12} className="text-gray-300" />;
+    }
+
+    return sortDirection === 'asc'
+      ? <ArrowUp size={12} className="text-primary-600" />
+      : <ArrowDown size={12} className="text-primary-600" />;
+  };
+
+  const toggleColumn = (column: PackageColumn) => {
+    setVisibleColumns(prev => ({ ...prev, [column]: !prev[column] }));
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header Actions */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+    <div className="space-y-6 animate-in fade-in duration-300">
+      
+      {/* Header and Controls */}
+      <div className="bg-white p-6 rounded-xl shadow-soft border border-gray-100 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-800">Travel Packages</h2>
-          <p className="text-sm text-gray-500 mt-1">Create and manage holiday packages, tours, and bundle deals.</p>
+          <h2 className="text-2xl font-bold text-gray-800">Tours Management</h2>
+          <p className="text-sm text-gray-500 mt-1">Total: {packages.length} records</p>
         </div>
-        <button 
-          onClick={openAddForm}
-          className="flex items-center gap-2 bg-primary-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary-700 transition-colors shadow-sm"
-        >
-          <Plus size={16} />
-          Add New Package
-        </button>
+        <div className="flex flex-wrap items-center gap-3">
+          
+          <div className="relative">
+            <button type="button" onClick={() => setIsColumnMenuOpen(prev => !prev)} className="flex items-center gap-2 bg-white border border-gray-200 text-gray-700 px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-gray-50">
+              <Columns size={16} /> View Columns <ChevronDown size={14} className="text-gray-400 ml-1" />
+            </button>
+            {isColumnMenuOpen && (
+              <div className="absolute right-0 mt-2 w-52 bg-white border border-gray-200 rounded-lg shadow-lg z-20 p-2">
+                {[
+                  { key: 'status', label: 'Status' },
+                  { key: 'image', label: 'Image' },
+                  { key: 'name', label: 'Tour Name' },
+                  { key: 'location', label: 'Location' },
+                  { key: 'duration', label: 'Duration' },
+                  { key: 'price', label: 'Price' },
+                  { key: 'tourType', label: 'Tour Type' },
+                ].map(col => (
+                  <label key={col.key} className="flex items-center gap-2 text-sm text-gray-700 px-2 py-1.5 rounded hover:bg-gray-50 cursor-pointer">
+                    <input type="checkbox" checked={visibleColumns[col.key as PackageColumn]} onChange={() => toggleColumn(col.key as PackageColumn)} className="rounded border-gray-300" />
+                    <span>{col.label}</span>
+                  </label>
+                ))}
+              </div>
+            )}
+          </div>
+          
+          <button className="flex items-center gap-2 bg-white border border-gray-200 text-gray-700 px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-gray-50">
+            All Columns <ChevronDown size={14} className="text-gray-400 ml-1" />
+          </button>
+
+          <div className="flex relative">
+            <input type="text" placeholder="Search records..." className="bg-white border border-gray-200 rounded-l-lg px-4 py-2.5 text-sm outline-none focus:border-primary-500 w-48" />
+            <button className="bg-primary-600 text-white px-4 py-2.5 rounded-r-lg hover:bg-primary-700 transition-colors">
+              <Search size={16} />
+            </button>
+          </div>
+
+          <button onClick={() => navigate('/packages/edit/new')} className="flex items-center gap-2 bg-primary-600 text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-primary-700 shadow-sm ml-2">
+            <Plus size={16} /> Create New
+          </button>
+        </div>
       </div>
 
-      {/* Filters and Search */}
-      <div className="bg-white p-4 rounded-xl shadow-soft border border-gray-100 flex flex-col md:flex-row gap-4 justify-between items-center">
-        <div className="flex items-center w-full md:w-96 relative">
-          <Search className="text-gray-400 absolute ml-3" size={18} />
-          <input 
-            type="text" 
-            placeholder="Search packages by name or destination..." 
-            className="w-full bg-gray-50 border border-gray-200 rounded-lg pl-10 pr-4 py-2 text-sm focus:ring-2 focus:ring-primary-500 outline-none transition-all"
-          />
-        </div>
-        <div className="flex gap-3 w-full md:w-auto">
-          <select className="bg-gray-50 border border-gray-200 text-gray-700 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2 outline-none">
-            <option value="">All Statuses</option>
-            <option value="Published">Published</option>
-            <option value="Draft">Draft</option>
-          </select>
-        </div>
-      </div>
-
-      {/* Data Table */}
-      <div className="bg-white rounded-xl shadow-soft border border-gray-100 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm text-gray-600">
-            <thead className="text-xs text-gray-400 uppercase bg-gray-50/50 border-b border-gray-100">
+      {/* Main Table */}
+      <div className="bg-white rounded-xl shadow-soft border border-gray-100 overflow-hidden flex flex-col">
+        <div className="overflow-x-auto min-h-[400px]">
+          <table className="w-full text-left text-sm text-gray-600 whitespace-nowrap">
+            <thead className="text-[11px] text-gray-500 uppercase bg-gray-50/50 border-b border-gray-100 font-semibold tracking-wider">
               <tr>
-                <th className="px-6 py-4 font-medium">Package Image</th>
-                <th className="px-6 py-4 font-medium">Name & Destination</th>
-                <th className="px-6 py-4 font-medium">Duration</th>
-                <th className="px-6 py-4 font-medium">Price</th>
-                <th className="px-6 py-4 font-medium">Status</th>
-                <th className="px-6 py-4 font-medium text-right">Actions</th>
+                <th className="px-4 py-4 w-10 text-center"><input type="checkbox" className="rounded border-gray-300" /></th>
+                <th className="px-4 py-4 w-10">#</th>
+                {visibleColumns.status && <th className="px-4 py-4 text-center"><button type="button" onClick={() => handleSort('status')} className="inline-flex items-center gap-1 hover:text-primary-600">Status {sortIcon('status')}</button></th>}
+                {visibleColumns.image && <th className="px-4 py-4">Image</th>}
+                {visibleColumns.name && <th className="px-4 py-4"><button type="button" onClick={() => handleSort('name')} className="inline-flex items-center gap-1 hover:text-primary-600">Tour Name {sortIcon('name')}</button></th>}
+                {visibleColumns.location && <th className="px-4 py-4"><button type="button" onClick={() => handleSort('location')} className="inline-flex items-center gap-1 hover:text-primary-600">Location {sortIcon('location')}</button></th>}
+                {visibleColumns.duration && <th className="px-4 py-4"><button type="button" onClick={() => handleSort('duration')} className="inline-flex items-center gap-1 hover:text-primary-600">Duration {sortIcon('duration')}</button></th>}
+                {visibleColumns.price && <th className="px-4 py-4"><button type="button" onClick={() => handleSort('price')} className="inline-flex items-center gap-1 hover:text-primary-600">Price {sortIcon('price')}</button></th>}
+                {visibleColumns.tourType && <th className="px-4 py-4"><button type="button" onClick={() => handleSort('tourType')} className="inline-flex items-center gap-1 hover:text-primary-600">Tour Type {sortIcon('tourType')}</button></th>}
+                <th className="px-4 py-4 text-center">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
-              {packages.map((pkg) => (
+              {paginatedPackages.map((pkg, i) => (
                 <tr key={pkg.id} className="hover:bg-gray-50/50 transition-colors">
-                  <td className="px-6 py-4">
-                    <div className="w-16 h-12 bg-gray-100 rounded-lg border border-gray-200 flex items-center justify-center text-gray-400">
-                      <ImageIcon size={20} />
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="font-medium text-gray-900">{pkg.name}</div>
-                    <div className="text-xs text-gray-400">{pkg.destination}</div>
-                  </td>
-                  <td className="px-6 py-4 text-gray-900">{pkg.duration}</td>
-                  <td className="px-6 py-4 font-medium text-emerald-600">{pkg.price}</td>
-                  <td className="px-6 py-4">
-                    <span className={`px-2.5 py-1 text-xs font-medium rounded-full ${
-                      pkg.status === 'Published' ? 'bg-emerald-50 text-emerald-600' : 'bg-gray-100 text-gray-600'
-                    }`}>
-                      {pkg.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-right space-x-2">
-                    <button 
-                      onClick={() => openEditForm(pkg)}
-                      className="inline-flex items-center justify-center p-1.5 text-gray-500 bg-gray-50 rounded-lg hover:bg-primary-50 hover:text-primary-600 transition-colors"
-                      title="Edit"
-                    >
-                      <Edit2 size={16} />
+                  <td className="px-4 py-3 text-center"><input type="checkbox" className="rounded border-gray-300" /></td>
+                  <td className="px-4 py-3 text-gray-500">{startIndex + i + 1}</td>
+                  
+                  {/* Status Toggle */}
+                  {visibleColumns.status && <td className="px-4 py-3 text-center">
+                    <button onClick={() => toggleStatus(pkg.id)} className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${pkg.isActive ? 'bg-primary-600' : 'bg-gray-200'}`}>
+                      <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow-sm transition-transform ${pkg.isActive ? 'translate-x-4' : 'translate-x-1'}`} />
                     </button>
-                    <button 
-                      onClick={() => handleDelete(pkg.id)}
-                      className="inline-flex items-center justify-center p-1.5 text-gray-500 bg-gray-50 rounded-lg hover:bg-red-50 hover:text-red-600 transition-colors"
-                      title="Delete"
-                    >
-                      <Trash2 size={16} />
+                  </td>}
+
+                  {/* Thumbnail */}
+                  {visibleColumns.image && <td className="px-4 py-3">
+                    <div className="w-10 h-10 rounded-full overflow-hidden border border-gray-200">
+                      <img src={pkg.image} alt={pkg.title} className="w-full h-full object-cover" />
+                    </div>
+                  </td>}
+
+                  {visibleColumns.name && <td className="px-4 py-3 font-medium text-gray-900 truncate max-w-[250px]">{pkg.title}</td>}
+                  {visibleColumns.location && <td className="px-4 py-3 text-gray-700">{pkg.location}</td>}
+                  {visibleColumns.duration && <td className="px-4 py-3 text-gray-700">{pkg.days}D / {pkg.nights}N</td>}
+                  
+                  {/* Currency Converted Price */}
+                  {visibleColumns.price && <td className="px-4 py-3">
+                    <span className="inline-flex items-center px-2.5 py-1 rounded bg-emerald-50 text-emerald-700 font-bold text-xs border border-emerald-100">
+                      {convertAndFormat(pkg.basePriceNGN)}
+                    </span>
+                  </td>}
+
+                  {visibleColumns.tourType && <td className="px-4 py-3 text-gray-700">{pkg.tourType}</td>}
+                  
+                  {/* Actions */}
+                  <td className="px-4 py-3 text-center space-x-1">
+                    <button onClick={() => navigate(`/packages/edit/${pkg.id}`)} className="inline-flex p-1.5 text-gray-400 hover:text-blue-600 border border-gray-200 rounded hover:bg-gray-50 transition-colors" title="Edit">
+                      <Edit2 size={14} />
+                    </button>
+                    <button onClick={() => setPackages(packages.filter(p => p.id !== pkg.id))} className="inline-flex p-1.5 text-gray-400 hover:text-red-600 border border-gray-200 rounded hover:bg-gray-50 transition-colors" title="Delete">
+                      <Trash2 size={14} />
                     </button>
                   </td>
                 </tr>
@@ -149,121 +224,29 @@ export default function PackageList() {
             </tbody>
           </table>
         </div>
+
+        <div className="p-4 border-t border-gray-100 bg-gray-50/50 flex flex-col sm:flex-row justify-between items-center gap-4 mt-auto">
+          <div className="flex items-center gap-4 text-sm text-gray-600">
+            <span>Showing {totalItems === 0 ? 0 : startIndex + 1} to {Math.min(endIndex, totalItems)} of {totalItems} results</span>
+            <select value={rowsPerPage} onChange={handleRowsChange} className="bg-white border border-gray-200 rounded px-2 py-1 outline-none focus:border-primary-500 cursor-pointer text-sm">
+              <option value="5">5 per page</option>
+              <option value="10">10 per page</option>
+              <option value="25">25 per page</option>
+              <option value="50">50 per page</option>
+            </select>
+          </div>
+
+          <div className="flex items-center gap-1.5">
+            <button onClick={() => setCurrentPage(previous => Math.max(previous - 1, 1))} disabled={currentPage === 1} className="w-8 h-8 flex items-center justify-center rounded-lg bg-white border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"><ChevronLeft size={16} /></button>
+            {pageNumbers.map(number => (
+              <button key={number} onClick={() => setCurrentPage(number)} className={`w-8 h-8 flex items-center justify-center rounded-lg text-sm font-medium transition-colors ${currentPage === number ? 'bg-primary-500 text-white shadow-sm' : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'}`}>
+                {number}
+              </button>
+            ))}
+            <button onClick={() => setCurrentPage(previous => Math.min(previous + 1, totalPages))} disabled={currentPage === totalPages} className="px-3 h-8 flex items-center justify-center gap-1 rounded-lg bg-white border border-gray-200 text-gray-600 text-sm font-medium hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">Next <ChevronRight size={16} /></button>
+          </div>
+        </div>
       </div>
-
-      {/* Add / Edit Form Slide-Over */}
-      <SlideOver 
-        isOpen={isSlideOverOpen} 
-        onClose={() => setIsSlideOverOpen(false)} 
-        title={editingPackage ? "Edit Package" : "Add New Package"}
-      >
-        <form className="space-y-5 pb-24" onSubmit={(e) => e.preventDefault()}>
-          
-          {/* Image Upload Area */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Package Cover Image</label>
-            <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-xl hover:bg-gray-50 transition-colors cursor-pointer">
-              <div className="space-y-1 text-center">
-                <ImageIcon className="mx-auto h-12 w-12 text-gray-400" />
-                <div className="flex text-sm text-gray-600 justify-center">
-                  <span className="relative cursor-pointer bg-white rounded-md font-medium text-primary-600 hover:text-primary-500">
-                    Upload a file
-                  </span>
-                  <p className="pl-1">or drag and drop</p>
-                </div>
-                <p className="text-xs text-gray-500">PNG, JPG, GIF up to 10MB</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 gap-5">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Package Name</label>
-              <input 
-                type="text" 
-                defaultValue={editingPackage?.name || ''}
-                className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-primary-500 outline-none"
-                placeholder="e.g. Dubai Desert Safari"
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Destination</label>
-              <input 
-                type="text" 
-                defaultValue={editingPackage?.destination || ''}
-                className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-primary-500 outline-none"
-                placeholder="e.g. Dubai, UAE"
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Price</label>
-                <input 
-                  type="text" 
-                  defaultValue={editingPackage?.price || ''}
-                  className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-primary-500 outline-none"
-                  placeholder="$0.00"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Duration</label>
-                <input 
-                  type="text" 
-                  defaultValue={editingPackage?.duration || ''}
-                  className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-primary-500 outline-none"
-                  placeholder="e.g. 5 Days / 4 Nights"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Inclusions (Comma separated)</label>
-              <textarea 
-                rows={3}
-                defaultValue={editingPackage?.inclusions?.join(', ') || ''}
-                className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-primary-500 outline-none resize-none"
-                placeholder="Flight, Hotel, Breakfast..."
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Exclusions (Comma separated)</label>
-              <textarea 
-                rows={3}
-                defaultValue={editingPackage?.exclusions?.join(', ') || ''}
-                className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-primary-500 outline-none resize-none"
-                placeholder="Visa, Travel Insurance..."
-              />
-            </div>
-            
-            <div className="flex items-center gap-2 mt-2">
-               <input type="checkbox" id="publishToggle" className="w-4 h-4 text-primary-600 bg-gray-100 border-gray-300 rounded focus:ring-primary-500" defaultChecked={editingPackage?.status === 'Published'} />
-               <label htmlFor="publishToggle" className="text-sm font-medium text-gray-700">Publish immediately</label>
-            </div>
-          </div>
-
-          {/* Action Buttons */}
-          <div className="pt-6 mt-6 border-t border-gray-100 flex gap-3">
-            <button 
-              type="button"
-              onClick={() => setIsSlideOverOpen(false)}
-              className="flex-1 flex items-center justify-center gap-2 bg-white border border-gray-200 text-gray-700 px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors"
-            >
-              Cancel
-            </button>
-            <button 
-              type="submit"
-              onClick={() => setIsSlideOverOpen(false)}
-              className="flex-1 flex items-center justify-center gap-2 bg-primary-600 text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-primary-700 transition-colors shadow-sm"
-            >
-              <Check size={16} />
-              Save Package
-            </button>
-          </div>
-        </form>
-      </SlideOver>
     </div>
   );
 }
