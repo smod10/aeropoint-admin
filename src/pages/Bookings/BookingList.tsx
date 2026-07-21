@@ -10,7 +10,7 @@ type BookingSortKey = BookingColumn;
 export default function BookingList() {
   const navigate = useNavigate();
   const { moduleType } = useParams(); 
-  const { convertFromAndFormat } = useCurrency();
+  const { convertAndFormat } = useCurrency();
   
   // Pagination & Filter States
   const [rowsPerPage, setRowsPerPage] = useState(25);
@@ -285,8 +285,8 @@ export default function BookingList() {
                     </td>}
 
                     {visibleColumns.price && <td className="px-4 py-3">
-                      <div className="font-bold text-gray-900">{convertFromAndFormat(Number(b.price), 'USD')}</div>
-                      <div className="text-xs font-semibold text-emerald-600">Earn {convertFromAndFormat(Number(b.earning), 'USD')}</div>
+                      <div className="font-bold text-gray-900">{convertAndFormat(Number(b.price))}</div>
+                      <div className="text-xs font-semibold text-emerald-600">Earn {convertAndFormat(Number(b.earning))}</div>
                     </td>}
 
                     {visibleColumns.customer && <td className="px-4 py-3">

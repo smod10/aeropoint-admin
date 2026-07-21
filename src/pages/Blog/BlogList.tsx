@@ -12,6 +12,16 @@ export default function BlogList() {
   const [currentPage, setCurrentPage] = useState(1);
   const [sortKey, setSortKey] = useState<BlogSortKey>('createdAt');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+  const [isColumnMenuOpen, setIsColumnMenuOpen] = useState(false);
+  const [visibleColumns, setVisibleColumns] = useState({
+    status: true,
+    image: true,
+    title: true,
+    category: true,
+    featured: true,
+    createdAt: true,
+    actions: true,
+  });
 
   const sortedBlogs = useMemo(() => {
     return [...blogs].sort((left, right) => {
@@ -66,6 +76,22 @@ export default function BlogList() {
       : <ArrowDown size={12} className="text-[#0d6efd]" />;
   };
 
+  const toggleColumn = (column: keyof typeof visibleColumns) => {
+    setVisibleColumns(previous => ({ ...previous, [column]: !previous[column] }));
+  };
+
+  const showAllColumns = () => {
+    setVisibleColumns({
+      status: true,
+      image: true,
+      title: true,
+      category: true,
+      featured: true,
+      createdAt: true,
+      actions: true,
+    });
+  };
+
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
       
@@ -77,13 +103,48 @@ export default function BlogList() {
         </div>
         <div className="flex flex-wrap items-center gap-3">
           
-          <button className="flex items-center gap-2 bg-white border border-gray-200 text-gray-700 px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-gray-50">
-            <Columns size={16} /> View Columns <ChevronDown size={14} className="text-gray-400 ml-1" />
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setIsColumnMenuOpen(previous => !previous)}
+              className="flex items-center gap-2 bg-white border border-gray-200 text-gray-700 px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-gray-50"
+            >
+              <Columns size={16} /> View Columns <ChevronDown size={14} className="text-gray-400 ml-1" />
+            </button>
+            {isColumnMenuOpen && (
+              <div className="absolute right-0 mt-2 w-56 bg-white border border-gray-200 rounded-lg shadow-lg z-20 p-2 max-h-80 overflow-y-auto">
+                {([
+                  ['status', 'Status'],
+                  ['image', 'Image'],
+                  ['title', 'Title'],
+                  ['category', 'Category'],
+                  ['featured', 'Featured'],
+                  ['createdAt', 'Created At'],
+                  ['actions', 'Actions'],
+                ] as const).map(([key, label]) => (
+                  <label key={key} className="flex items-center gap-2 text-sm text-gray-700 px-2 py-1.5 rounded hover:bg-gray-50 cursor-pointer">
+                    <input type="checkbox" checked={visibleColumns[key]} onChange={() => toggleColumn(key)} className="rounded border-gray-300" />
+                    <span>{label}</span>
+                  </label>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <button type="button" onClick={showAllColumns} className="flex items-center gap-2 bg-white border border-gray-200 text-gray-700 px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-gray-50">
+            All Columns
           </button>
-          
-          <button className="flex items-center gap-2 bg-white border border-gray-200 text-gray-700 px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-gray-50">
-            All Columns <ChevronDown size={14} className="text-gray-400 ml-1" />
-          </button>
+
+          <div className="flex items-center gap-2 bg-white border border-gray-200 text-gray-700 px-3 py-2.5 rounded-lg text-sm">
+            <span className="text-gray-500">Show</span>
+            <select value={rowsPerPage} onChange={handleRowsChange} className="bg-transparent font-medium outline-none cursor-pointer">
+              <option value="5">5</option>
+              <option value="10">10</option>
+              <option value="25">25</option>
+              <option value="50">50</option>
+            </select>
+            <span className="text-gray-500">entries</span>
+          </div>
 
           <div className="flex relative">
             <input type="text" placeholder="Search records..." className="bg-white border border-gray-200 rounded-l-lg px-4 py-2.5 text-sm outline-none focus:border-primary-500 w-48" />
@@ -106,13 +167,13 @@ export default function BlogList() {
               <tr>
                 <th className="px-4 py-4 w-10 text-center"><input type="checkbox" className="rounded border-gray-300" /></th>
                 <th className="px-4 py-4 w-10">#</th>
-                <th className="px-4 py-4 text-center"><button type="button" onClick={() => handleSort('status')} className="inline-flex items-center gap-1 hover:text-[#0d6efd]">Status {sortIcon('status')}</button></th>
-                <th className="px-4 py-4">Image</th>
-                <th className="px-4 py-4"><button type="button" onClick={() => handleSort('title')} className="inline-flex items-center gap-1 hover:text-[#0d6efd]">Title {sortIcon('title')}</button></th>
-                <th className="px-4 py-4"><button type="button" onClick={() => handleSort('category')} className="inline-flex items-center gap-1 hover:text-[#0d6efd]">Category {sortIcon('category')}</button></th>
-                <th className="px-4 py-4"><button type="button" onClick={() => handleSort('featured')} className="inline-flex items-center gap-1 hover:text-[#0d6efd]">Featured {sortIcon('featured')}</button></th>
-                <th className="px-4 py-4"><button type="button" onClick={() => handleSort('createdAt')} className="inline-flex items-center gap-1 hover:text-[#0d6efd]">Created At {sortIcon('createdAt')}</button></th>
-                <th className="px-4 py-4 text-center">Actions</th>
+                {visibleColumns.status && <th className="px-4 py-4 text-center"><button type="button" onClick={() => handleSort('status')} className="inline-flex items-center gap-1 hover:text-[#0d6efd]">Status {sortIcon('status')}</button></th>}
+                {visibleColumns.image && <th className="px-4 py-4">Image</th>}
+                {visibleColumns.title && <th className="px-4 py-4"><button type="button" onClick={() => handleSort('title')} className="inline-flex items-center gap-1 hover:text-[#0d6efd]">Title {sortIcon('title')}</button></th>}
+                {visibleColumns.category && <th className="px-4 py-4"><button type="button" onClick={() => handleSort('category')} className="inline-flex items-center gap-1 hover:text-[#0d6efd]">Category {sortIcon('category')}</button></th>}
+                {visibleColumns.featured && <th className="px-4 py-4"><button type="button" onClick={() => handleSort('featured')} className="inline-flex items-center gap-1 hover:text-[#0d6efd]">Featured {sortIcon('featured')}</button></th>}
+                {visibleColumns.createdAt && <th className="px-4 py-4"><button type="button" onClick={() => handleSort('createdAt')} className="inline-flex items-center gap-1 hover:text-[#0d6efd]">Created At {sortIcon('createdAt')}</button></th>}
+                {visibleColumns.actions && <th className="px-4 py-4 text-center">Actions</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
@@ -120,51 +181,61 @@ export default function BlogList() {
                 <tr key={blog.id} className="hover:bg-gray-50/50 transition-colors">
                   <td className="px-4 py-3 text-center"><input type="checkbox" className="rounded border-gray-300" /></td>
                   <td className="px-4 py-3 text-gray-500">{startIndex + i + 1}</td>
-                  
-                  <td className="px-4 py-3 text-center">
-                    <button onClick={() => toggleStatus(blog.id)} className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${blog.status ? 'bg-[#0d6efd]' : 'bg-gray-200'}`}>
-                      <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow-sm transition-transform ${blog.status ? 'translate-x-4' : 'translate-x-1'}`} />
-                    </button>
-                  </td>
 
-                  <td className="px-4 py-3">
-                    <div className="w-10 h-10 rounded-lg overflow-hidden border border-gray-200">
-                      <img src={blog.image} alt={blog.title} className="w-full h-full object-cover" />
-                    </div>
-                  </td>
+                  {visibleColumns.status && (
+                    <td className="px-4 py-3 text-center">
+                      <button onClick={() => toggleStatus(blog.id)} className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${blog.status ? 'bg-[#0d6efd]' : 'bg-gray-200'}`}>
+                        <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow-sm transition-transform ${blog.status ? 'translate-x-4' : 'translate-x-1'}`} />
+                      </button>
+                    </td>
+                  )}
 
-                  <td className="px-4 py-3">
-                    <div className="font-medium text-gray-900 truncate max-w-[300px]">{blog.title}</div>
-                    <div className="text-xs text-gray-400 mt-0.5">{blog.slug}</div>
-                  </td>
-                  
-                  <td className="px-4 py-3 text-gray-700">{blog.category}</td>
-                  
-                  <td className="px-4 py-3">
-                    {blog.featured ? (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-yellow-100/50 text-yellow-700 font-medium text-xs border border-yellow-200/50">
-                        <Star size={12} fill="currentColor" /> Featured
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-gray-50 text-gray-500 font-medium text-xs border border-gray-200">
-                        <Star size={12} /> Regular
-                      </span>
-                    )}
-                  </td>
+                  {visibleColumns.image && (
+                    <td className="px-4 py-3">
+                      <div className="w-10 h-10 rounded-lg overflow-hidden border border-gray-200">
+                        <img src={blog.image} alt={blog.title} className="w-full h-full object-cover" />
+                      </div>
+                    </td>
+                  )}
 
-                  <td className="px-4 py-3 text-gray-700">{blog.createdAt}</td>
-                  
-                  <td className="px-4 py-3 text-center space-x-1">
-                    <button className="inline-flex p-1.5 text-gray-400 hover:text-gray-700 border border-gray-200 rounded hover:bg-gray-50 transition-colors" title="View">
-                      <Eye size={14} />
-                    </button>
-                    <button onClick={() => navigate(`/blog/edit/${blog.id}`)} className="inline-flex p-1.5 text-gray-400 hover:text-[#0d6efd] border border-gray-200 rounded hover:bg-gray-50 transition-colors" title="Edit">
-                      <Edit2 size={14} />
-                    </button>
-                    <button onClick={() => setBlogs(blogs.filter(b => b.id !== blog.id))} className="inline-flex p-1.5 text-gray-400 hover:text-red-600 border border-gray-200 rounded hover:bg-gray-50 transition-colors" title="Delete">
-                      <Trash2 size={14} />
-                    </button>
-                  </td>
+                  {visibleColumns.title && (
+                    <td className="px-4 py-3">
+                      <div className="font-medium text-gray-900 truncate max-w-[300px]">{blog.title}</div>
+                      <div className="text-xs text-gray-400 mt-0.5">{blog.slug}</div>
+                    </td>
+                  )}
+
+                  {visibleColumns.category && <td className="px-4 py-3 text-gray-700">{blog.category}</td>}
+
+                  {visibleColumns.featured && (
+                    <td className="px-4 py-3">
+                      {blog.featured ? (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-yellow-100/50 text-yellow-700 font-medium text-xs border border-yellow-200/50">
+                          <Star size={12} fill="currentColor" /> Featured
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-gray-50 text-gray-500 font-medium text-xs border border-gray-200">
+                          <Star size={12} /> Regular
+                        </span>
+                      )}
+                    </td>
+                  )}
+
+                  {visibleColumns.createdAt && <td className="px-4 py-3 text-gray-700">{blog.createdAt}</td>}
+
+                  {visibleColumns.actions && (
+                    <td className="px-4 py-3 text-center space-x-1">
+                      <button className="inline-flex p-1.5 text-gray-400 hover:text-gray-700 border border-gray-200 rounded hover:bg-gray-50 transition-colors" title="View">
+                        <Eye size={14} />
+                      </button>
+                      <button onClick={() => navigate(`/blog/edit/${blog.id}`)} className="inline-flex p-1.5 text-gray-400 hover:text-[#0d6efd] border border-gray-200 rounded hover:bg-gray-50 transition-colors" title="Edit">
+                        <Edit2 size={14} />
+                      </button>
+                      <button onClick={() => setBlogs(blogs.filter(b => b.id !== blog.id))} className="inline-flex p-1.5 text-gray-400 hover:text-red-600 border border-gray-200 rounded hover:bg-gray-50 transition-colors" title="Delete">
+                        <Trash2 size={14} />
+                      </button>
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>

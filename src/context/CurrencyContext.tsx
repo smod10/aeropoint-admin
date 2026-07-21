@@ -1,21 +1,24 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useState } from 'react';
 
-type Currency = 'NGN' | 'USD' | 'GBP' | 'EUR' | 'CAD';
+// Export the type explicitly
+export type Currency = 'NGN' | 'USD' | 'GBP' | 'EUR' | 'CAD';
 
 interface CurrencyContextType {
   currency: Currency;
   setCurrency: (c: Currency) => void;
   convertAndFormat: (amountInNGN: number) => string;
-  convertFromAndFormat: (amount: number, fromCurrency: Currency) => string;
+  convertFromAndFormat: (amountInNGN: number, _sourceCurrency?: Currency) => string;
+  exchangeRates: Record<Currency, number>;
+  updateExchangeRates: (newRates: Record<Currency, number>) => void;
 }
 
-// Exchange rates relative to 1 NGN as a fallback until live rates are fetched.
-const fallbackRates: Record<Currency, number> = {
+// Base values: 1 Unit of Foreign Currency = X NGN
+const defaultRates: Record<Currency, number> = {
   NGN: 1,
-  USD: 1 / 1500, // Example: 1500 NGN = 1 USD
-  GBP: 1 / 1900,
-  EUR: 1 / 1620,
-  CAD: 1 / 1100,
+  USD: 1500, 
+  GBP: 1900,
+  EUR: 1620,
+  CAD: 1100,
 };
 
 const symbols: Record<Currency, string> = {
@@ -24,49 +27,33 @@ const symbols: Record<Currency, string> = {
 
 export const CurrencyContext = createContext<CurrencyContextType | undefined>(undefined);
 
+const fallbackContext: CurrencyContextType = {
+  currency: 'NGN',
+  setCurrency: () => undefined,
+  convertAndFormat: (amountInNGN: number) => `₦${amountInNGN.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+  convertFromAndFormat: (amountInNGN: number) => `₦${amountInNGN.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+  exchangeRates: defaultRates,
+  updateExchangeRates: () => undefined,
+};
+
 export const CurrencyProvider: React.FC<{children: React.ReactNode}> = ({ children }) => {
   const [currency, setCurrency] = useState<Currency>('NGN');
-  const [rates, setRates] = useState<Record<Currency, number>>(fallbackRates);
-
-  useEffect(() => {
-    const controller = new AbortController();
-
-    const loadLiveRates = async () => {
-      try {
-        const response = await fetch('https://open.er-api.com/v6/latest/NGN', { signal: controller.signal });
-        if (!response.ok) return;
-        const data = await response.json();
-        const liveRates = data?.rates;
-        if (!liveRates) return;
-
-        setRates({
-          NGN: 1,
-          USD: Number(liveRates.USD) || fallbackRates.USD,
-          GBP: Number(liveRates.GBP) || fallbackRates.GBP,
-          EUR: Number(liveRates.EUR) || fallbackRates.EUR,
-          CAD: Number(liveRates.CAD) || fallbackRates.CAD,
-        });
-      } catch {
-        // Keep fallback rates when live fetch fails.
-      }
-    };
-
-    loadLiveRates();
-    return () => controller.abort();
-  }, []);
+  const [exchangeRates, setExchangeRates] = useState<Record<Currency, number>>(defaultRates);
 
   const convertAndFormat = (amountInNGN: number) => {
-    const converted = amountInNGN * rates[currency];
+    // Math: NGN Amount divided by the foreign currency's NGN equivalent
+    const converted = amountInNGN / exchangeRates[currency];
     return `${symbols[currency]}${converted.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   };
 
-  const convertFromAndFormat = (amount: number, fromCurrency: Currency) => {
-    const amountInNGN = fromCurrency === 'NGN' ? amount : amount / rates[fromCurrency];
-    return convertAndFormat(amountInNGN);
+  const convertFromAndFormat = (amountInNGN: number) => convertAndFormat(amountInNGN);
+
+  const updateExchangeRates = (newRates: Record<Currency, number>) => {
+    setExchangeRates(newRates);
   };
 
   return (
-    <CurrencyContext.Provider value={{ currency, setCurrency, convertAndFormat, convertFromAndFormat }}>
+    <CurrencyContext.Provider value={{ currency, setCurrency, convertAndFormat, convertFromAndFormat, exchangeRates, updateExchangeRates }}>
       {children}
     </CurrencyContext.Provider>
   );
@@ -74,6 +61,5 @@ export const CurrencyProvider: React.FC<{children: React.ReactNode}> = ({ childr
 
 export const useCurrency = () => {
   const context = useContext(CurrencyContext);
-  if (!context) throw new Error('useCurrency must be used within CurrencyProvider');
-  return context;
+  return context ?? fallbackContext;
 };

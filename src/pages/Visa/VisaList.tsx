@@ -87,6 +87,16 @@ export default function VisaList() {
           <p className="text-sm text-gray-500 mt-1">Manage destination countries and their available visas.</p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-2 bg-white border border-gray-200 text-gray-700 px-3 py-2 rounded-lg text-sm">
+            <span className="text-gray-500">Show</span>
+            <select value={rowsPerPage} onChange={handleRowsChange} className="bg-transparent font-medium outline-none cursor-pointer">
+              <option value="5">5</option>
+              <option value="10">10</option>
+              <option value="25">25</option>
+              <option value="50">50</option>
+            </select>
+            <span className="text-gray-500">entries</span>
+          </div>
           <div className="flex relative">
             <input type="text" placeholder="Search destination..." className="bg-white border border-gray-200 rounded-l-lg px-4 py-2 text-sm outline-none focus:border-primary-500 w-48" />
             <button className="bg-primary-600 text-white px-4 py-2 rounded-r-lg hover:bg-primary-700 transition-colors"><Search size={16} /></button>

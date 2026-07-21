@@ -45,14 +45,17 @@ import UserReports from './pages/Reports/UserReports';
 import TransactionReports from './pages/Reports/TransactionReports';
 import TransactionView from './pages/Reports/TransactionView';
 
+// Settings & Exchange Rates
+import ExchangeRates from './pages/Settings/ExchangeRates';
+import SettingsPage from './pages/Settings/SettingsPage';
+
 // Other Modules
 import HotelList from './pages/Hotels/HotelList';
 import PaymentList from './pages/Payments/PaymentList';
-import Modules from './pages/Integrations/Modules';
+import Modules from './pages/Integrations/modules';
 import MediaLibrary from './pages/Media/MediaLibrary';
-import SettingsPage from './pages/Settings/SettingsPage';
 
-function App() {
+export default function App() {
   return (
     <CurrencyProvider>
       <BrowserRouter>
@@ -103,12 +106,14 @@ function App() {
             <Route path="reports/transactions" element={<TransactionReports />} />
             <Route path="reports/transactions/:id" element={<TransactionView />} />
             
-            {/* Misc */}
+            {/* Settings & Other Modules */}
+            <Route path="settings" element={<SettingsPage />} />
+            <Route path="settings/exchange-rates" element={<ExchangeRates />} />
+            
             <Route path="hotels" element={<HotelList />} />
             <Route path="payments" element={<PaymentList />} />
             <Route path="modules" element={<Modules />} /> 
             <Route path="media" element={<MediaLibrary />} />
-            <Route path="settings" element={<SettingsPage />} />
             
             <Route path="*" element={
               <div className="flex items-center justify-center h-64 text-gray-500 bg-white rounded-xl border border-gray-100 shadow-soft">
@@ -121,5 +126,3 @@ function App() {
     </CurrencyProvider>
   );
 }
-
-export default App;

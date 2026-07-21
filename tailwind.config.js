@@ -6,18 +6,24 @@ export default {
   ],
   theme: {
     extend: {
+      // 2. Add the fontFamily override here
+      fontFamily: {
+        sans: ['Inter', 'sans-serif'], 
+      },
       colors: {
         primary: {
-          50: '#eff6ff',
-          100: '#dbeafe',
-          500: '#3b82f6',
-          600: '#2563eb',
-          900: '#1e3a8a',
+          50: '#f0f7ff',
+          100: '#e0edff',
+          200: '#cce0ff',
+          300: '#a3c8ff',
+          400: '#70a5ff',
+          500: '#3d7aff',
+          600: '#0d6efd', // Your core brand blue
+          700: '#0054d6',
+          800: '#0043ab',
+          900: '#00368a',
         },
-        sidebar: '#0f172a', // Clean, dark sidebar contrasting with white cards
-      },
-      boxShadow: {
-        'soft': '0 2px 10px -3px rgba(6, 81, 237, 0.1)',
+        sidebar: '#0f172a', // Slate 900
       }
     },
   },

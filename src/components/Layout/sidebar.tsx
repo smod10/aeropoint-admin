@@ -77,6 +77,7 @@ const navItems = [
     icon: Settings,
     subItems: [
       { name: 'General Settings', path: '/settings' },
+      { name: 'Exchange Rates', path: '/settings/exchange-rates' },
       { name: 'Payment Gateways', path: '/payments' },
       { name: 'Modules', path: '/modules' }
     ]
