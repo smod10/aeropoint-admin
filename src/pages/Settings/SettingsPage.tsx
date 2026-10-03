@@ -1,8 +1,46 @@
-import { useState } from 'react';
-import { Building, Globe, Users, Shield, Bell, Save, Upload } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { Building, Globe, Users, Shield, Bell, Save, Upload, Pencil, UserPlus } from 'lucide-react';
+import { mockUsers } from '../../data/mockUsers';
+
+const roleOptions = ['All Roles', 'admin', 'employee', 'supplier', 'agent'];
 
 export default function SettingsPage() {
-  const [activeTab, setActiveTab] = useState('general');
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [activeTab, setActiveTab] = useState<'general' | 'team'>(location.pathname === '/settings/team' ? 'team' : 'general');
+  const [selectedRole, setSelectedRole] = useState('All Roles');
+
+  useEffect(() => {
+    setActiveTab(location.pathname === '/settings/team' ? 'team' : 'general');
+  }, [location.pathname]);
+
+  const roleSummary = useMemo(() => [
+    { label: 'Admins', count: mockUsers.filter(user => user.role === 'admin').length, tone: 'bg-purple-100 text-purple-700' },
+    { label: 'Employees', count: mockUsers.filter(user => user.role === 'employee').length, tone: 'bg-blue-100 text-blue-700' },
+    { label: 'Suppliers', count: mockUsers.filter(user => user.role === 'supplier').length, tone: 'bg-orange-100 text-orange-700' },
+    { label: 'Agents', count: mockUsers.filter(user => user.role === 'agent').length, tone: 'bg-emerald-100 text-emerald-700' },
+  ], []);
+
+  const teamMembers = useMemo(
+    () => mockUsers
+      .filter(user => ['admin', 'employee', 'supplier', 'agent'].includes(user.role))
+      .map(user => ({
+        ...user,
+        roleLabel: user.role === 'admin' ? 'Admin' : user.role === 'employee' ? 'Employee' : user.role === 'supplier' ? 'Supplier' : 'Agent',
+        location: user.role === 'supplier' ? 'Operations' : user.role === 'agent' ? 'Sales' : user.role === 'employee' ? 'Support' : 'Executive',
+      })),
+    []
+  );
+
+  const filteredTeamMembers = selectedRole === 'All Roles'
+    ? teamMembers
+    : teamMembers.filter(member => member.role === selectedRole);
+
+  const handleTabChange = (tab: 'general' | 'team') => {
+    setActiveTab(tab);
+    navigate(tab === 'team' ? '/settings/team' : '/settings');
+  };
 
   const tabs = [
     { id: 'general', label: 'General Info', icon: Building },
@@ -26,7 +64,7 @@ export default function SettingsPage() {
             {tabs.map((tab) => (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
+                onClick={() => handleTabChange(tab.id as 'general' | 'team')}
                 className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-colors ${
                   activeTab === tab.id
                     ? 'bg-white text-primary-600 shadow-sm border border-gray-100'
@@ -114,35 +152,100 @@ export default function SettingsPage() {
           )}
 
           {activeTab === 'team' && (
-            <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
-              <div className="flex justify-between items-center mb-6">
-                <h3 className="text-lg font-semibold text-gray-900">Team Members</h3>
-                <button className="bg-primary-50 text-primary-600 px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary-100 transition-colors">
-                  Invite Member
-                </button>
+            <div className="animate-in fade-in slide-in-from-bottom-2 duration-300 space-y-6">
+              <div className="flex flex-col lg:flex-row justify-between gap-4 mb-2">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">Team & Roles</h3>
+                  <p className="text-sm text-gray-500 mt-1">Manage internal access, assignments, and role ownership.</p>
+                </div>
+                <div className="flex gap-2">
+                  <button className="bg-white border border-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors">
+                    <UserPlus size={14} className="inline mr-2" />
+                    Invite Member
+                  </button>
+                  <button className="bg-primary-50 text-primary-600 px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary-100 transition-colors">
+                    Add Role
+                  </button>
+                </div>
               </div>
-              <div className="border border-gray-100 rounded-xl overflow-hidden">
-                <table className="w-full text-left text-sm text-gray-600">
-                  <thead className="bg-gray-50 border-b border-gray-100">
-                    <tr>
-                      <th className="px-4 py-3 font-medium text-gray-700">User</th>
-                      <th className="px-4 py-3 font-medium text-gray-700">Role</th>
-                      <th className="px-4 py-3 font-medium text-gray-700">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100">
-                    <tr>
-                      <td className="px-4 py-3"><span className="font-medium text-gray-900">Admin User</span><br/><span className="text-xs text-gray-400">admin@aeropoint.com</span></td>
-                      <td className="px-4 py-3">Super Admin</td>
-                      <td className="px-4 py-3"><span className="px-2 py-1 bg-emerald-50 text-emerald-600 text-xs rounded-full">Active</span></td>
-                    </tr>
-                    <tr>
-                      <td className="px-4 py-3"><span className="font-medium text-gray-900">Sarah Jenkins</span><br/><span className="text-xs text-gray-400">sarah@aeropoint.com</span></td>
-                      <td className="px-4 py-3">Booking Agent</td>
-                      <td className="px-4 py-3"><span className="px-2 py-1 bg-emerald-50 text-emerald-600 text-xs rounded-full">Active</span></td>
-                    </tr>
-                  </tbody>
-                </table>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+                {roleSummary.map((role) => (
+                  <div key={role.label} className="rounded-xl border border-gray-100 bg-gray-50 p-4">
+                    <div className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold ${role.tone}`}>
+                      {role.label}
+                    </div>
+                    <p className="mt-4 text-2xl font-bold text-gray-900">{role.count}</p>
+                  </div>
+                ))}
+              </div>
+
+              <div className="rounded-xl border border-gray-100 overflow-hidden bg-white">
+                <div className="px-4 py-3 border-b border-gray-100 bg-gray-50 flex flex-wrap gap-2">
+                  {roleOptions.map((role) => (
+                    <button
+                      key={role}
+                      onClick={() => setSelectedRole(role)}
+                      className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                        selectedRole === role
+                          ? 'bg-primary-600 text-white'
+                          : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
+                      }`}
+                    >
+                      {role}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-sm text-gray-600">
+                    <thead className="text-[11px] text-gray-500 uppercase bg-gray-50/50 border-b border-gray-100 font-semibold tracking-wider">
+                      <tr>
+                        <th className="px-4 py-4">Staff</th>
+                        <th className="px-4 py-4">Role</th>
+                        <th className="px-4 py-4">Department</th>
+                        <th className="px-4 py-4">Status</th>
+                        <th className="px-4 py-4 text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-50">
+                      {filteredTeamMembers.map((member) => (
+                        <tr key={member.id} className="hover:bg-gray-50/50 transition-colors">
+                          <td className="px-4 py-4">
+                            <div className="font-medium text-gray-900">{member.firstName} {member.lastName}</div>
+                            <div className="text-xs text-gray-400">{member.email}</div>
+                          </td>
+                          <td className="px-4 py-4 capitalize">
+                            <span className={`px-2.5 py-1 rounded text-[10px] font-bold ${
+                              member.role === 'admin' ? 'bg-purple-100 text-purple-700' :
+                              member.role === 'agent' ? 'bg-emerald-100 text-emerald-700' :
+                              member.role === 'supplier' ? 'bg-orange-100 text-orange-700' :
+                              'bg-blue-100 text-blue-700'
+                            }`}>
+                              {member.roleLabel}
+                            </span>
+                          </td>
+                          <td className="px-4 py-4 text-gray-700">{member.location}</td>
+                          <td className="px-4 py-4">
+                            <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${member.status ? 'bg-emerald-50 text-emerald-600' : 'bg-gray-100 text-gray-600'}`}>
+                              {member.status ? 'Active' : 'Inactive'}
+                            </span>
+                          </td>
+                          <td className="px-4 py-4 text-right">
+                            <div className="flex justify-end gap-2">
+                              <button className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-primary-600 bg-primary-50 rounded-lg hover:bg-primary-100 transition-colors">
+                                <Pencil size={12} /> Edit
+                              </button>
+                              <button className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors">
+                                Assign
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
           )}

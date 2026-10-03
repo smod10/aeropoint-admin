@@ -108,6 +108,7 @@ export default function App() {
             
             {/* Settings & Other Modules */}
             <Route path="settings" element={<SettingsPage />} />
+            <Route path="settings/team" element={<SettingsPage />} />
             <Route path="settings/exchange-rates" element={<ExchangeRates />} />
             
             <Route path="hotels" element={<HotelList />} />

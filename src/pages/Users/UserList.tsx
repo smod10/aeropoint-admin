@@ -52,11 +52,8 @@ export default function UserList() {
 
   // Filter users dynamically based on sidebar Role selection
   useEffect(() => {
-    if (role) {
-      setUsers(mockUsers.filter(u => u.role.toLowerCase() === role.toLowerCase()));
-    } else {
-      setUsers(mockUsers);
-    }
+    const customerUsers = mockUsers.filter(u => u.role.toLowerCase() === 'customer');
+    setUsers(customerUsers);
     setCurrentPage(1);
   }, [role]);
 
@@ -88,7 +85,7 @@ export default function UserList() {
       <div className="bg-white p-6 rounded-xl shadow-soft border border-gray-100 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
         <div>
           <h2 className="text-2xl font-bold text-gray-800 capitalize">
-            {role ? `${role}s Management` : 'All Users Management'}
+            Customers Management
           </h2>
           <p className="text-sm text-gray-500 mt-1">Total: {users.length} records</p>
         </div>
@@ -140,13 +137,13 @@ export default function UserList() {
           </div>
           
           <div className="flex relative">
-            <input type="text" placeholder="Search users..." className="bg-white border border-gray-200 rounded-l-lg px-4 py-2.5 text-sm outline-none focus:border-[#0d6efd] w-48" />
+            <input type="text" placeholder="Search customers..." className="bg-white border border-gray-200 rounded-l-lg px-4 py-2.5 text-sm outline-none focus:border-[#0d6efd] w-48" />
             <button className="bg-[#0d6efd] text-white px-4 py-2.5 rounded-r-lg hover:bg-blue-700 transition-colors">
               <Search size={16} />
             </button>
           </div>
           <button onClick={() => navigate('/users/edit/new')} className="flex items-center gap-2 bg-[#0d6efd] text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-blue-700 shadow-sm ml-2">
-            <Plus size={16} /> Create User
+            <Plus size={16} /> Create Customer
           </button>
         </div>
       </div>

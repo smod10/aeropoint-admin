@@ -26,12 +26,7 @@ const navItems = [
     name: 'Users', 
     icon: Users,
     subItems: [
-      { name: 'All Users', path: '/users' },
-      { name: 'Admin', path: '/users/role/admin' },
-      { name: 'Supplier', path: '/users/role/supplier' },
-      { name: 'Employee', path: '/users/role/employee' },
-      { name: 'Customer', path: '/users/role/customer' },
-      { name: 'Agent', path: '/users/role/agent' }
+      { name: 'Customers', path: '/users' }
     ]
   },
   { 
@@ -77,6 +72,7 @@ const navItems = [
     icon: Settings,
     subItems: [
       { name: 'General Settings', path: '/settings' },
+      { name: 'Team & Roles', path: '/settings/team' },
       { name: 'Exchange Rates', path: '/settings/exchange-rates' },
       { name: 'Payment Gateways', path: '/payments' },
       { name: 'Modules', path: '/modules' }
@@ -91,6 +87,11 @@ export default function Sidebar({ isExpanded, toggleSidebar }: { isExpanded: boo
 
   // Set initial active menu based on STRICT URL matching and enforce accordion behavior
   useEffect(() => {
+    if (location.pathname === '/') {
+      setOpenMenu(null);
+      return;
+    }
+
     const activeItem = navItems.find(item => 
       item.subItems && item.subItems.some(sub => {
         if (sub.path === '/') return location.pathname === '/';
