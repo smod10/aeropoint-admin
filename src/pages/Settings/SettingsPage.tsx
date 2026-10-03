@@ -8,7 +8,7 @@ const roleOptions = ['All Roles', 'admin', 'employee', 'supplier', 'agent'];
 export default function SettingsPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const [activeTab, setActiveTab] = useState<'general' | 'team'>(location.pathname === '/settings/team' ? 'team' : 'general');
+  const [activeTab, setActiveTab] = useState<'general' | 'localization' | 'team'>(location.pathname === '/settings/team' ? 'team' : 'general');
   const [selectedRole, setSelectedRole] = useState('All Roles');
 
   useEffect(() => {
@@ -37,9 +37,11 @@ export default function SettingsPage() {
     ? teamMembers
     : teamMembers.filter(member => member.role === selectedRole);
 
-  const handleTabChange = (tab: 'general' | 'team') => {
+  const handleTabChange = (tab: 'general' | 'localization' | 'team') => {
     setActiveTab(tab);
-    navigate(tab === 'team' ? '/settings/team' : '/settings');
+    if (tab !== 'localization') {
+      navigate(tab === 'team' ? '/settings/team' : '/settings');
+    }
   };
 
   const tabs = [
@@ -64,7 +66,7 @@ export default function SettingsPage() {
             {tabs.map((tab) => (
               <button
                 key={tab.id}
-                onClick={() => handleTabChange(tab.id as 'general' | 'team')}
+                onClick={() => handleTabChange(tab.id as 'general' | 'localization' | 'team')}
                 className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-colors ${
                   activeTab === tab.id
                     ? 'bg-white text-primary-600 shadow-sm border border-gray-100'
