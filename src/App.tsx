@@ -28,6 +28,7 @@ import VisaSettings from './pages/Visa/VisaSettings';
 // Users Module
 import UserList from './pages/Users/UserList';
 import UserEdit from './pages/Users/UserEdit';
+import UserTrash from './pages/Users/UserTrash';
 
 // Packages Module
 import PackageList from './pages/Packages/PackageList';
@@ -48,6 +49,8 @@ import TransactionView from './pages/Reports/TransactionView';
 // Settings & Exchange Rates
 import ExchangeRates from './pages/Settings/ExchangeRates';
 import SettingsPage from './pages/Settings/SettingsPage';
+import TeamMemberEdit from './pages/Settings/TeamMemberEdit';
+import RoleEdit from './pages/Settings/RoleEdit';
 
 // Other Modules
 import HotelList from './pages/Hotels/HotelList';
@@ -85,6 +88,7 @@ export default function App() {
 
             {/* Users */}
             <Route path="users" element={<UserList />} />
+            <Route path="users/trash" element={<UserTrash />} />
             <Route path="users/role/:role" element={<UserList />} />
             <Route path="users/edit/:id" element={<UserEdit />} />
             
@@ -109,6 +113,8 @@ export default function App() {
             {/* Settings & Other Modules */}
             <Route path="settings" element={<SettingsPage />} />
             <Route path="settings/team" element={<SettingsPage />} />
+            <Route path="settings/team/:id" element={<TeamMemberEdit />} />
+            <Route path="settings/roles/:role" element={<RoleEdit />} />
             <Route path="settings/exchange-rates" element={<ExchangeRates />} />
             
             <Route path="hotels" element={<HotelList />} />

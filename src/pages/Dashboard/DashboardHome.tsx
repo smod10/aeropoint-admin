@@ -1,11 +1,15 @@
 import { useState } from 'react';
+import type { FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Users, BookOpen, DollarSign, TrendingUp, 
-  ArrowUpRight, Plane, Building2, Package, Ticket
+  ArrowUpRight, Plane, Building2, Package, Ticket, MessageSquare, Send, CheckCheck
 } from 'lucide-react';
 import { useCurrency } from '../../context/CurrencyContext';
 import { mockBookings } from '../../data/mockBookings';
+import { mockTickets, type SupportTicket } from '../../data/mockTickets';
+
+const readTickets = (): SupportTicket[] => JSON.parse(localStorage.getItem('aeropoint-support-tickets') || 'null') ?? mockTickets;
 
 export default function DashboardHome() {
   const navigate = useNavigate();
@@ -15,10 +19,35 @@ export default function DashboardHome() {
   
   // Grab the 5 most recent bookings for the dashboard table
   const [recentBookings] = useState(mockBookings.slice(0, 5));
+  const [supportTickets, setSupportTickets] = useState<SupportTicket[]>(readTickets);
+  const [selectedTicketId, setSelectedTicketId] = useState(() => readTickets()[0]?.id ?? '');
+  const [ticketReply, setTicketReply] = useState('');
 
   // Simulated Base Metrics (in NGN)
   const totalRevenueNGN = 125430000; 
   const monthlyRevenueNGN = 14500000;
+  const selectedTicket = supportTickets.find(ticket => ticket.id === selectedTicketId);
+
+  const saveTickets = (updatedTickets: SupportTicket[]) => {
+    setSupportTickets(updatedTickets);
+    localStorage.setItem('aeropoint-support-tickets', JSON.stringify(updatedTickets));
+  };
+
+  const sendTicketReply = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const message = ticketReply.trim();
+    if (!message || !selectedTicket) return;
+    saveTickets(supportTickets.map(ticket => ticket.id === selectedTicket.id ? {
+      ...ticket,
+      status: 'In progress',
+      replies: [...ticket.replies, { author: 'Support', message, createdAt: new Date().toLocaleString() }],
+    } : ticket));
+    setTicketReply('');
+  };
+
+  const toggleTicketResolved = (ticket: SupportTicket) => {
+    saveTickets(supportTickets.map(item => item.id === ticket.id ? { ...item, status: item.status === 'Resolved' ? 'Open' : 'Resolved' } : item));
+  };
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300 pb-10">
@@ -222,6 +251,44 @@ export default function DashboardHome() {
         </div>
 
       </div>
+
+      <section className="overflow-hidden rounded-lg border border-gray-200 bg-white">
+        <div className="flex flex-col gap-3 border-b border-gray-100 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-3">
+            <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary-50 text-primary-700"><MessageSquare size={18} /></span>
+            <div><h3 className="text-base font-semibold text-gray-900">Customer support tickets</h3><p className="text-xs text-gray-500">Reply to customer contact requests from the dashboard.</p></div>
+          </div>
+          <span className="text-xs font-medium text-gray-500">{supportTickets.filter(ticket => ticket.status !== 'Resolved').length} requiring attention</span>
+        </div>
+        <div className="grid min-h-[360px] grid-cols-1 lg:grid-cols-[minmax(240px,0.8fr)_minmax(0,1.5fr)]">
+          <div className="divide-y divide-gray-100 border-b border-gray-100 lg:border-b-0 lg:border-r">
+            {supportTickets.map(ticket => (
+              <button key={ticket.id} onClick={() => setSelectedTicketId(ticket.id)} className={`w-full px-4 py-4 text-left transition-colors ${selectedTicketId === ticket.id ? 'bg-primary-50/70' : 'hover:bg-gray-50'}`}>
+                <span className="flex items-center justify-between gap-3"><span className="text-xs font-semibold text-primary-700">{ticket.id}</span><span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${ticket.status === 'Resolved' ? 'bg-emerald-50 text-emerald-700' : ticket.status === 'In progress' ? 'bg-amber-50 text-amber-700' : 'bg-secondary-50 text-secondary-700'}`}>{ticket.status}</span></span>
+                <span className="mt-2 block truncate text-sm font-semibold text-gray-900">{ticket.subject}</span>
+                <span className="mt-1 block text-xs text-gray-500">{ticket.customer} · {ticket.createdAt}</span>
+              </button>
+            ))}
+            {supportTickets.length === 0 && <p className="p-6 text-sm text-gray-500">No support tickets.</p>}
+          </div>
+          {selectedTicket ? (
+            <div className="flex min-w-0 flex-col p-5">
+              <div className="flex flex-col gap-3 border-b border-gray-100 pb-4 sm:flex-row sm:items-start sm:justify-between">
+                <div className="min-w-0"><p className="text-xs font-semibold text-gray-500">{selectedTicket.id} · {selectedTicket.createdAt}</p><h4 className="mt-1 text-base font-semibold text-gray-900">{selectedTicket.subject}</h4><p className="mt-1 text-xs text-gray-500">{selectedTicket.customer} · {selectedTicket.email}</p></div>
+                <button onClick={() => toggleTicketResolved(selectedTicket)} className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-lg border border-gray-200 px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50"><CheckCheck size={14} /> {selectedTicket.status === 'Resolved' ? 'Reopen' : 'Resolve'}</button>
+              </div>
+              <div className="flex-1 space-y-3 overflow-y-auto py-4">
+                <div className="max-w-2xl rounded-lg bg-gray-50 p-3"><p className="text-sm leading-6 text-gray-700">{selectedTicket.message}</p><p className="mt-2 text-[11px] font-medium text-gray-400">{selectedTicket.customer}</p></div>
+                {selectedTicket.replies.map((reply, index) => <div key={`${selectedTicket.id}-reply-${index}`} className="ml-auto max-w-2xl rounded-lg bg-primary-50 p-3"><p className="text-sm leading-6 text-gray-700">{reply.message}</p><p className="mt-2 text-[11px] font-medium text-primary-700">{reply.author} · {reply.createdAt}</p></div>)}
+              </div>
+              <form onSubmit={sendTicketReply} className="flex items-end gap-2 border-t border-gray-100 pt-4">
+                <label className="min-w-0 flex-1 text-xs font-medium text-gray-600">Reply<textarea required rows={2} value={ticketReply} onChange={event => setTicketReply(event.target.value)} placeholder="Write a reply to the customer..." className="mt-1.5 block w-full resize-y rounded-lg border border-gray-200 px-3 py-2 text-sm font-normal text-gray-800 outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-100" /></label>
+                <button type="submit" disabled={!ticketReply.trim()} aria-label="Send reply" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary-600 text-white hover:bg-primary-700 disabled:cursor-not-allowed disabled:opacity-50"><Send size={16} /></button>
+              </form>
+            </div>
+          ) : <div className="flex items-center justify-center p-8 text-sm text-gray-500">Select a ticket to view the conversation.</div>}
+        </div>
+      </section>
     </div>
   );
 }

@@ -2,6 +2,19 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer utilities {
+  [class~="bg-[#0d6efd]"] { background-color: #3d246c; }
+  [class~="text-[#0d6efd]"] { color: #3d246c; }
+  [class~="border-[#0d6efd]"] { border-color: #3d246c; }
+  [class~="focus:border-[#0d6efd]"]:focus { border-color: #3d246c; }
+  [class~="focus:ring-[#0d6efd]"]:focus { --tw-ring-color: #3d246c; }
+  [class~="focus-within:border-[#0d6efd]"]:focus-within { border-color: #3d246c; }
+  [class~="focus-within:ring-[#0d6efd]"]:focus-within { --tw-ring-color: #3d246c; }
+  [class~="hover:text-[#0d6efd]"]:hover { color: #3d246c; }
+  [class~="hover:bg-blue-700"]:hover { background-color: #321d59; }
+  [class~="hover:text-blue-800"]:hover { color: #271746; }
+}
+
 @layer base {
   html,
   body,

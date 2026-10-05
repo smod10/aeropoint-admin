@@ -6,6 +6,8 @@ import {
   BarChart3, Settings, LogOut, PanelLeftClose, 
   PanelLeftOpen, ChevronDown, ChevronRight
 } from 'lucide-react';
+import whiteLogo from '../../assets/aeropoint-express-logo-white.svg';
+import whiteIcon from '../../assets/aeropoint-express-icon-square.png';
 
 const navItems = [
   { name: 'Dashboard', path: '/', icon: LayoutDashboard },
@@ -26,7 +28,12 @@ const navItems = [
     name: 'Users', 
     icon: Users,
     subItems: [
-      { name: 'Customers', path: '/users' }
+      { name: 'Customers', path: '/users' },
+      { name: 'Agents', path: '/users/role/agent' },
+      { name: 'Suppliers', path: '/users/role/supplier' },
+      { name: 'Employees', path: '/users/role/employee' },
+      { name: 'Administrators', path: '/users/role/admin' },
+      { name: 'Trash', path: '/users/trash' }
     ]
   },
   { 
@@ -119,10 +126,14 @@ export default function Sidebar({ isExpanded, toggleSidebar }: { isExpanded: boo
   };
 
   return (
-    <aside className={`bg-sidebar text-slate-300 flex flex-col h-screen fixed left-0 top-0 overflow-y-visible transition-all duration-300 z-50 ${isExpanded ? 'w-64' : 'w-20'}`}>
-      <div className="p-4 flex items-center justify-between h-16 border-b border-slate-800">
-        {isExpanded && <h1 className="text-xl font-bold text-white tracking-tight truncate pr-2">Aeropoint<span className="text-[#0d6efd]">.</span></h1>}
-        <button onClick={toggleSidebar} className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition-colors mx-auto">
+    <aside className={`bg-sidebar text-white flex flex-col h-screen fixed left-0 top-0 overflow-y-visible transition-all duration-300 z-50 ${isExpanded ? 'w-64' : 'w-20'}`}>
+      <div className={`flex items-center h-16 border-b border-white/15 ${isExpanded ? 'px-4 justify-between' : 'px-3 justify-between'}`}>
+        <img
+          src={isExpanded ? whiteLogo : whiteIcon}
+          alt="Aeropoint Express Travel Ltd"
+          className={isExpanded ? 'w-48 h-auto' : 'w-6 h-6 object-contain shrink-0'}
+        />
+        <button onClick={toggleSidebar} aria-label={isExpanded ? 'Collapse sidebar' : 'Expand sidebar'} className="w-8 h-8 flex items-center justify-center shrink-0 rounded-lg hover:bg-white/10 text-white/70 hover:text-white transition-colors">
           {isExpanded ? <PanelLeftClose size={20} /> : <PanelLeftOpen size={20} />}
         </button>
       </div>
@@ -142,11 +153,11 @@ export default function Sidebar({ isExpanded, toggleSidebar }: { isExpanded: boo
                 <button
                   onClick={() => handleParentClick(item)}
                   className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg transition-colors ${
-                    isActive ? 'bg-[#0d6efd]/20 text-white' : 'hover:bg-slate-800 hover:text-white'
+                    isActive ? 'bg-white/15 text-white' : 'hover:bg-white/10 hover:text-white'
                   } ${!isExpanded && 'justify-center'}`}
                 >
                   <div className="flex items-center">
-                    <item.icon size={20} className={`flex-shrink-0 ${isActive ? 'text-[#0d6efd]' : ''}`} />
+                    <item.icon size={20} className={`flex-shrink-0 ${isActive ? 'text-secondary-400' : ''}`} />
                     {isExpanded && <span className="ml-3 text-sm font-medium truncate">{item.name}</span>}
                   </div>
                   {isExpanded && (
@@ -159,7 +170,7 @@ export default function Sidebar({ isExpanded, toggleSidebar }: { isExpanded: boo
                   end
                   className={({ isActive }) =>
                     `flex items-center px-3 py-2.5 rounded-lg transition-colors ${
-                      isActive ? 'bg-[#0d6efd] text-white shadow-sm' : 'hover:bg-slate-800 hover:text-white'
+                      isActive ? 'bg-secondary-500 text-white shadow-sm' : 'hover:bg-white/10 hover:text-white'
                     } ${!isExpanded && 'justify-center'}`
                   }
                 >
@@ -177,7 +188,7 @@ export default function Sidebar({ isExpanded, toggleSidebar }: { isExpanded: boo
                       end
                       className={({ isActive }) =>
                         `block px-3 py-2 text-sm rounded-lg transition-colors ${
-                          isActive ? 'bg-[#0d6efd] text-white' : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                          isActive ? 'bg-secondary-500 text-white' : 'text-white/70 hover:text-white hover:bg-white/10'
                         }`
                       }
                     >
@@ -209,8 +220,8 @@ export default function Sidebar({ isExpanded, toggleSidebar }: { isExpanded: boo
         })}
       </nav>
       
-      <div className="p-3 mt-auto border-t border-slate-800">
-        <button className={`flex items-center px-3 py-2.5 w-full rounded-lg hover:bg-slate-800 transition-colors text-red-400 hover:text-red-300 ${!isExpanded && 'justify-center'}`}>
+      <div className="p-3 mt-auto border-t border-white/15">
+        <button onClick={() => navigate('/login')} className={`flex items-center px-3 py-2.5 w-full rounded-lg hover:bg-white/10 transition-colors text-white/80 hover:text-white ${!isExpanded && 'justify-center'}`}>
           <LogOut size={20} className="flex-shrink-0" />
           {isExpanded && <span className="ml-3 text-sm font-medium truncate">Logout</span>}
         </button>

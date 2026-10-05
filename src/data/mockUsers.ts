@@ -1,6 +1,6 @@
 export const mockUsers = [
   // Admins
-  { id: 1, uid: '9a42d8ff0ec2e2895124373', status: true, banned: false, firstName: 'Super', lastName: 'Admin', email: 'admin@aeropoint.com', phone: '+1 234 567 8900', role: 'admin', balance: '0.00', verified: true, createdAt: 'Jan 01, 2026 10:00 AM' },
+  { id: 1, uid: '9a42d8ff0ec2e2895124373', status: true, banned: false, isSuperAdmin: true, firstName: 'Super', lastName: 'Admin', email: 'admin@aeropoint.com', phone: '+1 234 567 8900', role: 'admin', balance: '0.00', verified: true, createdAt: 'Jan 01, 2026 10:00 AM' },
   { id: 2, uid: 'aa12d9ff1fd3f3906235484', status: true, banned: false, firstName: 'James', lastName: 'Obi', email: 'james.obi@aeropoint.com', phone: '+234 802 111 2222', role: 'admin', balance: '0.00', verified: true, createdAt: 'Jan 15, 2026 09:00 AM' },
 
   // Employees

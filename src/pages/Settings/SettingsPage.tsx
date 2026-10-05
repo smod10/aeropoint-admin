@@ -1,36 +1,44 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Building, Globe, Users, Shield, Bell, Save, Upload, Pencil, UserPlus } from 'lucide-react';
+import { Building, Globe, Users, Shield, Bell, Save, Pencil, UserPlus } from 'lucide-react';
 import { mockUsers } from '../../data/mockUsers';
+import companyLogo from '../../assets/aeropoint-express-logo.png';
+import { canEditAccount, getCurrentActorRole } from '../../utils/accountAccess';
 
 const roleOptions = ['All Roles', 'admin', 'employee', 'supplier', 'agent'];
+type TeamMemberUpdate = { firstName: string; lastName: string; email: string; phone: string; role: string; department: string; status: boolean };
 
 export default function SettingsPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const [activeTab, setActiveTab] = useState<'general' | 'localization' | 'team'>(location.pathname === '/settings/team' ? 'team' : 'general');
   const [selectedRole, setSelectedRole] = useState('All Roles');
+  const [teamOverrides] = useState<Record<number, Partial<TeamMemberUpdate>>>(() => JSON.parse(localStorage.getItem('aeropoint-team-overrides') || '{}'));
+  const [baseCurrency, setBaseCurrency] = useState(() => localStorage.getItem('aeropoint-base-currency') || 'NGN');
+  const [timeZone, setTimeZone] = useState(() => localStorage.getItem('aeropoint-time-zone') || 'Africa/Lagos');
+  const actorRole = getCurrentActorRole();
 
   useEffect(() => {
     setActiveTab(location.pathname === '/settings/team' ? 'team' : 'general');
   }, [location.pathname]);
 
   const roleSummary = useMemo(() => [
-    { label: 'Admins', count: mockUsers.filter(user => user.role === 'admin').length, tone: 'bg-purple-100 text-purple-700' },
-    { label: 'Employees', count: mockUsers.filter(user => user.role === 'employee').length, tone: 'bg-blue-100 text-blue-700' },
-    { label: 'Suppliers', count: mockUsers.filter(user => user.role === 'supplier').length, tone: 'bg-orange-100 text-orange-700' },
-    { label: 'Agents', count: mockUsers.filter(user => user.role === 'agent').length, tone: 'bg-emerald-100 text-emerald-700' },
-  ], []);
+    { id: 'admin', label: 'Admins', count: mockUsers.filter(user => (teamOverrides[user.id]?.role ?? user.role) === 'admin').length, tone: 'bg-primary-100 text-primary-800' },
+    { id: 'employee', label: 'Employees', count: mockUsers.filter(user => (teamOverrides[user.id]?.role ?? user.role) === 'employee').length, tone: 'bg-blue-100 text-blue-700' },
+    { id: 'supplier', label: 'Suppliers', count: mockUsers.filter(user => (teamOverrides[user.id]?.role ?? user.role) === 'supplier').length, tone: 'bg-orange-100 text-orange-700' },
+    { id: 'agent', label: 'Agents', count: mockUsers.filter(user => (teamOverrides[user.id]?.role ?? user.role) === 'agent').length, tone: 'bg-emerald-100 text-emerald-700' },
+  ], [teamOverrides]);
 
   const teamMembers = useMemo(
     () => mockUsers
+      .map(user => ({ ...user, ...teamOverrides[user.id] }))
       .filter(user => ['admin', 'employee', 'supplier', 'agent'].includes(user.role))
       .map(user => ({
         ...user,
         roleLabel: user.role === 'admin' ? 'Admin' : user.role === 'employee' ? 'Employee' : user.role === 'supplier' ? 'Supplier' : 'Agent',
-        location: user.role === 'supplier' ? 'Operations' : user.role === 'agent' ? 'Sales' : user.role === 'employee' ? 'Support' : 'Executive',
+        location: teamOverrides[user.id]?.department ?? (user.role === 'supplier' ? 'Operations' : user.role === 'agent' ? 'Sales' : user.role === 'employee' ? 'Support' : 'Executive'),
       })),
-    []
+    [teamOverrides]
   );
 
   const filteredTeamMembers = selectedRole === 'All Roles'
@@ -88,8 +96,8 @@ export default function SettingsPage() {
               <div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Company Information</h3>
                 <div className="flex items-center gap-6 mb-6">
-                  <div className="w-24 h-24 bg-gray-50 border-2 border-dashed border-gray-300 rounded-xl flex items-center justify-center">
-                    <Upload className="text-gray-400" size={24} />
+                  <div className="w-24 h-24 bg-white border border-gray-200 rounded-lg flex items-center justify-center p-2">
+                    <img src={companyLogo} alt="Aeropoint Express Travel Ltd" className="w-full h-auto" />
                   </div>
                   <div>
                     <h4 className="text-sm font-medium text-gray-900">Company Logo</h4>
@@ -107,15 +115,19 @@ export default function SettingsPage() {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Support Email</label>
-                    <input type="email" defaultValue="support@aeropoint.com" className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-primary-500 outline-none" />
+                    <input type="email" defaultValue="info@aeropointexpress.com" className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-primary-500 outline-none" />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Support Phone</label>
-                    <input type="text" defaultValue="+44 20 7946 0958" className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-primary-500 outline-none" />
+                    <input type="tel" defaultValue="+234 702 599 0424" className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-primary-500 outline-none" />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Tax ID / VAT Number</label>
                     <input type="text" defaultValue="GB992384710" className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-primary-500 outline-none" />
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Business Address</label>
+                    <textarea rows={2} defaultValue="68 Vulcanizer bus, Liberty Road, Oke Ado, Ibadan." className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-primary-500 outline-none resize-y" />
                   </div>
                 </div>
               </div>
@@ -128,7 +140,8 @@ export default function SettingsPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Base Currency</label>
-                  <select className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-primary-500 outline-none">
+                  <select value={baseCurrency} onChange={event => { setBaseCurrency(event.target.value); localStorage.setItem('aeropoint-base-currency', event.target.value); }} className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-primary-500 outline-none">
+                    <option value="NGN">NGN - Nigerian Naira (₦)</option>
                     <option value="USD">USD - US Dollar</option>
                     <option value="GBP">GBP - British Pound</option>
                     <option value="EUR">EUR - Euro</option>
@@ -136,10 +149,11 @@ export default function SettingsPage() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Time Zone</label>
-                  <select className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-primary-500 outline-none">
-                    <option value="GMT">GMT (London)</option>
-                    <option value="EST">EST (New York)</option>
-                    <option value="GST">GST (Dubai)</option>
+                  <select value={timeZone} onChange={event => { setTimeZone(event.target.value); localStorage.setItem('aeropoint-time-zone', event.target.value); }} className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-primary-500 outline-none">
+                    <option value="Africa/Lagos">Africa/Lagos (WAT, UTC+1)</option>
+                    <option value="Europe/London">Europe/London</option>
+                    <option value="America/New_York">America/New_York</option>
+                    <option value="Asia/Dubai">Asia/Dubai</option>
                   </select>
                 </div>
                 <div>
@@ -173,12 +187,13 @@ export default function SettingsPage() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
                 {roleSummary.map((role) => (
-                  <div key={role.label} className="rounded-xl border border-gray-100 bg-gray-50 p-4">
+                  <button key={role.id} onClick={() => navigate(`/settings/roles/${role.id}`)} className="rounded-lg border border-gray-200 bg-gray-50 p-4 text-left hover:border-primary-300 hover:bg-primary-50 transition-colors">
                     <div className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold ${role.tone}`}>
                       {role.label}
                     </div>
                     <p className="mt-4 text-2xl font-bold text-gray-900">{role.count}</p>
-                  </div>
+                    <span className="mt-2 block text-xs font-medium text-primary-600">Manage access</span>
+                  </button>
                 ))}
               </div>
 
@@ -235,9 +250,9 @@ export default function SettingsPage() {
                           </td>
                           <td className="px-4 py-4 text-right">
                             <div className="flex justify-end gap-2">
-                              <button className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-primary-600 bg-primary-50 rounded-lg hover:bg-primary-100 transition-colors">
+                              {canEditAccount(actorRole, member) && <button onClick={() => navigate(`/settings/team/${member.id}`)} className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-primary-700 bg-primary-50 rounded-lg hover:bg-primary-100 transition-colors">
                                 <Pencil size={12} /> Edit
-                              </button>
+                              </button>}
                               <button className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors">
                                 Assign
                               </button>

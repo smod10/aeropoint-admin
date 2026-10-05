@@ -9,6 +9,7 @@ import {
 import { mockUsers } from '../../data/mockUsers';
 import { countries } from '../../data/countries';
 import { useCurrency } from '../../context/CurrencyContext';
+import { canEditAccount, getCurrentActorRole, readAccountOverrides, saveAccountOverride } from '../../utils/accountAccess';
 
 type TabType = 'profile' | 'information' | 'activity' | 'bookings' | 'transactions' | 'notes';
 type ActivityColumn = 'recordId' | 'details' | 'date';
@@ -20,8 +21,10 @@ export default function UserEdit() {
   const { convertFromAndFormat } = useCurrency();
   
   const isNew = id === 'new' || !id;
-  // If it's a new user, return null instead of falling back to the first mock user
-  const user = isNew ? null : (mockUsers.find(u => u.id === Number(id)) || mockUsers[0]);
+  const accountOverrides = readAccountOverrides();
+  const originalUser = isNew ? null : mockUsers.find(account => account.id === Number(id)) ?? null;
+  const user = originalUser ? { ...originalUser, ...accountOverrides[originalUser.id] } : null;
+  const actorRole = getCurrentActorRole();
 
   const [activeTab, setActiveTab] = useState<TabType>('profile');
   const [isColumnMenuOpen, setIsColumnMenuOpen] = useState(false);
@@ -39,11 +42,35 @@ export default function UserEdit() {
     description: true,
     date: true,
   });
+  const [profile, setProfile] = useState(() => {
+    const phoneParts = user?.phone ? user.phone.split(' ') : ['+234', ''];
+    return {
+      firstName: user?.firstName ?? '',
+      lastName: user?.lastName ?? '',
+      email: user?.email ?? '',
+      phonePrefix: phoneParts[0],
+      phoneNumber: phoneParts.slice(1).join(' '),
+      role: user?.role ?? 'customer',
+      status: user?.status ?? true,
+    };
+  });
+  const [isSaved, setIsSaved] = useState(false);
 
-  // Handle phone splitting gracefully for both new and existing users
-  const phoneParts = user?.phone ? user.phone.split(' ') : ['+234', ''];
-  const phonePrefix = phoneParts[0];
-  const phoneNumber = phoneParts.slice(1).join(' ');
+  const phonePrefix = profile.phonePrefix;
+  const phoneNumber = profile.phoneNumber;
+
+  const saveProfile = () => {
+    if (!user || !canEditAccount(actorRole, user)) return;
+    saveAccountOverride(user.id, {
+      firstName: profile.firstName,
+      lastName: profile.lastName,
+      email: profile.email,
+      phone: `${profile.phonePrefix} ${profile.phoneNumber}`.trim(),
+      role: profile.role,
+      status: profile.status,
+    });
+    setIsSaved(true);
+  };
 
   const toggleActivityColumn = (column: ActivityColumn) => {
     setVisibleActivityColumns(prev => ({ ...prev, [column]: !prev[column] }));
@@ -52,6 +79,14 @@ export default function UserEdit() {
   const toggleTransactionColumn = (column: TransactionColumn) => {
     setVisibleTransactionColumns(prev => ({ ...prev, [column]: !prev[column] }));
   };
+
+  if (!isNew && !user) {
+    return <div className="rounded-lg border border-gray-200 bg-white p-8 text-center text-gray-600">Account not found.</div>;
+  }
+
+  if (user && !canEditAccount(actorRole, user)) {
+    return <div role="alert" className="rounded-lg border border-secondary-200 bg-white p-8 text-center"><h2 className="text-lg font-semibold text-gray-900">Edit access restricted</h2><p className="mt-2 text-sm text-gray-600">Your role cannot edit this account.</p><button onClick={() => navigate(-1)} className="mt-4 rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700">Go back</button></div>;
+  }
 
   return (
     <div className="space-y-6 max-w-6xl animate-in fade-in duration-300 pb-10">
@@ -74,14 +109,14 @@ export default function UserEdit() {
         <div className="flex gap-4 w-full md:w-auto">
           <div>
             <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Status</label>
-            <select defaultValue={isNew ? 'active' : (user?.status ? 'active' : 'inactive')} className="bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none w-full md:w-32">
+            <select value={profile.status ? 'active' : 'inactive'} onChange={event => { setIsSaved(false); setProfile(current => ({ ...current, status: event.target.value === 'active' })); }} className="bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none w-full md:w-32">
               <option value="active">Active</option>
               <option value="inactive">Inactive</option>
             </select>
           </div>
           <div>
             <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Role</label>
-            <select defaultValue={user?.role || 'customer'} className="bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none w-full md:w-32 capitalize">
+            <select value={profile.role} onChange={event => { setIsSaved(false); setProfile(current => ({ ...current, role: event.target.value })); }} className="bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none w-full md:w-32 capitalize">
               <option value="admin">Admin</option>
               <option value="agent">Agent</option>
               <option value="supplier">Supplier</option>
@@ -137,22 +172,22 @@ export default function UserEdit() {
                 <div>
                   <h3 className="text-sm font-bold text-gray-800 flex items-center gap-2 mb-4"><UserIcon size={16} className="text-gray-500"/> Personal Information</h3>
                   <div className="grid grid-cols-2 gap-6 mb-4">
-                    <div><label className="block text-xs font-medium text-gray-700 mb-1">First Name</label><input type="text" defaultValue={user?.firstName || ''} placeholder="Enter first name" className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-primary-500" /></div>
-                    <div><label className="block text-xs font-medium text-gray-700 mb-1">Last Name</label><input type="text" defaultValue={user?.lastName || ''} placeholder="Enter last name" className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-primary-500" /></div>
+                    <div><label className="block text-xs font-medium text-gray-700 mb-1">First Name</label><input type="text" value={profile.firstName} onChange={event => { setIsSaved(false); setProfile(current => ({ ...current, firstName: event.target.value })); }} placeholder="Enter first name" className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-primary-500" /></div>
+                    <div><label className="block text-xs font-medium text-gray-700 mb-1">Last Name</label><input type="text" value={profile.lastName} onChange={event => { setIsSaved(false); setProfile(current => ({ ...current, lastName: event.target.value })); }} placeholder="Enter last name" className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-primary-500" /></div>
                   </div>
                   <div className="grid grid-cols-2 gap-6">
-                    <div><label className="block text-xs font-medium text-gray-700 mb-1">Email</label><input type="email" defaultValue={user?.email || ''} placeholder="email@example.com" className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-primary-500" /></div>
+                    <div><label className="block text-xs font-medium text-gray-700 mb-1">Email</label><input type="email" value={profile.email} onChange={event => { setIsSaved(false); setProfile(current => ({ ...current, email: event.target.value })); }} placeholder="email@example.com" className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-primary-500" /></div>
                     <div>
                       <label className="block text-xs font-medium text-gray-700 mb-1">Phone</label>
                       <div className="flex gap-2">
-                        <select className="w-28 bg-white border border-gray-200 rounded-lg px-2 py-2 text-sm outline-none" defaultValue={isNew ? '+234' : phonePrefix}>
+                        <select value={phonePrefix} onChange={event => { setIsSaved(false); setProfile(current => ({ ...current, phonePrefix: event.target.value })); }} className="w-28 bg-white border border-gray-200 rounded-lg px-2 py-2 text-sm outline-none">
                           {countries.map((c, idx) => (
                             <option key={`phone-${c.code}-${idx}`} value={c.dialCode}>
                               {c.code} {c.dialCode}
                             </option>
                           ))}
                         </select>
-                        <input type="text" defaultValue={phoneNumber || ''} placeholder="Phone number" className="flex-1 bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-primary-500" />
+                        <input type="text" value={phoneNumber} onChange={event => { setIsSaved(false); setProfile(current => ({ ...current, phoneNumber: event.target.value })); }} placeholder="Phone number" className="flex-1 bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-primary-500" />
                       </div>
                     </div>
                   </div>
@@ -286,9 +321,10 @@ export default function UserEdit() {
           
           {activeTab === 'profile' && (
             <div className="p-6 bg-gray-50 border-t border-gray-100 flex justify-end gap-3 mt-auto">
-              <button type="submit" className="flex items-center gap-2 bg-primary-600 text-white px-6 py-2.5 rounded-lg text-sm font-medium hover:bg-primary-700 shadow-sm transition-colors">
+              <button type="button" onClick={saveProfile} className="flex items-center gap-2 bg-primary-600 text-white px-6 py-2.5 rounded-lg text-sm font-medium hover:bg-primary-700 shadow-sm transition-colors">
                 <Save size={16} /> Save Profile Changes
               </button>
+              {isSaved && <span role="status" className="self-center text-sm font-medium text-emerald-700">Profile saved</span>}
             </div>
           )}
         </div>

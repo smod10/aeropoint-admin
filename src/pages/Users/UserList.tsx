@@ -3,13 +3,24 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { Search, Plus, Edit2, Trash2, Columns, ChevronDown } from 'lucide-react';
 import { mockUsers } from '../../data/mockUsers';
 import { useCurrency } from '../../context/CurrencyContext';
+import { canDeleteAccount, canEditAccount, getCurrentActorRole, moveAccountToTrash, readAccountOverrides, readAccountTrash } from '../../utils/accountAccess';
+
+function getActiveUsers(role?: string) {
+  const overrides = readAccountOverrides();
+  const trashedIds = readAccountTrash();
+  const selectedRole = role || 'customer';
+  return mockUsers
+    .map(user => ({ ...user, ...overrides[user.id] }))
+    .filter(user => !trashedIds[user.id] && user.role.toLowerCase() === selectedRole.toLowerCase());
+}
 
 export default function UserList() {
   const navigate = useNavigate();
   const { role } = useParams(); 
   const { convertAndFormat } = useCurrency(); 
 
-  const [users, setUsers] = useState(mockUsers);
+  const actorRole = getCurrentActorRole();
+  const [users, setUsers] = useState(() => getActiveUsers(role));
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
   
@@ -52,8 +63,7 @@ export default function UserList() {
 
   // Filter users dynamically based on sidebar Role selection
   useEffect(() => {
-    const customerUsers = mockUsers.filter(u => u.role.toLowerCase() === 'customer');
-    setUsers(customerUsers);
+    setUsers(getActiveUsers(role));
     setCurrentPage(1);
   }, [role]);
 
@@ -66,6 +76,13 @@ export default function UserList() {
 
   const toggleStatus = (id: number) => {
     setUsers(users.map(u => u.id === id ? { ...u, status: !u.status } : u));
+  };
+
+  const deleteAccount = (user: (typeof mockUsers)[number]) => {
+    if (!canDeleteAccount(actorRole, user)) return;
+    if (!window.confirm(`Move ${user.firstName} ${user.lastName} to Trash?`)) return;
+    moveAccountToTrash(user.id, actorRole);
+    setUsers(current => current.filter(account => account.id !== user.id));
   };
 
   const showAllColumns = () => {
@@ -85,11 +102,14 @@ export default function UserList() {
       <div className="bg-white p-6 rounded-xl shadow-soft border border-gray-100 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
         <div>
           <h2 className="text-2xl font-bold text-gray-800 capitalize">
-            Customers Management
+            {role ? `${role} Management` : 'Customers Management'}
           </h2>
           <p className="text-sm text-gray-500 mt-1">Total: {users.length} records</p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
+          <button onClick={() => navigate('/users/trash')} className="flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50">
+            <Trash2 size={16} /> Trash
+          </button>
           
           {/* Column Filter Dropdown */}
           <div className="relative" ref={dropdownRef}>
@@ -143,7 +163,7 @@ export default function UserList() {
             </button>
           </div>
           <button onClick={() => navigate('/users/edit/new')} className="flex items-center gap-2 bg-[#0d6efd] text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-blue-700 shadow-sm ml-2">
-            <Plus size={16} /> Create Customer
+            <Plus size={16} /> Create {role || 'Customer'}
           </button>
         </div>
       </div>
@@ -207,12 +227,12 @@ export default function UserList() {
                   )}
                   
                   <td className="px-4 py-3 text-center space-x-1">
-                    <button onClick={() => navigate(`/users/edit/${user.id}`)} className="inline-flex p-1.5 text-gray-400 hover:text-[#0d6efd] border border-gray-200 rounded hover:bg-gray-50 transition-colors" title="Edit">
+                    {canEditAccount(actorRole, user) && <button onClick={() => navigate(`/users/edit/${user.id}`)} className="inline-flex p-1.5 text-gray-400 hover:text-[#0d6efd] border border-gray-200 rounded hover:bg-gray-50 transition-colors" title="Edit" aria-label={`Edit ${user.firstName} ${user.lastName}`}>
                       <Edit2 size={14} />
-                    </button>
-                    <button onClick={() => setUsers(users.filter(u => u.id !== user.id))} className="inline-flex p-1.5 text-gray-400 hover:text-red-600 border border-gray-200 rounded hover:bg-gray-50 transition-colors" title="Delete">
+                    </button>}
+                    {canDeleteAccount(actorRole, user) && <button onClick={() => deleteAccount(user)} className="inline-flex p-1.5 text-gray-400 hover:text-red-600 border border-gray-200 rounded hover:bg-gray-50 transition-colors" title="Move to Trash" aria-label={`Move ${user.firstName} ${user.lastName} to Trash`}>
                       <Trash2 size={14} />
-                    </button>
+                    </button>}
                   </td>
                 </tr>
               ))}
