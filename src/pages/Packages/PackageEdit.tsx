@@ -14,7 +14,7 @@ export default function PackageEdit() {
   const { id } = useParams();
   
   const isUmrahContext = pathname.includes('/umrah');
-  const entityName = isUmrahContext ? 'Umrah Package' : 'Tour';
+  const entityName = isUmrahContext ? 'Umrah Package' : 'Package';
   const backPath = isUmrahContext ? '/umrah' : '/packages';
 
   const isNew = id === 'new' || !id;
@@ -96,10 +96,6 @@ export default function PackageEdit() {
                 <h3 className="text-sm font-bold text-blue-900 flex items-center gap-2 mb-6"><Flag size={16} /> Basic Information</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                   <div>
-                    <label className="block text-xs font-bold text-gray-700 mb-1.5">Owner</label>
-                    <input type="text" defaultValue={pkg?.owner} placeholder="Search by name or email..." className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-primary-500" />
-                  </div>
-                  <div>
                     <label className="block text-xs font-bold text-gray-700 mb-1.5">Name *</label>
                     <input type="text" defaultValue={pkg?.title} placeholder={`Enter ${entityName} Name`} className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-primary-500" required />
                   </div>
@@ -109,11 +105,12 @@ export default function PackageEdit() {
                     <label className="block text-xs font-bold text-gray-700 mb-1.5">Tour Type</label>
                     <select defaultValue={pkg?.tourType || ''} className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-primary-500 cursor-pointer">
                       <option value="" disabled>Select Type</option>
-                      {isUmrahContext ? (
-                        <><option value="Umrah">Umrah</option><option value="Hajj">Hajj</option><option value="Ziyarat">Ziyarat</option></>
-                      ) : (
-                        <><option value="Join-In">Join-In</option><option value="Private">Private</option><option value="Sightseeing">Sightseeing</option></>
-                      )}
+                      <option value="Join-In">Join-In</option>
+                      <option value="Private">Private</option>
+                      <option value="Sightseeing">Sightseeing</option>
+                      <option value="Umrah">Umrah</option>
+                      <option value="Hajj">Hajj</option>
+                      <option value="Ziyarat">Ziyarat</option>
                     </select>
                   </div>
                   <div>

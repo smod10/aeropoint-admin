@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, BookOpen, Plane, Building2, Package, 
-  FileText, Moon, Users, PenTool, Image as ImageIcon, 
+  FileText, Users, PenTool, Image as ImageIcon, 
   BarChart3, Settings, LogOut, PanelLeftClose, 
   PanelLeftOpen, ChevronDown, ChevronRight
 } from 'lucide-react';
@@ -17,7 +17,7 @@ const navItems = [
     subItems: [
       { name: 'All Bookings', path: '/bookings' },
       { name: 'Flights Bookings', path: '/bookings/type/flights' },
-      { name: 'Stays Bookings', path: '/bookings/type/stays' },
+      { name: 'Hotel Bookings', path: '/bookings/type/stays' },
       { name: 'Tours Bookings', path: '/bookings/type/tours' },
       { name: 'Visa Bookings', path: '/bookings/type/visa' },
       { name: 'Umrah Bookings', path: '/bookings/type/umrah' },
@@ -28,12 +28,7 @@ const navItems = [
     name: 'Users', 
     icon: Users,
     subItems: [
-      { name: 'Customers', path: '/users' },
-      { name: 'Agents', path: '/users/role/agent' },
-      { name: 'Suppliers', path: '/users/role/supplier' },
-      { name: 'Employees', path: '/users/role/employee' },
-      { name: 'Administrators', path: '/users/role/admin' },
-      { name: 'Trash', path: '/users/trash' }
+      { name: 'Customers', path: '/users' }
     ]
   },
   { 
@@ -46,7 +41,7 @@ const navItems = [
     ]
   },
   { name: 'Hotels', path: '/hotels', icon: Building2 },
-  { name: 'Packages', path: '/packages', icon: Package },
+  { name: 'Tours & Umrah', path: '/packages', icon: Package },
   { 
     name: 'Visa', 
     icon: FileText,
@@ -55,7 +50,6 @@ const navItems = [
       { name: 'Visa Settings', path: '/visa/settings' }
     ]
   },
-  { name: 'Umrah', path: '/umrah', icon: Moon },
   { 
     name: 'Blogs', 
     icon: PenTool,
@@ -69,9 +63,7 @@ const navItems = [
     name: 'Reports', 
     icon: BarChart3,
     subItems: [
-      { name: 'Booking Reports', path: '/reports/bookings' },
-      { name: 'Users Reports', path: '/reports/users' },
-      { name: 'Transactions Reports', path: '/reports/transactions' }
+      { name: 'Bookings & Revenue', path: '/reports/bookings' }
     ]
   },
   { 
@@ -80,6 +72,7 @@ const navItems = [
     subItems: [
       { name: 'General Settings', path: '/settings' },
       { name: 'Team & Roles', path: '/settings/team' },
+      { name: 'Team Trash', path: '/settings/team/trash' },
       { name: 'Exchange Rates', path: '/settings/exchange-rates' },
       { name: 'Payment Gateways', path: '/payments' },
       { name: 'Modules', path: '/modules' }

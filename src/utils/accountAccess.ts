@@ -52,6 +52,10 @@ export function isSuperAdmin(actorRole: ActorRole): boolean {
   return actorRole === 'super_admin';
 }
 
+export function canManageTeam(actorRole: ActorRole): boolean {
+  return actorRole === 'super_admin' || actorRole === 'admin';
+}
+
 export function readAccountOverrides(): Record<number, AccountOverride> {
   return JSON.parse(localStorage.getItem(ACCOUNT_OVERRIDES_KEY) || '{}');
 }

@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { CurrencyProvider } from './context/CurrencyContext'; 
 
 // Layouts & Auth
@@ -10,6 +10,8 @@ import DashboardHome from './pages/Dashboard/DashboardHome';
 
 // Bookings Module
 import BookingList from './pages/Bookings/BookingList';
+import BookingCreate from './pages/Bookings/BookingCreate';
+import BookingDetails from './pages/Bookings/BookingDetails';
 import BookingEdit from './pages/Bookings/BookingEdit';
 import InvoiceView from './pages/Bookings/InvoiceView';
 
@@ -33,7 +35,6 @@ import UserTrash from './pages/Users/UserTrash';
 // Packages Module
 import PackageList from './pages/Packages/PackageList';
 import PackageEdit from './pages/Packages/PackageEdit';
-import UmrahList from './pages/Umrah/UmrahList';
 
 // Blog Module
 import BlogList from './pages/Blog/BlogList';
@@ -41,7 +42,7 @@ import BlogEdit from './pages/Blog/BlogEdit';
 import BlogCategories from './pages/Blog/BlogCategories';
 
 // Reports Module
-import BookingReports from './pages/Reports/BookingReports';
+import RevenueReport from './pages/Reports/RevenueReport';
 import UserReports from './pages/Reports/UserReports';
 import TransactionReports from './pages/Reports/TransactionReports';
 import TransactionView from './pages/Reports/TransactionView';
@@ -53,7 +54,9 @@ import TeamMemberEdit from './pages/Settings/TeamMemberEdit';
 import RoleEdit from './pages/Settings/RoleEdit';
 
 // Other Modules
-import HotelList from './pages/Hotels/HotelList';
+import HotelCatalog from './pages/Hotels/HotelCatalog';
+import HotelListingEdit from './pages/Hotels/HotelListingEdit';
+import PublicHotels from './pages/Hotels/PublicHotels';
 import PaymentList from './pages/Payments/PaymentList';
 import Modules from './pages/Integrations/modules';
 import MediaLibrary from './pages/Media/MediaLibrary';
@@ -64,6 +67,7 @@ export default function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<Login />} />
+          <Route path="/hotels/public" element={<PublicHotels />} />
 
           <Route path="/" element={<AdminLayout />}>
             <Route index element={<DashboardHome />} />
@@ -71,8 +75,11 @@ export default function App() {
             {/* Bookings */}
             <Route path="bookings" element={<BookingList />} />
             <Route path="bookings/type/:moduleType" element={<BookingList />} />
+            <Route path="bookings/create" element={<BookingCreate />} />
+            <Route path="bookings/create/:bookingType" element={<BookingCreate />} />
+            <Route path="bookings/view/:id" element={<BookingDetails />} />
             <Route path="bookings/edit/:id" element={<BookingEdit />} />
-            <Route path="bookings/view/:id" element={<InvoiceView />} />
+            <Route path="bookings/invoice/:id" element={<InvoiceView />} />
             
             {/* Flights */}
             <Route path="flights" element={<FlightList />} />
@@ -96,8 +103,7 @@ export default function App() {
             <Route path="packages" element={<PackageList />} />
             <Route path="packages/edit/:id" element={<PackageEdit />} />
             
-            <Route path="umrah" element={<UmrahList />} />
-            <Route path="umrah/edit/:id" element={<PackageEdit />} />
+            <Route path="umrah/*" element={<Navigate to="/packages" replace />} />
             
             {/* Blogs */}
             <Route path="blog" element={<BlogList />} />
@@ -105,7 +111,7 @@ export default function App() {
             <Route path="blog/categories" element={<BlogCategories />} />
 
             {/* Reports */}
-            <Route path="reports/bookings" element={<BookingReports />} />
+            <Route path="reports/bookings" element={<RevenueReport />} />
             <Route path="reports/users" element={<UserReports />} />
             <Route path="reports/transactions" element={<TransactionReports />} />
             <Route path="reports/transactions/:id" element={<TransactionView />} />
@@ -113,11 +119,13 @@ export default function App() {
             {/* Settings & Other Modules */}
             <Route path="settings" element={<SettingsPage />} />
             <Route path="settings/team" element={<SettingsPage />} />
+            <Route path="settings/team/trash" element={<UserTrash />} />
             <Route path="settings/team/:id" element={<TeamMemberEdit />} />
             <Route path="settings/roles/:role" element={<RoleEdit />} />
             <Route path="settings/exchange-rates" element={<ExchangeRates />} />
             
-            <Route path="hotels" element={<HotelList />} />
+            <Route path="hotels" element={<HotelCatalog />} />
+            <Route path="hotels/edit/:id" element={<HotelListingEdit />} />
             <Route path="payments" element={<PaymentList />} />
             <Route path="modules" element={<Modules />} /> 
             <Route path="media" element={<MediaLibrary />} />

@@ -1,16 +1,44 @@
 import { useMemo, useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Search, Columns, Edit2, Trash2, ArrowUpRight, ChevronDown, ChevronLeft, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
+import { Search, Columns, Edit2, Eye, ArrowUpRight, ChevronDown, ChevronLeft, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown, Plus, X } from 'lucide-react';
 import { mockBookings } from '../../data/mockBookings'; 
 import { useCurrency } from '../../context/CurrencyContext';
+import { readManagedBookings } from '../../utils/bookingStorage';
+import type { BookingType } from '../../types/booking';
+import { canManageTeam, getCurrentActorRole } from '../../utils/accountAccess';
 
 type BookingColumn = 'invoice' | 'module' | 'booking' | 'payment' | 'price' | 'customer' | 'ref' | 'createdAt';
 type BookingSortKey = BookingColumn;
+
+type BookingRow = {
+  id: string;
+  invoice: string;
+  moduleType: string;
+  moduleName: string;
+  booking: string;
+  payment: string;
+  price: string;
+  earning: string;
+  user: string;
+  ref: string;
+  createdAt: string;
+  managed: boolean;
+};
+
+const creationTypes: { type: BookingType; label: string; path: string }[] = [
+  { type: 'flights', label: 'Flight', path: 'flights' },
+  { type: 'stays', label: 'Hotel', path: 'stays' },
+  { type: 'tours', label: 'Tour / Package', path: 'tours' },
+  { type: 'visa', label: 'Visa', path: 'visa' },
+  { type: 'umrah', label: 'Umrah', path: 'umrah' },
+];
 
 export default function BookingList() {
   const navigate = useNavigate();
   const { moduleType } = useParams(); 
   const { convertAndFormat } = useCurrency();
+  const canManage = canManageTeam(getCurrentActorRole());
+  const [isTypePickerOpen, setIsTypePickerOpen] = useState(false);
   
   // Pagination & Filter States
   const [rowsPerPage, setRowsPerPage] = useState(25);
@@ -25,7 +53,7 @@ export default function BookingList() {
     payment: true,
     price: true,
     customer: true,
-    ref: true,
+    ref: false,
     createdAt: true,
   });
 
@@ -35,9 +63,35 @@ export default function BookingList() {
   }, [moduleType]);
 
   // 1. Filter the data based on module type
-  const filteredBookings = moduleType 
-    ? mockBookings.filter(b => b.moduleType === moduleType) 
-    : mockBookings;
+  const bookingOverrides = JSON.parse(localStorage.getItem('aeropoint-booking-overrides') || '{}') as Record<string, { bookingStatus?: string; paymentStatus?: string; price?: string; customerName?: string; customerEmail?: string }>;
+  const bookings: BookingRow[] = [
+    ...mockBookings.map(booking => ({
+      ...booking,
+      id: String(booking.id),
+      booking: bookingOverrides[booking.invoice]?.bookingStatus ?? booking.booking,
+      payment: bookingOverrides[booking.invoice]?.paymentStatus ?? booking.payment,
+      price: bookingOverrides[booking.invoice]?.price ?? booking.price,
+      user: `${bookingOverrides[booking.invoice]?.customerName ?? booking.user.split('\n')[0]}\n${bookingOverrides[booking.invoice]?.customerEmail ?? booking.user.split('\n')[1]}`,
+      managed: false,
+    })),
+    ...readManagedBookings().map(booking => ({
+      id: booking.bookingId,
+      invoice: booking.bookingId,
+      moduleType: booking.bookingType,
+      moduleName: `${booking.bookingType === 'stays' ? 'Hotel' : booking.bookingType.charAt(0).toUpperCase() + booking.bookingType.slice(1)}\nManual booking`,
+      booking: booking.bookingStatus.toUpperCase(),
+      payment: booking.paymentStatus.toUpperCase(),
+      price: String(booking.amount),
+      earning: '0',
+      user: `${booking.customerName}${booking.customerEmail ? `\n${booking.customerEmail}` : ''}`,
+      ref: booking.guestBooking ? 'Guest booking' : booking.customerId ? `Customer #${booking.customerId}` : 'New customer',
+      createdAt: booking.createdAt,
+      managed: true,
+    })),
+  ];
+  const filteredBookings = moduleType
+    ? bookings.filter(booking => booking.moduleType === (moduleType === 'hotels' ? 'stays' : moduleType))
+    : bookings;
 
   const sortedBookings = useMemo(() => {
     return [...filteredBookings].sort((left, right) => {
@@ -90,12 +144,19 @@ export default function BookingList() {
     navigate(e.target.value);
   };
 
+  const createBooking = () => {
+    const directType = creationTypes.find(item => item.path === moduleType);
+    if (directType) navigate(`/bookings/create/${directType.type}`);
+    else setIsTypePickerOpen(true);
+  };
+
   const pageTitle = moduleType 
     ? `${moduleType.charAt(0).toUpperCase() + moduleType.slice(1)} Bookings` 
     : 'All Bookings';
 
   // Generate an array of page numbers to render the pagination buttons
   const pageNumbers = Array.from({ length: totalPages }, (_, i) => i + 1);
+  const visibleColumnCount = 3 + Object.values(visibleColumns).filter(Boolean).length;
 
   const toggleColumn = (column: BookingColumn) => {
     setVisibleColumns(prev => ({ ...prev, [column]: !prev[column] }));
@@ -129,7 +190,7 @@ export default function BookingList() {
       payment: true,
       price: true,
       customer: true,
-      ref: true,
+      ref: false,
       createdAt: true,
     });
   };
@@ -144,6 +205,7 @@ export default function BookingList() {
           <p className="text-sm text-gray-500 mt-1">Total: {totalItems} records</p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
+          {canManage && <button onClick={createBooking} className="inline-flex items-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700"><Plus size={16} /> Create New Booking</button>}
           
           {/* Module Filter Dropdown */}
           <div className="flex items-center gap-2 bg-white border border-gray-200 text-gray-700 px-3 py-2 rounded-lg text-sm">
@@ -155,7 +217,7 @@ export default function BookingList() {
             >
               <option value="/bookings">All Bookings</option>
               <option value="/bookings/type/flights">Flights</option>
-              <option value="/bookings/type/stays">Stays</option>
+              <option value="/bookings/type/stays">Hotels</option>
               <option value="/bookings/type/tours">Tours</option>
               <option value="/bookings/type/visa">Visa</option>
               <option value="/bookings/type/umrah">Umrah</option>
@@ -194,14 +256,14 @@ export default function BookingList() {
                   Show All Columns
                 </button>
                 {[
-                  { key: 'invoice', label: 'Invoice' },
-                  { key: 'module', label: 'Module' },
-                  { key: 'booking', label: 'Booking' },
-                  { key: 'payment', label: 'Payment' },
-                  { key: 'price', label: 'Price' },
+                  { key: 'invoice', label: 'Booking ID' },
+                  { key: 'module', label: 'Booking Type' },
+                  { key: 'booking', label: 'Booking Status' },
+                  { key: 'payment', label: 'Payment Status' },
+                  { key: 'price', label: 'Amount' },
                   { key: 'customer', label: 'Customer' },
-                  { key: 'ref', label: 'Ref / PNR' },
-                  { key: 'createdAt', label: 'Created At' },
+                  { key: 'ref', label: 'Booking Reference' },
+                  { key: 'createdAt', label: 'Date' },
                 ].map(col => (
                   <label key={col.key} className="flex items-center gap-2 text-sm text-gray-700 px-2 py-1.5 rounded hover:bg-gray-50 cursor-pointer">
                     <input
@@ -226,6 +288,13 @@ export default function BookingList() {
         </div>
       </div>
 
+      {isTypePickerOpen && <div className="fixed inset-0 z-[70] flex items-center justify-center bg-gray-950/40 p-4" role="presentation" onMouseDown={event => { if (event.target === event.currentTarget) setIsTypePickerOpen(false); }}>
+        <section role="dialog" aria-modal="true" aria-labelledby="booking-type-title" className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
+          <div className="flex items-start justify-between"><div><h2 id="booking-type-title" className="text-lg font-semibold text-gray-900">Choose booking type</h2><p className="mt-1 text-sm text-gray-500">Select the form to open.</p></div><button onClick={() => setIsTypePickerOpen(false)} aria-label="Close" className="rounded p-1 text-gray-500 hover:bg-gray-100"><X size={18} /></button></div>
+          <div className="mt-5 grid gap-2">{creationTypes.map(item => <button key={item.type} onClick={() => navigate(`/bookings/create/${item.type}`)} className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-3 text-left text-sm font-medium text-gray-800 hover:border-primary-300 hover:bg-primary-50">{item.label}<ArrowUpRight size={16} className="text-gray-400" /></button>)}</div>
+        </section>
+      </div>}
+
       {/* Main Table Container */}
       <div className="bg-white rounded-xl shadow-soft border border-gray-100 overflow-hidden flex flex-col">
         <div className="overflow-x-auto min-h-[400px]">
@@ -234,14 +303,14 @@ export default function BookingList() {
               <tr>
                 <th className="px-4 py-4 w-10 text-center"><input type="checkbox" className="rounded border-gray-300" /></th>
                 <th className="px-4 py-4 w-10">#</th>
-                {visibleColumns.invoice && <th className="px-4 py-4"><button type="button" onClick={() => handleSort('invoice')} className="inline-flex items-center gap-1 hover:text-primary-600">Invoice {sortIcon('invoice')}</button></th>}
-                {visibleColumns.module && <th className="px-4 py-4"><button type="button" onClick={() => handleSort('module')} className="inline-flex items-center gap-1 hover:text-primary-600">Module {sortIcon('module')}</button></th>}
-                {visibleColumns.booking && <th className="px-4 py-4"><button type="button" onClick={() => handleSort('booking')} className="inline-flex items-center gap-1 hover:text-primary-600">Booking {sortIcon('booking')}</button></th>}
-                {visibleColumns.payment && <th className="px-4 py-4"><button type="button" onClick={() => handleSort('payment')} className="inline-flex items-center gap-1 hover:text-primary-600">Payment {sortIcon('payment')}</button></th>}
-                {visibleColumns.price && <th className="px-4 py-4"><button type="button" onClick={() => handleSort('price')} className="inline-flex items-center gap-1 hover:text-primary-600">Price {sortIcon('price')}</button></th>}
+                {visibleColumns.invoice && <th className="px-4 py-4"><button type="button" onClick={() => handleSort('invoice')} className="inline-flex items-center gap-1 hover:text-primary-600">Booking ID {sortIcon('invoice')}</button></th>}
                 {visibleColumns.customer && <th className="px-4 py-4"><button type="button" onClick={() => handleSort('customer')} className="inline-flex items-center gap-1 hover:text-primary-600">Customer {sortIcon('customer')}</button></th>}
-                {visibleColumns.ref && <th className="px-4 py-4 text-center"><button type="button" onClick={() => handleSort('ref')} className="inline-flex items-center gap-1 hover:text-primary-600 justify-center">Ref / PNR {sortIcon('ref')}</button></th>}
-                {visibleColumns.createdAt && <th className="px-4 py-4"><button type="button" onClick={() => handleSort('createdAt')} className="inline-flex items-center gap-1 hover:text-primary-600">Created At {sortIcon('createdAt')}</button></th>}
+                {visibleColumns.module && <th className="px-4 py-4"><button type="button" onClick={() => handleSort('module')} className="inline-flex items-center gap-1 hover:text-primary-600">Booking Type {sortIcon('module')}</button></th>}
+                {visibleColumns.createdAt && <th className="px-4 py-4"><button type="button" onClick={() => handleSort('createdAt')} className="inline-flex items-center gap-1 hover:text-primary-600">Date {sortIcon('createdAt')}</button></th>}
+                {visibleColumns.price && <th className="px-4 py-4"><button type="button" onClick={() => handleSort('price')} className="inline-flex items-center gap-1 hover:text-primary-600">Amount {sortIcon('price')}</button></th>}
+                {visibleColumns.payment && <th className="px-4 py-4"><button type="button" onClick={() => handleSort('payment')} className="inline-flex items-center gap-1 hover:text-primary-600">Payment Status {sortIcon('payment')}</button></th>}
+                {visibleColumns.booking && <th className="px-4 py-4"><button type="button" onClick={() => handleSort('booking')} className="inline-flex items-center gap-1 hover:text-primary-600">Booking Status {sortIcon('booking')}</button></th>}
+                {visibleColumns.ref && <th className="px-4 py-4 text-center"><button type="button" onClick={() => handleSort('ref')} className="inline-flex items-center gap-1 hover:text-primary-600 justify-center">Booking Reference {sortIcon('ref')}</button></th>}
                 <th className="px-4 py-4 text-center">Actions</th>
               </tr>
             </thead>
@@ -258,10 +327,11 @@ export default function BookingList() {
                       </button>
                     </td>}
 
-                    {visibleColumns.module && <td className="px-4 py-3">
-                      <div className="font-bold text-gray-800">{b.moduleName.split('\n')[0]}</div>
-                      <div className="text-xs text-gray-500">{b.moduleName.split('\n')[1]}</div>
-                    </td>}
+                    {visibleColumns.customer && <td className="px-4 py-3"><div className="font-bold text-gray-900">{b.user.split('\n')[0]}</div><div className="text-xs text-gray-500">{b.user.split('\n')[1] || 'Guest booking'}</div></td>}
+                    {visibleColumns.module && <td className="px-4 py-3"><div className="font-bold capitalize text-gray-800">{b.moduleType === 'stays' ? 'Hotel' : b.moduleType}</div><div className="text-xs text-gray-500">{b.moduleName.split('\n')[1]}</div></td>}
+                    {visibleColumns.createdAt && <td className="px-4 py-3 text-gray-800 text-sm font-medium">{b.createdAt}</td>}
+                    {visibleColumns.price && <td className="px-4 py-3"><div className="font-bold text-gray-900">{convertAndFormat(Number(b.price))}</div></td>}
+                    {visibleColumns.payment && <td className="px-4 py-3"><span className={`px-2.5 py-1 text-[10px] uppercase font-bold rounded border ${b.payment === 'PAID' ? 'bg-emerald-100 text-emerald-700 border-emerald-200' : b.payment === 'REFUNDED' ? 'bg-purple-100 text-purple-700 border-purple-200' : 'bg-gray-50 text-gray-600 border-gray-200'}`}>{b.payment}</span></td>}
 
                     {visibleColumns.booking && <td className="px-4 py-3 space-y-1">
                       <span className={`block w-max px-2.5 py-1 text-[10px] uppercase font-bold rounded 
@@ -276,34 +346,15 @@ export default function BookingList() {
                       )}
                     </td>}
 
-                    {visibleColumns.payment && <td className="px-4 py-3">
-                      <span className={`px-2.5 py-1 text-[10px] uppercase font-bold rounded border 
-                        ${b.payment === 'PAID' ? 'bg-emerald-100 text-emerald-700 border-emerald-200' : 
-                          b.payment === 'REFUNDED' ? 'bg-purple-100 text-purple-700 border-purple-200' : 'bg-gray-50 text-gray-600 border-gray-200'}`}>
-                        {b.payment}
-                      </span>
-                    </td>}
-
-                    {visibleColumns.price && <td className="px-4 py-3">
-                      <div className="font-bold text-gray-900">{convertAndFormat(Number(b.price))}</div>
-                      <div className="text-xs font-semibold text-emerald-600">Earn {convertAndFormat(Number(b.earning))}</div>
-                    </td>}
-
-                    {visibleColumns.customer && <td className="px-4 py-3">
-                      <div className="font-bold text-gray-900">{b.user.split('\n')[0]}</div>
-                      <div className="text-xs text-gray-500">{b.user.split('\n')[1]}</div>
-                    </td>}
-
                     {visibleColumns.ref && <td className="px-4 py-3 text-center text-gray-400 italic text-xs font-mono">{b.ref}</td>}
-                    {visibleColumns.createdAt && <td className="px-4 py-3 text-gray-800 text-sm font-medium">{b.createdAt}</td>}
                     
                     <td className="px-4 py-3 text-center space-x-1">
-                      <button onClick={() => navigate(`/bookings/edit/${b.invoice}`)} className="inline-flex p-1.5 text-gray-400 hover:text-blue-600 border border-gray-200 rounded hover:bg-gray-50 transition-colors" title="Edit">
+                      <button onClick={() => navigate(`/bookings/view/${b.invoice}`)} className="inline-flex p-1.5 text-gray-400 hover:text-primary-600 border border-gray-200 rounded hover:bg-gray-50 transition-colors" title="View details" aria-label={`View booking ${b.invoice}`}>
+                        <Eye size={14} />
+                      </button>
+                      {canManage && <button onClick={() => navigate(b.managed ? `/bookings/create/${b.moduleType}?edit=${encodeURIComponent(b.invoice)}` : `/bookings/edit/${b.invoice}`)} className="inline-flex p-1.5 text-gray-400 hover:text-blue-600 border border-gray-200 rounded hover:bg-gray-50 transition-colors" title="Edit">
                         <Edit2 size={14} />
-                      </button>
-                      <button className="inline-flex p-1.5 text-gray-400 hover:text-red-600 border border-gray-200 rounded hover:bg-gray-50 transition-colors" title="Delete">
-                        <Trash2 size={14} />
-                      </button>
+                      </button>}
                     </td>
                   </tr>
                 ))

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Search, Info, Edit2, ArrowLeft, Key, DollarSign, FileText, LayoutIcon, Check } from 'lucide-react';
 
 // Define the structure based on the requirements
@@ -21,10 +21,11 @@ const initialGateways: Gateway[] = [
   { id: 6, name: 'Flutterwave', type: 'Credit_card', status: false, isDefault: false, currency: 'NGN', devMode: true, order: 6, credentials: { publicKey: 'FLWPUBK_TEST-fe4f5...', secretKey: 'FLWSECK_TEST-c297...', encryptionKey: 'FLWSECK_TESTe82f...' } },
   { id: 8, name: 'Stripe', type: 'Credit_card', status: true, isDefault: true, currency: 'NGN', devMode: true, order: 8, credentials: { publishableKey: 'pk_test_51...', secretKey: 'sk_test_51...', webhookSecret: 'whsec_...' } },
   { id: 9, name: 'PayPal', type: 'Digital_wallet', status: true, isDefault: false, currency: 'NGN', devMode: true, order: 9, credentials: { clientId: '', clientSecret: '' } },
+  { id: 10, name: 'Bank Transfer', type: 'Manual', status: true, isDefault: false, currency: 'NGN', devMode: false, order: 10, credentials: { bankName: '', accountName: '', accountNumber: '', instructions: '' } },
 ];
 
 export default function PaymentGateways() {
-  const [gateways, setGateways] = useState<Gateway[]>(initialGateways);
+  const [gateways, setGateways] = useState<Gateway[]>(() => JSON.parse(localStorage.getItem('aeropoint-payment-gateways') || 'null') || initialGateways);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [isColumnMenuOpen, setIsColumnMenuOpen] = useState(false);
   const [visibleColumns, setVisibleColumns] = useState<Record<GatewayColumn, boolean>>({
@@ -36,6 +37,10 @@ export default function PaymentGateways() {
   });
 
   const activeGateway = gateways.find(g => g.id === editingId);
+
+  useEffect(() => {
+    localStorage.setItem('aeropoint-payment-gateways', JSON.stringify(gateways));
+  }, [gateways]);
 
   // Business Rules Logic
   const handleStatusToggle = (id: number) => {
@@ -131,15 +136,23 @@ export default function PaymentGateways() {
           {/* Left Column: Forms */}
           <div className="lg:col-span-2 space-y-6">
             
-            {/* API Credentials Card */}
+            {/* Gateway Configuration Card */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
               <div className="bg-gray-50 px-6 py-4 border-b border-gray-100 flex justify-between items-center">
                 <h3 className="text-sm font-bold text-gray-800 flex items-center gap-2">
-                  <Key size={16} className="text-gray-500" /> API Credentials
+                  <Key size={16} className="text-gray-500" /> {activeGateway.name === 'Bank Transfer' ? 'Bank Account Details' : 'API Credentials'}
                 </h3>
                 <span className="text-xs font-medium bg-gray-200 text-gray-600 px-2 py-1 rounded">{activeGateway.name} Integration</span>
               </div>
               <div className="p-6 space-y-5">
+                {activeGateway.name === 'Bank Transfer' && (
+                  <>
+                    <div><label className="block text-sm font-medium text-gray-700 mb-1">Bank Name</label><input value={activeGateway.credentials.bankName || ''} onChange={event => updateCredential('bankName', event.target.value)} className="w-full bg-white border border-gray-200 rounded-lg px-4 py-2.5 text-sm outline-none focus:border-primary-500" /></div>
+                    <div><label className="block text-sm font-medium text-gray-700 mb-1">Account Name</label><input value={activeGateway.credentials.accountName || ''} onChange={event => updateCredential('accountName', event.target.value)} className="w-full bg-white border border-gray-200 rounded-lg px-4 py-2.5 text-sm outline-none focus:border-primary-500" /></div>
+                    <div><label className="block text-sm font-medium text-gray-700 mb-1">Account Number</label><input inputMode="numeric" value={activeGateway.credentials.accountNumber || ''} onChange={event => updateCredential('accountNumber', event.target.value)} className="w-full bg-white border border-gray-200 rounded-lg px-4 py-2.5 text-sm outline-none focus:border-primary-500" /></div>
+                    <div><label className="block text-sm font-medium text-gray-700 mb-1">Payment Instructions</label><textarea rows={4} value={activeGateway.credentials.instructions || ''} onChange={event => updateCredential('instructions', event.target.value)} className="w-full bg-white border border-gray-200 rounded-lg px-4 py-2.5 text-sm outline-none focus:border-primary-500" /></div>
+                  </>
+                )}
                 
                 {/* Dynamic Fields based on Provider */}
                 {activeGateway.name === 'Flutterwave' && (

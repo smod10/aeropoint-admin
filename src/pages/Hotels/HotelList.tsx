@@ -1,9 +1,31 @@
 import { useState } from 'react';
-import { Search, Filter, Download, Eye, BedDouble, Calendar, MapPin, CheckCircle, Ban, Receipt } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Search, Filter, Download, Eye, BedDouble, Calendar, MapPin, CheckCircle, Ban, Receipt, Plus, Pencil } from 'lucide-react';
 import SlideOver from '../../components/Shared/SlideOver';
 
+type HotelBooking = {
+  id: string;
+  guest: string;
+  hotel: string;
+  location: string;
+  room: string;
+  checkIn: string;
+  checkOut: string;
+  amount: string;
+  status: string;
+  paymentStatus: string;
+  provider: string;
+  email: string;
+  phone: string;
+  address?: string;
+  rooms?: number;
+  adults?: number;
+  children?: number;
+  managed?: boolean;
+};
+
 // Mock Data
-const mockHotels = [
+const mockHotels: HotelBooking[] = [
   {
     id: 'HTL-9021',
     guest: 'David Wallace',
@@ -69,8 +91,17 @@ const getPaymentBadge = (status: string) => {
   return <span className={`px-2.5 py-1 text-xs font-medium rounded-full ${styles[status]}`}>{status}</span>;
 };
 
+const displayBookingDate = (date: string) => /^\d{4}-\d{2}-\d{2}$/.test(date)
+  ? new Date(`${date}T00:00:00`).toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: 'numeric' })
+  : date;
+
 export default function HotelList() {
-  const [selectedBooking, setSelectedBooking] = useState<typeof mockHotels[0] | null>(null);
+  const navigate = useNavigate();
+  const bookings: HotelBooking[] = (() => {
+    const saved = JSON.parse(localStorage.getItem('aeropoint-hotel-bookings') || '[]') as HotelBooking[];
+    return [...saved, ...mockHotels];
+  })();
+  const [selectedBooking, setSelectedBooking] = useState<HotelBooking | null>(null);
   const [isSlideOverOpen, setIsSlideOverOpen] = useState(false);
 
   const openDetails = (booking: typeof mockHotels[0]) => {
@@ -86,10 +117,14 @@ export default function HotelList() {
           <h2 className="text-2xl font-bold text-gray-800">Hotel Reservations</h2>
           <p className="text-sm text-gray-500 mt-1">Manage accommodation bookings and guest details.</p>
         </div>
-        <button className="flex items-center gap-2 bg-white border border-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors shadow-sm">
-          <Download size={16} />
-          Export Data
-        </button>
+        <div className="flex gap-2">
+          <button className="flex items-center gap-2 bg-white border border-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors shadow-sm">
+            <Download size={16} /> Export Data
+          </button>
+          <button onClick={() => navigate('/hotels/edit/new')} className="flex items-center gap-2 bg-primary-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary-700 shadow-sm">
+            <Plus size={16} /> Create Stay Booking
+          </button>
+        </div>
       </div>
 
       {/* Filters and Search */}
@@ -131,7 +166,7 @@ export default function HotelList() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
-              {mockHotels.map((booking) => (
+              {bookings.map((booking) => (
                 <tr key={booking.id} className="hover:bg-gray-50/50 transition-colors">
                   <td className="px-6 py-4 font-medium text-primary-600">{booking.id}</td>
                   <td className="px-6 py-4">
@@ -143,8 +178,8 @@ export default function HotelList() {
                     <div className="text-xs text-gray-400">{booking.room}</div>
                   </td>
                   <td className="px-6 py-4">
-                    <div className="text-gray-900">{booking.checkIn}</div>
-                    <div className="text-xs text-gray-400">to {booking.checkOut}</div>
+                    <div className="text-gray-900">{displayBookingDate(booking.checkIn)}</div>
+                    <div className="text-xs text-gray-400">to {displayBookingDate(booking.checkOut)}</div>
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex flex-col gap-1.5 items-start">
@@ -217,17 +252,21 @@ export default function HotelList() {
                   <span className="text-gray-500 flex items-center gap-1.5"><MapPin size={14}/> Hotel</span>
                   <span className="font-medium text-gray-900">{selectedBooking.hotel}</span>
                 </div>
+                {selectedBooking.address && <div className="grid grid-cols-2 items-center">
+                  <span className="text-gray-500">Address</span>
+                  <span className="font-medium text-gray-900">{selectedBooking.address}</span>
+                </div>}
                 <div className="grid grid-cols-2 items-center">
                   <span className="text-gray-500 flex items-center gap-1.5"><BedDouble size={14}/> Room Type</span>
                   <span className="font-medium text-gray-900">{selectedBooking.room}</span>
                 </div>
                 <div className="grid grid-cols-2 items-center">
                   <span className="text-gray-500 flex items-center gap-1.5"><Calendar size={14}/> Check-in</span>
-                  <span className="font-medium text-gray-900">{selectedBooking.checkIn}</span>
+                  <span className="font-medium text-gray-900">{displayBookingDate(selectedBooking.checkIn)}</span>
                 </div>
                 <div className="grid grid-cols-2 items-center">
                   <span className="text-gray-500 flex items-center gap-1.5"><Calendar size={14}/> Check-out</span>
-                  <span className="font-medium text-gray-900">{selectedBooking.checkOut}</span>
+                  <span className="font-medium text-gray-900">{displayBookingDate(selectedBooking.checkOut)}</span>
                 </div>
                 <div className="grid grid-cols-2">
                   <span className="text-gray-500">API Provider</span>
@@ -248,6 +287,9 @@ export default function HotelList() {
               </button>
               
               <div className="grid grid-cols-2 gap-3">
+                {selectedBooking.managed && <button onClick={() => navigate(`/hotels/edit/${selectedBooking.id}`)} className="col-span-2 flex items-center justify-center gap-2 bg-white border border-gray-200 text-gray-700 px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors">
+                  <Pencil size={16} /> Edit Booking
+                </button>}
                 <button className="flex items-center justify-center gap-2 bg-white border border-gray-200 text-gray-700 px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-emerald-50 hover:text-emerald-600 hover:border-emerald-200 transition-colors">
                   <CheckCircle size={16} />
                   Confirm

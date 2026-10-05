@@ -9,7 +9,17 @@ function getActiveUsers(role?: string) {
   const overrides = readAccountOverrides();
   const trashedIds = readAccountTrash();
   const selectedRole = role || 'customer';
-  return mockUsers
+  const createdCustomers = (JSON.parse(localStorage.getItem('aeropoint-booking-customers') || '[]') as { id: number; firstName: string; lastName: string; email: string; phone: string }[]).map(customer => ({
+    ...customer,
+    uid: `AEP-${customer.id}`,
+    status: true,
+    banned: false,
+    role: 'customer',
+    balance: '0.00',
+    verified: false,
+    createdAt: new Date().toISOString(),
+  }));
+  return [...mockUsers, ...createdCustomers]
     .map(user => ({ ...user, ...overrides[user.id] }))
     .filter(user => !trashedIds[user.id] && user.role.toLowerCase() === selectedRole.toLowerCase());
 }

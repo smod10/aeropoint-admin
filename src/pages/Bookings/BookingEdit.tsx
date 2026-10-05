@@ -1,15 +1,36 @@
+import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, CheckCircle2, FileText, Ban, RotateCcw, AlertTriangle, ShieldCheck, CreditCard, XCircle, User, Settings, Calendar, Banknote } from 'lucide-react';
 import { mockBookings } from '../../data/mockBookings';
 import { useCurrency } from '../../context/CurrencyContext';
+import { canManageTeam, getCurrentActorRole } from '../../utils/accountAccess';
+
+type BookingOverride = { bookingStatus?: string; paymentStatus?: string; price?: string; customerName?: string; customerEmail?: string };
 
 export default function BookingEdit() {
   const navigate = useNavigate();
   const { id } = useParams();
   const { convertFromAndFormat } = useCurrency();
+  const canManage = canManageTeam(getCurrentActorRole());
   
   const booking = mockBookings.find(b => b.invoice === id) || mockBookings[0];
   const refTitle = booking.moduleType === 'flights' ? 'PNR Number' : booking.moduleType === 'visa' ? 'Application ID' : 'Booking Reference';
+  const savedOverrides = JSON.parse(localStorage.getItem('aeropoint-booking-overrides') || '{}') as Record<string, BookingOverride>;
+  const saved = savedOverrides[booking.invoice] || {};
+  const [bookingStatus, setBookingStatus] = useState(saved.bookingStatus ?? booking.booking.split('\n')[0]);
+  const [paymentStatus, setPaymentStatus] = useState(saved.paymentStatus ?? booking.payment);
+  const [price, setPrice] = useState(saved.price ?? booking.price);
+  const [customerName, setCustomerName] = useState(saved.customerName ?? booking.user.split('\n')[0]);
+  const [customerEmail, setCustomerEmail] = useState(saved.customerEmail ?? booking.user.split('\n')[1]);
+
+  const saveChanges = () => {
+    const overrides = JSON.parse(localStorage.getItem('aeropoint-booking-overrides') || '{}') as Record<string, BookingOverride>;
+    overrides[booking.invoice] = { bookingStatus, paymentStatus, price, customerName, customerEmail };
+    localStorage.setItem('aeropoint-booking-overrides', JSON.stringify(overrides));
+    navigate(`/bookings/view/${booking.invoice}`);
+  };
+
+  if (!canManage) return <div role="alert" className="rounded-lg border border-red-200 bg-white p-8 text-center text-gray-600">You do not have permission to edit bookings.</div>;
 
   return (
     <div className="space-y-6 max-w-5xl animate-in fade-in duration-300">
@@ -28,12 +49,13 @@ export default function BookingEdit() {
           </div>
         </div>
         <div className="flex gap-2">
-          <button className="flex items-center gap-2 bg-gray-800 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-900 transition-colors shadow-sm">
+          <button onClick={() => setPaymentStatus('PAID')} className="flex items-center gap-2 bg-gray-800 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-900 transition-colors shadow-sm">
             <CreditCard size={16} /> Mark Paid
           </button>
-          <button className="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-emerald-700 transition-colors shadow-sm">
+          <button onClick={() => setBookingStatus('CONFIRMED')} className="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-emerald-700 transition-colors shadow-sm">
             <CheckCircle2 size={16} /> Confirm Booking
           </button>
+          <button onClick={saveChanges} className="rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700">Save Changes</button>
         </div>
       </div>
 
@@ -68,13 +90,13 @@ export default function BookingEdit() {
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <button className="flex items-center justify-center gap-2 bg-emerald-600 text-white py-3 rounded-lg text-sm font-bold hover:bg-emerald-700 transition-colors shadow-sm">
+          <button onClick={() => setBookingStatus('CONFIRMED')} className="flex items-center justify-center gap-2 bg-emerald-600 text-white py-3 rounded-lg text-sm font-bold hover:bg-emerald-700 transition-colors shadow-sm">
             <CheckCircle2 size={18} /> Issue Booking
           </button>
-          <button className="flex items-center justify-center gap-2 bg-gray-200 text-gray-600 py-3 rounded-lg text-sm font-bold hover:bg-gray-300 transition-colors">
+          <button onClick={() => setBookingStatus('CANCELLED')} className="flex items-center justify-center gap-2 bg-gray-200 text-gray-600 py-3 rounded-lg text-sm font-bold hover:bg-gray-300 transition-colors">
             <Ban size={18} /> Void Booking
           </button>
-          <button className="flex items-center justify-center gap-2 bg-gray-200 text-gray-600 py-3 rounded-lg text-sm font-bold hover:bg-gray-300 transition-colors">
+          <button onClick={() => setPaymentStatus('REFUNDED')} className="flex items-center justify-center gap-2 bg-gray-200 text-gray-600 py-3 rounded-lg text-sm font-bold hover:bg-gray-300 transition-colors">
             <XCircle size={18} /> Cancel Booking
           </button>
           <button className="flex items-center justify-center gap-2 bg-gray-200 text-gray-600 py-3 rounded-lg text-sm font-bold hover:bg-gray-300 transition-colors">
@@ -90,10 +112,10 @@ export default function BookingEdit() {
           <span className="text-xs text-gray-500">Pricing & Commission</span>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-5 gap-6">
-          <div><label className="block text-xs font-medium text-gray-700 mb-1">Booking Status <span className="text-red-500">*</span></label><select className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none"><option>{booking.booking.split('\n')[0]}</option><option>CONFIRMED</option><option>CANCELLED</option></select></div>
-          <div><label className="block text-xs font-medium text-gray-700 mb-1">Payment Status <span className="text-red-500">*</span></label><select className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none"><option>{booking.payment}</option><option>PAID</option></select></div>
+          <div><label className="block text-xs font-medium text-gray-700 mb-1">Booking Status <span className="text-red-500">*</span></label><select value={bookingStatus} onChange={event => setBookingStatus(event.target.value)} className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none"><option>PENDING</option><option>CONFIRMED</option><option>COMPLETED</option><option>CANCELLED</option></select></div>
+          <div><label className="block text-xs font-medium text-gray-700 mb-1">Payment Status <span className="text-red-500">*</span></label><select value={paymentStatus} onChange={event => setPaymentStatus(event.target.value)} className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none"><option>UNPAID</option><option>PENDING</option><option>PAID</option><option>REFUNDED</option></select></div>
           <div><label className="block text-xs font-medium text-gray-700 mb-1">Original Price <span className="text-red-500">*</span></label><input type="text" defaultValue={convertFromAndFormat(Number(booking.price) - Number(booking.earning), 'USD')} className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none" /></div>
-          <div><label className="block text-xs font-medium text-gray-700 mb-1">Final Price</label><input type="text" defaultValue={convertFromAndFormat(Number(booking.price), 'USD')} className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none" /></div>
+          <div><label className="block text-xs font-medium text-gray-700 mb-1">Final Price</label><input type="number" min="0" step="0.01" value={price} onChange={event => setPrice(event.target.value)} className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none" /></div>
           <div><label className="block text-xs font-medium text-gray-700 mb-1">Commission</label><input type="text" defaultValue={convertFromAndFormat(Number(booking.earning), 'USD')} className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none font-bold text-emerald-600" /></div>
         </div>
       </div>
@@ -105,8 +127,8 @@ export default function BookingEdit() {
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="grid grid-cols-2 gap-4">
-            <div><label className="block text-xs font-medium text-gray-700 mb-1">Name <span className="text-red-500">*</span></label><input type="text" defaultValue={booking.user.split('\n')[0]} className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none" /></div>
-            <div><label className="block text-xs font-medium text-gray-700 mb-1">Email <span className="text-red-500">*</span></label><input type="email" defaultValue={booking.user.split('\n')[1]} className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none" /></div>
+            <div><label className="block text-xs font-medium text-gray-700 mb-1">Name <span className="text-red-500">*</span></label><input type="text" value={customerName} onChange={event => setCustomerName(event.target.value)} className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none" /></div>
+            <div><label className="block text-xs font-medium text-gray-700 mb-1">Email <span className="text-red-500">*</span></label><input type="email" value={customerEmail} onChange={event => setCustomerEmail(event.target.value)} className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none" /></div>
           </div>
         </div>
       </div>

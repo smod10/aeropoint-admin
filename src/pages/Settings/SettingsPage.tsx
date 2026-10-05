@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Building, Globe, Users, Shield, Bell, Save, Pencil, UserPlus } from 'lucide-react';
+import { Building, Globe, Users, Shield, Bell, Save, Pencil, UserPlus, Trash2 } from 'lucide-react';
 import { mockUsers } from '../../data/mockUsers';
 import companyLogo from '../../assets/aeropoint-express-logo.png';
-import { canEditAccount, getCurrentActorRole } from '../../utils/accountAccess';
+import { canEditAccount, canManageTeam, getCurrentAccountId, getCurrentActorRole, moveAccountToTrash, readAccountTrash } from '../../utils/accountAccess';
 
 const roleOptions = ['All Roles', 'admin', 'employee', 'supplier', 'agent'];
 type TeamMemberUpdate = { firstName: string; lastName: string; email: string; phone: string; role: string; department: string; status: boolean };
@@ -14,6 +14,7 @@ export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState<'general' | 'localization' | 'team'>(location.pathname === '/settings/team' ? 'team' : 'general');
   const [selectedRole, setSelectedRole] = useState('All Roles');
   const [teamOverrides] = useState<Record<number, Partial<TeamMemberUpdate>>>(() => JSON.parse(localStorage.getItem('aeropoint-team-overrides') || '{}'));
+  const [teamTrash, setTeamTrash] = useState(readAccountTrash);
   const [baseCurrency, setBaseCurrency] = useState(() => localStorage.getItem('aeropoint-base-currency') || 'NGN');
   const [timeZone, setTimeZone] = useState(() => localStorage.getItem('aeropoint-time-zone') || 'Africa/Lagos');
   const actorRole = getCurrentActorRole();
@@ -23,22 +24,23 @@ export default function SettingsPage() {
   }, [location.pathname]);
 
   const roleSummary = useMemo(() => [
-    { id: 'admin', label: 'Admins', count: mockUsers.filter(user => (teamOverrides[user.id]?.role ?? user.role) === 'admin').length, tone: 'bg-primary-100 text-primary-800' },
-    { id: 'employee', label: 'Employees', count: mockUsers.filter(user => (teamOverrides[user.id]?.role ?? user.role) === 'employee').length, tone: 'bg-blue-100 text-blue-700' },
-    { id: 'supplier', label: 'Suppliers', count: mockUsers.filter(user => (teamOverrides[user.id]?.role ?? user.role) === 'supplier').length, tone: 'bg-orange-100 text-orange-700' },
-    { id: 'agent', label: 'Agents', count: mockUsers.filter(user => (teamOverrides[user.id]?.role ?? user.role) === 'agent').length, tone: 'bg-emerald-100 text-emerald-700' },
-  ], [teamOverrides]);
+    { id: 'admin', label: 'Admins', count: mockUsers.filter(user => !teamTrash[user.id] && (teamOverrides[user.id]?.role ?? user.role) === 'admin').length, tone: 'bg-primary-100 text-primary-800' },
+    { id: 'employee', label: 'Employees', count: mockUsers.filter(user => !teamTrash[user.id] && (teamOverrides[user.id]?.role ?? user.role) === 'employee').length, tone: 'bg-blue-100 text-blue-700' },
+    { id: 'supplier', label: 'Suppliers', count: mockUsers.filter(user => !teamTrash[user.id] && (teamOverrides[user.id]?.role ?? user.role) === 'supplier').length, tone: 'bg-orange-100 text-orange-700' },
+    { id: 'agent', label: 'Agents', count: mockUsers.filter(user => !teamTrash[user.id] && (teamOverrides[user.id]?.role ?? user.role) === 'agent').length, tone: 'bg-emerald-100 text-emerald-700' },
+  ], [teamOverrides, teamTrash]);
 
   const teamMembers = useMemo(
     () => mockUsers
       .map(user => ({ ...user, ...teamOverrides[user.id] }))
       .filter(user => ['admin', 'employee', 'supplier', 'agent'].includes(user.role))
+      .filter(user => !teamTrash[user.id])
       .map(user => ({
         ...user,
         roleLabel: user.role === 'admin' ? 'Admin' : user.role === 'employee' ? 'Employee' : user.role === 'supplier' ? 'Supplier' : 'Agent',
         location: teamOverrides[user.id]?.department ?? (user.role === 'supplier' ? 'Operations' : user.role === 'agent' ? 'Sales' : user.role === 'employee' ? 'Support' : 'Executive'),
       })),
-    [teamOverrides]
+    [teamOverrides, teamTrash]
   );
 
   const filteredTeamMembers = selectedRole === 'All Roles'
@@ -50,6 +52,12 @@ export default function SettingsPage() {
     if (tab !== 'localization') {
       navigate(tab === 'team' ? '/settings/team' : '/settings');
     }
+  };
+
+  const deleteTeamMember = (id: number) => {
+    if (!window.confirm('Move this team member to Team Trash?')) return;
+    moveAccountToTrash(id, actorRole);
+    setTeamTrash(readAccountTrash());
   };
 
   const tabs = [
@@ -175,6 +183,9 @@ export default function SettingsPage() {
                   <p className="text-sm text-gray-500 mt-1">Manage internal access, assignments, and role ownership.</p>
                 </div>
                 <div className="flex gap-2">
+                  {canManageTeam(actorRole) && <button onClick={() => navigate('/settings/team/trash')} className="bg-white border border-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors">
+                    <Trash2 size={14} className="inline mr-2" />Team Trash
+                  </button>}
                   <button className="bg-white border border-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors">
                     <UserPlus size={14} className="inline mr-2" />
                     Invite Member
@@ -252,6 +263,9 @@ export default function SettingsPage() {
                             <div className="flex justify-end gap-2">
                               {canEditAccount(actorRole, member) && <button onClick={() => navigate(`/settings/team/${member.id}`)} className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-primary-700 bg-primary-50 rounded-lg hover:bg-primary-100 transition-colors">
                                 <Pencil size={12} /> Edit
+                              </button>}
+                              {canManageTeam(actorRole) && !member.isSuperAdmin && member.id !== getCurrentAccountId() && <button onClick={() => deleteTeamMember(member.id)} className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-700 bg-red-50 rounded-lg hover:bg-red-100 transition-colors">
+                                <Trash2 size={12} /> Delete
                               </button>}
                               <button className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors">
                                 Assign

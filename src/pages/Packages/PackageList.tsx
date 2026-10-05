@@ -113,7 +113,7 @@ export default function PackageList() {
       {/* Header and Controls */}
       <div className="bg-white p-6 rounded-xl shadow-soft border border-gray-100 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-800">Tours Management</h2>
+          <h2 className="text-2xl font-bold text-gray-800">Tours & Umrah Packages</h2>
           <p className="text-sm text-gray-500 mt-1">Total: {packages.length} records</p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
