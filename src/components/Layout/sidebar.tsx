@@ -40,7 +40,14 @@ const navItems = [
       { name: 'Airports', path: '/flights/airports' }
     ]
   },
-  { name: 'Hotels', path: '/hotels', icon: Building2 },
+  { 
+    name: 'Hotels', 
+    icon: Building2,
+    subItems: [
+      { name: 'Hotel Listings', path: '/hotels' },
+      { name: 'Room Inventory', path: '/hotels/inventory' }
+    ]
+  },
   { name: 'Tours & Umrah', path: '/packages', icon: Package },
   { 
     name: 'Visa', 
@@ -63,7 +70,7 @@ const navItems = [
     name: 'Reports', 
     icon: BarChart3,
     subItems: [
-      { name: 'Bookings & Revenue', path: '/reports/bookings' }
+      { name: 'Booking & Revenue', path: '/reports/bookings' }
     ]
   },
   { 
@@ -72,7 +79,6 @@ const navItems = [
     subItems: [
       { name: 'General Settings', path: '/settings' },
       { name: 'Team & Roles', path: '/settings/team' },
-      { name: 'Team Trash', path: '/settings/team/trash' },
       { name: 'Exchange Rates', path: '/settings/exchange-rates' },
       { name: 'Payment Gateways', path: '/payments' },
       { name: 'Modules', path: '/modules' }

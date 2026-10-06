@@ -10,7 +10,7 @@ const standardAmenities = ['Wi-Fi', 'Swimming Pool', 'Gym', 'Restaurant', 'Parki
 const fieldClass = 'mt-1.5 w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-100';
 
 function blankRoom(): HotelRoom {
-  return { id: crypto.randomUUID(), name: '', description: '', images: [], maxGuests: 2, bedType: '', facilities: [], price: 0, availability: 'Available' };
+  return { id: crypto.randomUUID(), name: '', description: '', images: [], maxGuests: 2, bedType: '', facilities: [], price: 0, availableUnits: 0, availability: 'Available' };
 }
 
 function readImage(file: File): Promise<HotelImage> {
@@ -111,6 +111,7 @@ export default function HotelListingEdit() {
         {hotel.rooms.map((room, index) => <article key={room.id} className="rounded-lg border border-gray-200 bg-white p-5"><div className="mb-4 flex items-center justify-between"><h3 className="text-sm font-semibold text-gray-900">Room {index + 1}</h3>{hotel.rooms.length > 1 && <button type="button" onClick={() => update('rooms', hotel.rooms.filter(item => item.id !== room.id))} aria-label={`Remove room ${index + 1}`} className="rounded p-1.5 text-red-600 hover:bg-red-50"><Trash2 size={16} /></button>}</div><div className="grid gap-4 sm:grid-cols-2">
           <label className="text-sm font-medium text-gray-700">Room name / type<input required value={room.name} onChange={event => updateRoom(room.id, { name: event.target.value })} className={fieldClass} /></label>
           <label className="text-sm font-medium text-gray-700">Maximum guests<input required min="1" type="number" value={room.maxGuests} onChange={event => updateRoom(room.id, { maxGuests: Number(event.target.value) })} className={fieldClass} /></label>
+          <label className="text-sm font-medium text-gray-700">Available rooms<input required min="0" type="number" value={room.availableUnits ?? 0} onChange={event => updateRoom(room.id, { availableUnits: Number(event.target.value) })} className={fieldClass} /></label>
           <label className="text-sm font-medium text-gray-700">Bed type<input value={room.bedType} onChange={event => updateRoom(room.id, { bedType: event.target.value })} placeholder="King, twin, bunk..." className={fieldClass} /></label>
           <label className="text-sm font-medium text-gray-700">Price per night<input required min="0" step="0.01" type="number" value={room.price} onChange={event => updateRoom(room.id, { price: Number(event.target.value) })} className={fieldClass} /></label>
           <label className="text-sm font-medium text-gray-700">Availability<select value={room.availability} onChange={event => updateRoom(room.id, { availability: event.target.value as HotelRoom['availability'] })} className={fieldClass}><option>Available</option><option>Unavailable</option></select></label>

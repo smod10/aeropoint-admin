@@ -5,11 +5,11 @@ import { ArrowLeft, Save, UserRound } from 'lucide-react';
 import { mockPackages } from '../../data/mockPackages';
 import { mockUsers } from '../../data/mockUsers';
 import { findManagedBooking, saveManagedBooking } from '../../utils/bookingStorage';
+import { readHotelListings } from '../../utils/hotelStorage';
 import { canManageTeam, getCurrentActorRole } from '../../utils/accountAccess';
 import type { BookingType, ManagedBooking } from '../../types/booking';
 
 type Customer = { id: number; firstName: string; lastName: string; email: string; phone: string };
-type HotelOption = { id: string; name: string; status: string; rooms?: { name: string }[] };
 type Field = { key: string; label: string; type?: string; required?: boolean; options?: string[]; rows?: number };
 
 const typeLabels: Record<BookingType, string> = {
@@ -102,7 +102,7 @@ export default function BookingCreate() {
 
   const filteredCustomers = customers.filter(customer => `${customer.firstName} ${customer.lastName} ${customer.email}`.toLowerCase().includes(customerSearch.toLowerCase()));
   const packages = mockPackages.filter(item => bookingType === 'umrah' ? item.module === 'umrah' : item.module === 'tour');
-  const hotels = (JSON.parse(localStorage.getItem('aeropoint-hotel-listings') || '[]') as HotelOption[]).filter(hotel => hotel.status === 'Published');
+  const hotels = readHotelListings().filter(hotel => hotel.status === 'Published');
   const activeFields = fieldsByType[bookingType] ?? fieldsByType.flights;
 
   const selectCustomer = (id: number) => {

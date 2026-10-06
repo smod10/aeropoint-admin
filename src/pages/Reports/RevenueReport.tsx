@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from 'react';
 import { Download, Printer, RefreshCw } from 'lucide-react';
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import apiClient from '../../services/apiClient';
-import companyLogo from '../../assets/aeropoint-express-logo.png';
 
 type DatePeriod = 'today' | 'thisMonth' | 'lastMonth' | 'thisYear' | 'custom';
 type BookingType = 'all' | 'flights' | 'hotels' | 'tours' | 'visa' | 'umrah';
@@ -177,7 +176,7 @@ export default function RevenueReport() {
     <div className="space-y-6">
       <style>{'@media print { .report-controls { display: none !important; } .report-shell { border: 0 !important; box-shadow: none !important; } body { background: white !important; } }'}</style>
       <header className="flex flex-col gap-4 border-b border-gray-200 pb-5 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-4"><img src={companyLogo} alt="Aeropoint Express" className="h-10 w-auto object-contain" /><div><h1 className="text-2xl font-bold text-gray-900">Bookings & Revenue</h1><p className="mt-1 text-sm text-gray-500">{periodLabel} · Generated {new Date().toLocaleDateString()}</p></div></div>
+        <div><h1 className="text-2xl font-bold text-gray-900">Booking & Revenue</h1><p className="mt-1 text-sm text-gray-500">{periodLabel} · Generated {new Date().toLocaleDateString()}</p></div>
         <div className="report-controls flex flex-wrap gap-2">
           <button onClick={() => window.print()} disabled={isLoading || Boolean(error)} className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"><Printer size={16} /> Export PDF</button>
           <button onClick={exportCsv} disabled={isLoading || Boolean(error)} className="inline-flex items-center gap-2 rounded-lg bg-primary-600 px-3 py-2 text-sm font-medium text-white hover:bg-primary-700 disabled:cursor-not-allowed disabled:opacity-50"><Download size={16} /> Export CSV</button>

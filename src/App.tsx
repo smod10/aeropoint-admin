@@ -55,6 +55,7 @@ import RoleEdit from './pages/Settings/RoleEdit';
 
 // Other Modules
 import HotelCatalog from './pages/Hotels/HotelCatalog';
+import HotelInventory from './pages/Hotels/HotelInventory';
 import HotelListingEdit from './pages/Hotels/HotelListingEdit';
 import PublicHotels from './pages/Hotels/PublicHotels';
 import PaymentList from './pages/Payments/PaymentList';
@@ -125,6 +126,7 @@ export default function App() {
             <Route path="settings/exchange-rates" element={<ExchangeRates />} />
             
             <Route path="hotels" element={<HotelCatalog />} />
+            <Route path="hotels/inventory" element={<HotelInventory />} />
             <Route path="hotels/edit/:id" element={<HotelListingEdit />} />
             <Route path="payments" element={<PaymentList />} />
             <Route path="modules" element={<Modules />} /> 

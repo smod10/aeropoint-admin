@@ -61,7 +61,7 @@ export default function DashboardHome() {
           <button onClick={() => navigate('/bookings')} className="bg-white border border-gray-200 text-gray-700 px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors shadow-sm">
             View All Bookings
           </button>
-          <button onClick={() => navigate('/reports/transactions')} className="bg-[#0d6efd] text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors shadow-sm">
+          <button onClick={() => navigate('/reports/bookings')} className="bg-[#0d6efd] text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors shadow-sm">
             Generate Report
           </button>
         </div>

@@ -9,6 +9,7 @@ export type HotelRoom = {
   bedType: string;
   facilities: string[];
   price: number;
+  availableUnits?: number;
   availability: 'Available' | 'Unavailable';
 };
 
