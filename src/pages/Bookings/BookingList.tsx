@@ -360,7 +360,7 @@ export default function BookingList() {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={11} className="px-4 py-12 text-center text-gray-500">
+                  <td colSpan={visibleColumnCount} className="px-4 py-12 text-center text-gray-500">
                     No bookings found matching your criteria.
                   </td>
                 </tr>

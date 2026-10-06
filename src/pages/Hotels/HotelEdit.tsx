@@ -44,10 +44,6 @@ function getNights(checkIn: string, checkOut: string) {
   return Math.max(0, Math.ceil((new Date(`${checkOut}T00:00:00`).getTime() - new Date(`${checkIn}T00:00:00`).getTime()) / 86400000));
 }
 
-function displayDate(date: string) {
-  return date ? new Date(`${date}T00:00:00`).toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: 'numeric' }) : '';
-}
-
 function nextDate(date: string) {
   if (!date) return undefined;
   const [year, month, day] = date.split('-').map(Number);
