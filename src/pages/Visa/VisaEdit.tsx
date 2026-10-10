@@ -9,16 +9,24 @@ export default function VisaEdit() {
   const { id } = useParams();
   const isNew = id === 'new' || !id;
 
-  const [activeTab, setActiveTab] = useState<'general' | 'pricing' | 'requirements' | 'gallery'>('general');
+  const [activeTab, setActiveTab] = useState<'general' | 'pricing' | 'requirements' | 'gallery'>(isNew ? 'pricing' : 'general');
 
   // Form States
   const [destinationCountry, setDestinationCountry] = useState(isNew ? '' : 'United Kingdom');
   const [description, setDescription] = useState('');
-  const [pricingOptions, setPricingOptions] = useState<any[]>([]);
+  const [pricingOptions, setPricingOptions] = useState<any[]>(isNew ? [{
+    id: -1,
+    type: 'Tourist Visa',
+    processing: 'Standard (7-10 Days)',
+    entry: 'Single Entry',
+    duration: '30 Days',
+    baseFee: '',
+    markup: '',
+  }] : []);
   const [requirements, setRequirements] = useState<string[]>([]);
   
   // Track which Visa Option is currently being edited in the dropdown
-  const [activeOptionId, setActiveOptionId] = useState<number | null>(null);
+  const [activeOptionId, setActiveOptionId] = useState<number | null>(isNew ? -1 : null);
 
   // 1. Define dropdown options safely and dynamically
   const currentProfile = globalVisaProfiles.find(p => p.country === destinationCountry);
@@ -68,8 +76,9 @@ export default function VisaEdit() {
       ]);
     } else {
       setDescription('');
-      setPricingOptions([]);
-      setActiveOptionId(null);
+      const blankOption = isNew ? [{ id: -1, type: 'Tourist Visa', processing: 'Standard (7-10 Days)', entry: 'Single Entry', duration: '30 Days', baseFee: '', markup: '' }] : [];
+      setPricingOptions(blankOption);
+      setActiveOptionId(blankOption[0]?.id ?? null);
       setRequirements([]);
     }
   };
@@ -221,7 +230,7 @@ export default function VisaEdit() {
                   <h3 className="text-sm font-bold text-gray-800 flex items-center gap-2">
                     <DollarSign size={16} className="text-primary-500" /> Configured Visa Types for {destinationCountry || 'this Country'}
                   </h3>
-                  <p className="text-xs text-gray-500 mt-1">Select a specific visa track from the dropdown to edit its properties.</p>
+                  <p className="text-xs text-gray-500 mt-1">{isNew ? 'Complete the blank visa option below with its processing, duration, and pricing details.' : 'Select a specific visa track from the dropdown to edit its properties.'}</p>
                 </div>
                 <button type="button" onClick={addPricingOption} className="text-sm font-medium text-primary-600 hover:text-primary-700 flex items-center gap-1 bg-primary-50 px-3 py-1.5 rounded-lg">
                   <Plus size={16} /> Add Visa Option

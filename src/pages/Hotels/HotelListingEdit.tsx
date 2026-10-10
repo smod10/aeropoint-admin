@@ -25,7 +25,7 @@ function readImage(file: File): Promise<HotelImage> {
 function newHotel(): HotelListing {
   return {
     id: crypto.randomUUID(), name: '', description: '', address: '', city: '', country: '', contactName: '',
-    contactEmail: '', contactPhone: '', category: 'Hotel', stars: 3, amenities: [], images: [], featuredImageId: '',
+    contactEmail: '', contactPhone: '', category: 'Stay', stars: 3, amenities: [], images: [], featuredImageId: '',
     rooms: [blankRoom()], status: 'Draft', createdAt: new Date().toISOString(),
   };
 }
@@ -69,25 +69,25 @@ export default function HotelListingEdit() {
     setCustomAmenity('');
   };
 
-  if (id && id !== 'new' && !existing) return <div className="rounded-lg border border-gray-200 bg-white p-8 text-center text-gray-600">Hotel listing not found.</div>;
-  if (!canManage) return <div role="alert" className="rounded-lg border border-red-200 bg-white p-8 text-center text-gray-600">You do not have permission to manage hotel listings.</div>;
+  if (id && id !== 'new' && !existing) return <div className="rounded-lg border border-gray-200 bg-white p-8 text-center text-gray-600">Stay listing not found.</div>;
+  if (!canManage) return <div role="alert" className="rounded-lg border border-red-200 bg-white p-8 text-center text-gray-600">You do not have permission to manage stay listings.</div>;
 
   return (
     <form onSubmit={handleSubmit} className="mx-auto max-w-6xl space-y-6 pb-10">
       <header className="flex flex-col gap-4 border-b border-gray-200 pb-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-3"><Link to="/hotels" aria-label="Back to hotels" className="rounded-lg border border-gray-200 bg-white p-2 text-gray-600 hover:bg-gray-50"><ArrowLeft size={18} /></Link><div><p className="text-xs font-semibold uppercase tracking-wider text-primary-600">Hotel inventory</p><h1 className="mt-1 text-2xl font-bold text-gray-900">{existing ? 'Edit hotel listing' : 'Add new hotel'}</h1></div></div>
+        <div className="flex items-center gap-3"><Link to="/hotels" aria-label="Back to stays" className="rounded-lg border border-gray-200 bg-white p-2 text-gray-600 hover:bg-gray-50"><ArrowLeft size={18} /></Link><div><p className="text-xs font-semibold uppercase tracking-wider text-primary-600">Stay inventory</p><h1 className="mt-1 text-2xl font-bold text-gray-900">{existing ? 'Edit stay listing' : 'Add new stay'}</h1></div></div>
         <button type="submit" className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary-700"><Save size={16} /> Save listing</button>
       </header>
 
       <section className="rounded-lg border border-gray-200 bg-white p-6">
         <h2 className="text-sm font-semibold text-gray-900">Basic information</h2>
         <div className="mt-5 grid gap-4 sm:grid-cols-2">
-          <label className="text-sm font-medium text-gray-700 sm:col-span-2">Hotel / property name<input required value={hotel.name} onChange={event => update('name', event.target.value)} className={fieldClass} /></label>
+          <label className="text-sm font-medium text-gray-700 sm:col-span-2">Stay / property name<input required value={hotel.name} onChange={event => update('name', event.target.value)} className={fieldClass} /></label>
           <label className="text-sm font-medium text-gray-700 sm:col-span-2">Description<textarea required rows={4} value={hotel.description} onChange={event => update('description', event.target.value)} className={fieldClass} /></label>
           <label className="text-sm font-medium text-gray-700 sm:col-span-2">Street address<input required value={hotel.address} onChange={event => update('address', event.target.value)} className={fieldClass} /></label>
           <label className="text-sm font-medium text-gray-700">City<input required value={hotel.city} onChange={event => update('city', event.target.value)} className={fieldClass} /></label>
           <label className="text-sm font-medium text-gray-700">Country<input required value={hotel.country} onChange={event => update('country', event.target.value)} className={fieldClass} /></label>
-          <label className="text-sm font-medium text-gray-700">Category<select value={hotel.category} onChange={event => update('category', event.target.value)} className={fieldClass}>{['Hotel', 'Resort', 'Apartment', 'Guest House', 'Villa', 'Hostel', 'Other'].map(category => <option key={category}>{category}</option>)}</select></label>
+          <label className="text-sm font-medium text-gray-700">Category<select value={hotel.category === 'Hotel' ? 'Stay' : hotel.category} onChange={event => update('category', event.target.value)} className={fieldClass}>{['Stay', 'Resort', 'Apartment', 'Guest House', 'Villa', 'Hostel', 'Other'].map(category => <option key={category}>{category}</option>)}</select></label>
           <label className="text-sm font-medium text-gray-700">Star rating<select value={hotel.stars} onChange={event => update('stars', Number(event.target.value))} className={fieldClass}>{[1, 2, 3, 4, 5].map(stars => <option key={stars} value={stars}>{stars} star{stars === 1 ? '' : 's'}</option>)}</select></label>
           <label className="text-sm font-medium text-gray-700">Contact name<input value={hotel.contactName} onChange={event => update('contactName', event.target.value)} className={fieldClass} /></label>
           <label className="text-sm font-medium text-gray-700">Contact email<input type="email" value={hotel.contactEmail} onChange={event => update('contactEmail', event.target.value)} className={fieldClass} /></label>
@@ -123,7 +123,7 @@ export default function HotelListingEdit() {
       </section>
 
       <section className="flex flex-col gap-4 rounded-lg border border-gray-200 bg-white p-6 sm:flex-row sm:items-end sm:justify-between">
-        <label className="w-full max-w-xs text-sm font-medium text-gray-700">Listing status<select value={hotel.status} onChange={event => update('status', event.target.value as HotelListing['status'])} className={fieldClass}><option>Draft</option><option>Published</option><option>Unpublished</option></select><span className="mt-1 block text-xs font-normal text-gray-500">Only published hotels are available for booking.</span></label>
+        <label className="w-full max-w-xs text-sm font-medium text-gray-700">Listing status<select value={hotel.status} onChange={event => update('status', event.target.value as HotelListing['status'])} className={fieldClass}><option>Draft</option><option>Published</option><option>Unpublished</option></select><span className="mt-1 block text-xs font-normal text-gray-500">Only published stays are available for booking.</span></label>
         <button type="submit" className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary-700"><Save size={16} /> Save listing</button>
       </section>
     </form>

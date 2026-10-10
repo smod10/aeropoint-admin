@@ -1,11 +1,15 @@
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Printer, Download, CheckCircle2, CreditCard, Building } from 'lucide-react';
 import { mockTransactions } from '../../data/mockTransactions';
+import { useCurrency } from '../../context/CurrencyContext';
+import type { Currency } from '../../context/CurrencyContext';
 
 export default function TransactionView() {
   const navigate = useNavigate();
   const { id } = useParams();
+  const { convertFromAndFormat } = useCurrency();
   const transaction = mockTransactions.find(item => item.id === id) ?? mockTransactions[0];
+  const formatAmount = (amount: string) => convertFromAndFormat(Number(amount.replace(/,/g, '')), transaction.currency as Currency);
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto animate-in fade-in duration-300 pb-10">
@@ -81,15 +85,15 @@ export default function TransactionView() {
             <div className="bg-gray-50 rounded-lg p-5 border border-gray-100">
               <div className="flex justify-between items-center mb-3">
                 <span className="text-sm text-gray-600">Base Amount</span>
-                <span className="text-sm text-gray-900 font-medium">{transaction.currency} {transaction.netAmount}</span>
+                <span className="text-sm text-gray-900 font-medium">{formatAmount(transaction.netAmount)}</span>
               </div>
               <div className="flex justify-between items-center mb-3">
                 <span className="text-sm text-gray-600">Gateway Processing Fee</span>
-                <span className="text-sm text-gray-900 font-medium">{transaction.currency} {transaction.fees}</span>
+                <span className="text-sm text-gray-900 font-medium">{formatAmount(transaction.fees)}</span>
               </div>
               <div className="flex justify-between items-center pt-3 border-t border-gray-200 mt-2">
                 <span className="text-base font-bold text-gray-800">Total Paid</span>
-                <span className="text-xl font-black text-[#0d6efd]">{transaction.currency} {transaction.amount}</span>
+                <span className="text-xl font-black text-[#0d6efd]">{formatAmount(transaction.amount)}</span>
               </div>
             </div>
           </div>

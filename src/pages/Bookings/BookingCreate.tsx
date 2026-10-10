@@ -13,7 +13,7 @@ type Customer = { id: number; firstName: string; lastName: string; email: string
 type Field = { key: string; label: string; type?: string; required?: boolean; options?: string[]; rows?: number };
 
 const typeLabels: Record<BookingType, string> = {
-  flights: 'Flight', stays: 'Hotel', tours: 'Tour / Package', visa: 'Visa', umrah: 'Umrah',
+  flights: 'Flight', stays: 'Stay', tours: 'Tour / Package', visa: 'Visa', umrah: 'Umrah',
 };
 
 const fieldsByType: Record<BookingType, Field[]> = {
@@ -28,7 +28,7 @@ const fieldsByType: Record<BookingType, Field[]> = {
     { key: 'specialRequests', label: 'Special requests', rows: 3 },
   ],
   stays: [
-    { key: 'hotel', label: 'Hotel / property', required: true },
+    { key: 'hotel', label: 'Stay / property', required: true },
     { key: 'room', label: 'Room type', required: true },
     { key: 'checkIn', label: 'Check-in', type: 'date', required: true },
     { key: 'checkOut', label: 'Check-out', type: 'date', required: true },

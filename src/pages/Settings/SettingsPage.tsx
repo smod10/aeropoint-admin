@@ -1,21 +1,26 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Building, Globe, Users, Shield, Bell, Save, Pencil, UserPlus, Trash2 } from 'lucide-react';
+import { Building, Globe, Shield, Bell, Save, Pencil, Trash2 } from 'lucide-react';
 import { mockUsers } from '../../data/mockUsers';
+import { useCurrency } from '../../context/CurrencyContext';
+import type { Currency } from '../../context/CurrencyContext';
+import NotificationSettings from './NotificationSettings';
 import companyLogo from '../../assets/aeropoint-express-logo.png';
 import { canEditAccount, canManageTeam, getCurrentAccountId, getCurrentActorRole, moveAccountToTrash, readAccountTrash } from '../../utils/accountAccess';
+import { readCreatedTeamMembers } from '../../utils/teamMembers';
 
-const roleOptions = ['All Roles', 'admin', 'employee', 'supplier', 'agent'];
+const roleOptions = ['All Roles', 'admin', 'employee'];
 type TeamMemberUpdate = { firstName: string; lastName: string; email: string; phone: string; role: string; department: string; status: boolean };
 
 export default function SettingsPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const [activeTab, setActiveTab] = useState<'general' | 'localization' | 'team'>(location.pathname === '/settings/team' ? 'team' : 'general');
+  const [activeTab, setActiveTab] = useState<'general' | 'localization' | 'team' | 'security' | 'notifications'>(location.pathname === '/settings/team' ? 'team' : 'general');
   const [selectedRole, setSelectedRole] = useState('All Roles');
   const [teamOverrides] = useState<Record<number, Partial<TeamMemberUpdate>>>(() => JSON.parse(localStorage.getItem('aeropoint-team-overrides') || '{}'));
   const [teamTrash, setTeamTrash] = useState(readAccountTrash);
   const [baseCurrency, setBaseCurrency] = useState(() => localStorage.getItem('aeropoint-base-currency') || 'NGN');
+  const { setCurrency } = useCurrency();
   const [timeZone, setTimeZone] = useState(() => localStorage.getItem('aeropoint-time-zone') || 'Africa/Lagos');
   const actorRole = getCurrentActorRole();
 
@@ -24,21 +29,20 @@ export default function SettingsPage() {
   }, [location.pathname]);
 
   const roleSummary = useMemo(() => [
-    { id: 'admin', label: 'Admins', count: mockUsers.filter(user => !teamTrash[user.id] && (teamOverrides[user.id]?.role ?? user.role) === 'admin').length, tone: 'bg-primary-100 text-primary-800' },
-    { id: 'employee', label: 'Employees', count: mockUsers.filter(user => !teamTrash[user.id] && (teamOverrides[user.id]?.role ?? user.role) === 'employee').length, tone: 'bg-blue-100 text-blue-700' },
-    { id: 'supplier', label: 'Suppliers', count: mockUsers.filter(user => !teamTrash[user.id] && (teamOverrides[user.id]?.role ?? user.role) === 'supplier').length, tone: 'bg-orange-100 text-orange-700' },
-    { id: 'agent', label: 'Agents', count: mockUsers.filter(user => !teamTrash[user.id] && (teamOverrides[user.id]?.role ?? user.role) === 'agent').length, tone: 'bg-emerald-100 text-emerald-700' },
+    { id: 'super-admin', role: 'admin', label: 'Super Admin', count: mockUsers.filter(user => !teamTrash[user.id] && user.isSuperAdmin).length, tone: 'bg-primary-100 text-primary-800' },
+    { id: 'admin', role: 'admin', label: 'Admin', count: [...mockUsers, ...readCreatedTeamMembers()].filter(user => !teamTrash[user.id] && !user.isSuperAdmin && (teamOverrides[user.id]?.role ?? user.role) === 'admin').length, tone: 'bg-blue-100 text-blue-700' },
+    { id: 'employee', role: 'employee', label: 'Employee', count: [...mockUsers, ...readCreatedTeamMembers()].filter(user => !teamTrash[user.id] && (teamOverrides[user.id]?.role ?? user.role) === 'employee').length, tone: 'bg-emerald-100 text-emerald-700' },
   ], [teamOverrides, teamTrash]);
 
   const teamMembers = useMemo(
-    () => mockUsers
+    () => [...mockUsers, ...readCreatedTeamMembers()]
       .map(user => ({ ...user, ...teamOverrides[user.id] }))
-      .filter(user => ['admin', 'employee', 'supplier', 'agent'].includes(user.role))
+      .filter(user => ['admin', 'employee'].includes(user.role))
       .filter(user => !teamTrash[user.id])
       .map(user => ({
         ...user,
-        roleLabel: user.role === 'admin' ? 'Admin' : user.role === 'employee' ? 'Employee' : user.role === 'supplier' ? 'Supplier' : 'Agent',
-        location: teamOverrides[user.id]?.department ?? (user.role === 'supplier' ? 'Operations' : user.role === 'agent' ? 'Sales' : user.role === 'employee' ? 'Support' : 'Executive'),
+        roleLabel: user.isSuperAdmin ? 'Super Admin' : user.role === 'admin' ? 'Admin' : 'Employee',
+        location: teamOverrides[user.id]?.department ?? (user.role === 'employee' ? 'Support' : 'Executive'),
       })),
     [teamOverrides, teamTrash]
   );
@@ -47,11 +51,10 @@ export default function SettingsPage() {
     ? teamMembers
     : teamMembers.filter(member => member.role === selectedRole);
 
-  const handleTabChange = (tab: 'general' | 'localization' | 'team') => {
+  const handleTabChange = (tab: 'general' | 'localization' | 'team' | 'security' | 'notifications') => {
     setActiveTab(tab);
-    if (tab !== 'localization') {
-      navigate(tab === 'team' ? '/settings/team' : '/settings');
-    }
+    if (tab === 'team') navigate('/settings/team');
+    else if (location.pathname === '/settings/team') navigate('/settings');
   };
 
   const deleteTeamMember = (id: number) => {
@@ -63,7 +66,6 @@ export default function SettingsPage() {
   const tabs = [
     { id: 'general', label: 'General Info', icon: Building },
     { id: 'localization', label: 'Localization', icon: Globe },
-    { id: 'team', label: 'Team & Roles', icon: Users },
     { id: 'security', label: 'Security', icon: Shield },
     { id: 'notifications', label: 'Notifications', icon: Bell },
   ];
@@ -82,7 +84,7 @@ export default function SettingsPage() {
             {tabs.map((tab) => (
               <button
                 key={tab.id}
-                onClick={() => handleTabChange(tab.id as 'general' | 'localization' | 'team')}
+                onClick={() => handleTabChange(tab.id as 'general' | 'localization' | 'team' | 'security' | 'notifications')}
                 className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-colors ${
                   activeTab === tab.id
                     ? 'bg-white text-primary-600 shadow-sm border border-gray-100'
@@ -148,7 +150,7 @@ export default function SettingsPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Base Currency</label>
-                  <select value={baseCurrency} onChange={event => { setBaseCurrency(event.target.value); localStorage.setItem('aeropoint-base-currency', event.target.value); }} className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-primary-500 outline-none">
+                  <select value={baseCurrency} onChange={event => { const nextCurrency = event.target.value as Currency; setBaseCurrency(nextCurrency); setCurrency(nextCurrency); }} className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-primary-500 outline-none">
                     <option value="NGN">NGN - Nigerian Naira (₦)</option>
                     <option value="USD">USD - US Dollar</option>
                     <option value="GBP">GBP - British Pound</option>
@@ -175,6 +177,8 @@ export default function SettingsPage() {
             </div>
           )}
 
+          {activeTab === 'notifications' && <NotificationSettings />}
+
           {activeTab === 'team' && (
             <div className="animate-in fade-in slide-in-from-bottom-2 duration-300 space-y-6">
               <div className="flex flex-col lg:flex-row justify-between gap-4 mb-2">
@@ -186,19 +190,15 @@ export default function SettingsPage() {
                   {canManageTeam(actorRole) && <button onClick={() => navigate('/settings/team/trash')} className="bg-white border border-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors">
                     <Trash2 size={14} className="inline mr-2" />Team Trash
                   </button>}
-                  <button className="bg-white border border-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors">
-                    <UserPlus size={14} className="inline mr-2" />
-                    Invite Member
-                  </button>
-                  <button className="bg-primary-50 text-primary-600 px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary-100 transition-colors">
-                    Add Role
+                  <button onClick={() => navigate('/settings/team/new')} className="bg-primary-50 text-primary-600 px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary-100 transition-colors">
+                    Add New
                   </button>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {roleSummary.map((role) => (
-                  <button key={role.id} onClick={() => navigate(`/settings/roles/${role.id}`)} className="rounded-lg border border-gray-200 bg-gray-50 p-4 text-left hover:border-primary-300 hover:bg-primary-50 transition-colors">
+                  <button key={role.id} onClick={() => navigate(`/settings/roles/${role.role}`)} className="rounded-lg border border-gray-200 bg-gray-50 p-4 text-left hover:border-primary-300 hover:bg-primary-50 transition-colors">
                     <div className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold ${role.tone}`}>
                       {role.label}
                     </div>
@@ -245,10 +245,7 @@ export default function SettingsPage() {
                           </td>
                           <td className="px-4 py-4 capitalize">
                             <span className={`px-2.5 py-1 rounded text-[10px] font-bold ${
-                              member.role === 'admin' ? 'bg-purple-100 text-purple-700' :
-                              member.role === 'agent' ? 'bg-emerald-100 text-emerald-700' :
-                              member.role === 'supplier' ? 'bg-orange-100 text-orange-700' :
-                              'bg-blue-100 text-blue-700'
+                              member.isSuperAdmin ? 'bg-primary-100 text-primary-800' : member.role === 'admin' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'
                             }`}>
                               {member.roleLabel}
                             </span>
@@ -282,14 +279,14 @@ export default function SettingsPage() {
           )}
 
           {/* Action Footer shared across tabs */}
-          <div className="pt-8 mt-8 border-t border-gray-100 flex justify-end gap-3">
+          {activeTab !== 'notifications' && <div className="pt-8 mt-8 border-t border-gray-100 flex justify-end gap-3">
             <button className="px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50">
               Cancel
             </button>
             <button className="flex items-center gap-2 bg-primary-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary-700 shadow-sm">
               <Save size={16} /> Save Changes
             </button>
-          </div>
+          </div>}
         </div>
       </div>
     </div>

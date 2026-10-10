@@ -29,8 +29,8 @@ const initialModules: Module[] = [
   { id: 60, name: 'Sabre', provider: 'Sabre', category: 'Flights', status: false, b2c: '5', b2b: '3', currency: 'USD', env: 'Development', color: 'bg-[#e50000]' },
   { id: 65, name: 'Google Flights', provider: 'Google Flights', category: 'Flights', status: false, b2c: '2', b2b: '1', currency: 'USD', env: 'Production', color: 'bg-[#4285f4]' },
   
-  // Stays (Hotels)
-  { id: 101, name: 'Hotels', provider: 'Internal', category: 'Stays', status: true, b2c: '0', b2b: '0', currency: 'NGN', env: 'Production', color: 'bg-rose-400' },
+  // Internal stay inventory
+  { id: 101, name: 'Stays', provider: 'Internal', category: 'Stays', status: true, b2c: '0', b2b: '0', currency: 'NGN', env: 'Production', color: 'bg-rose-400' },
   { id: 102, name: 'Booking', provider: 'Booking.com', category: 'Stays', status: true, b2c: '0', b2b: '0', currency: 'USD', env: 'Production', color: 'bg-[#003580]' },
   { id: 103, name: 'Travelport', provider: 'Travelport', category: 'Stays', status: true, b2c: '3', b2b: '2', currency: 'USD', env: 'Production', color: 'bg-[#89d6d2]' },
   { id: 104, name: 'Hotelbeds', provider: 'Hotelbeds', category: 'Stays', status: true, b2c: '3', b2b: '2', currency: 'NGN', env: 'Production', color: 'bg-[#0c1e3e]' },

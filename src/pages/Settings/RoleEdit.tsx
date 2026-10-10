@@ -6,8 +6,6 @@ import { ArrowLeft, Check, Save, ShieldCheck } from 'lucide-react';
 const roleDefinitions = {
   admin: { label: 'Administrator', description: 'Full access to configuration, operations, and reporting.', defaults: 'all' },
   employee: { label: 'Employee', description: 'Day-to-day operational access for internal staff.', defaults: 'operations' },
-  supplier: { label: 'Supplier', description: 'Restricted access for travel inventory and fulfilment partners.', defaults: 'supplier' },
-  agent: { label: 'Travel agent', description: 'Sales and booking access for agency partners.', defaults: 'agent' },
 } as const;
 
 const resources = ['Dashboard', 'Bookings', 'Customers', 'Flights', 'Hotels & packages', 'Visa & Umrah', 'Payments', 'Reports', 'Team & settings'];
@@ -19,8 +17,6 @@ function defaultPermissions(role: keyof typeof roleDefinitions): Permissions {
   return Object.fromEntries(resources.flatMap(resource => actions.map(action => {
     let allowed = roleType === 'all';
     if (roleType === 'operations') allowed = action === 'View' || (['Bookings', 'Customers', 'Flights', 'Hotels & packages', 'Visa & Umrah'].includes(resource) && ['Create', 'Edit'].includes(action));
-    if (roleType === 'supplier') allowed = ['Flights', 'Hotels & packages'].includes(resource) && ['View', 'Edit'].includes(action);
-    if (roleType === 'agent') allowed = ['Bookings', 'Customers', 'Flights', 'Hotels & packages', 'Visa & Umrah'].includes(resource) && ['View', 'Create'].includes(action);
     return [`${resource}:${action}`, allowed];
   })));
 }

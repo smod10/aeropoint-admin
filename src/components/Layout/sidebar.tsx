@@ -17,7 +17,7 @@ const navItems = [
     subItems: [
       { name: 'All Bookings', path: '/bookings' },
       { name: 'Flights Bookings', path: '/bookings/type/flights' },
-      { name: 'Hotel Bookings', path: '/bookings/type/stays' },
+      { name: 'Stay Bookings', path: '/bookings/type/stays' },
       { name: 'Tours Bookings', path: '/bookings/type/tours' },
       { name: 'Visa Bookings', path: '/bookings/type/visa' },
       { name: 'Umrah Bookings', path: '/bookings/type/umrah' },
@@ -41,11 +41,10 @@ const navItems = [
     ]
   },
   { 
-    name: 'Hotels', 
+    name: 'Stays',
     icon: Building2,
     subItems: [
-      { name: 'Hotel Listings', path: '/hotels' },
-      { name: 'Room Inventory', path: '/hotels/inventory' }
+      { name: 'Stay Listings', path: '/hotels' }
     ]
   },
   { name: 'Tours & Umrah', path: '/packages', icon: Package },

@@ -1,10 +1,12 @@
 import { useMemo, useState } from 'react';
 import { Search, Columns, ChevronDown, Eye, ChevronLeft, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { mockUsers } from '../../data/mockUsers';
+import { useCurrency } from '../../context/CurrencyContext';
 
 type UserReportSortKey = 'uid' | 'firstName' | 'lastName' | 'email' | 'phone' | 'role' | 'status' | 'balance' | 'createdAt';
 
 export default function UserReports() {
+  const { convertFromAndFormat } = useCurrency();
   const [users] = useState(mockUsers);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
@@ -82,20 +84,6 @@ export default function UserReports() {
     setVisibleColumns(previous => ({ ...previous, [column]: !previous[column] }));
   };
 
-  const showAllColumns = () => {
-    setVisibleColumns({
-      uid: true,
-      firstName: true,
-      lastName: true,
-      email: true,
-      phone: true,
-      role: true,
-      status: true,
-      balance: true,
-      createdAt: true,
-    });
-  };
-
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
       
@@ -115,9 +103,6 @@ export default function UserReports() {
             </button>
             {isColumnMenuOpen && (
               <div className="absolute right-0 mt-2 w-56 bg-white border border-gray-200 rounded-lg shadow-lg z-20 p-2 max-h-80 overflow-y-auto">
-                <button type="button" onClick={showAllColumns} className="w-full text-left text-xs font-semibold text-primary-600 hover:bg-primary-50 rounded px-2 py-1.5 mb-1">
-                  Show All Columns
-                </button>
                 {([
                   ['uid', 'User ID'],
                   ['firstName', 'First Name'],
@@ -145,7 +130,6 @@ export default function UserReports() {
               <option value="25">25</option>
               <option value="50">50</option>
             </select>
-            <span className="text-gray-500">entries</span>
           </div>
           <div className="flex relative">
             <input type="text" placeholder="Search records..." className="bg-white border border-gray-200 rounded-l-lg px-4 py-2.5 text-sm outline-none focus:border-[#0d6efd] w-48" />
@@ -191,7 +175,7 @@ export default function UserReports() {
                       </span>
                     </td>
                   )}
-                  {visibleColumns.balance && <td className="px-4 py-3 text-gray-800">USD {user.balance}</td>}
+                  {visibleColumns.balance && <td className="px-4 py-3 text-gray-800">{convertFromAndFormat(Number(user.balance), 'USD')}</td>}
                   {visibleColumns.createdAt && <td className="px-4 py-3 text-gray-600">{user.createdAt}</td>}
                   
                   <td className="px-4 py-3 text-center">

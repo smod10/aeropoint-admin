@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LayoutIcon, Plus, Eye, Edit2, Trash2, ChevronLeft, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
+import { useCurrency } from '../../context/CurrencyContext';
 
 type FlightColumn = 'status' | 'flightNumber' | 'airline' | 'origin' | 'destination' | 'time' | 'type' | 'adult' | 'child' | 'infant';
 type FlightSortKey = 'status' | 'flightNumber' | 'airline' | 'origin' | 'destination' | 'time' | 'type' | 'adult' | 'child' | 'infant';
@@ -19,6 +20,7 @@ const initialFlights = [
 export default function FlightList() {
   const [flights, setFlights] = useState(initialFlights);
   const navigate = useNavigate();
+  const { convertFromAndFormat } = useCurrency();
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
   const [isColumnMenuOpen, setIsColumnMenuOpen] = useState(false);
@@ -196,9 +198,9 @@ export default function FlightList() {
                   {visibleColumns.destination && <td className="px-4 py-3">{flight.destination}</td>}
                   {visibleColumns.time && <td className="px-4 py-3">{flight.time}</td>}
                   {visibleColumns.type && <td className="px-4 py-3">{flight.type}</td>}
-                  {visibleColumns.adult && <td className="px-4 py-3 font-medium text-emerald-600 bg-emerald-50/30">{flight.adult}</td>}
-                  {visibleColumns.child && <td className="px-4 py-3 font-medium text-emerald-600 bg-emerald-50/30">{flight.child}</td>}
-                  {visibleColumns.infant && <td className="px-4 py-3 font-medium text-emerald-600 bg-emerald-50/30">{flight.infant}</td>}
+                  {visibleColumns.adult && <td className="px-4 py-3 font-medium text-emerald-600 bg-emerald-50/30">{convertFromAndFormat(Number(flight.adult.replace(/[^0-9.]/g, '')), 'USD')}</td>}
+                  {visibleColumns.child && <td className="px-4 py-3 font-medium text-emerald-600 bg-emerald-50/30">{convertFromAndFormat(Number(flight.child.replace(/[^0-9.]/g, '')), 'USD')}</td>}
+                  {visibleColumns.infant && <td className="px-4 py-3 font-medium text-emerald-600 bg-emerald-50/30">{convertFromAndFormat(Number(flight.infant.replace(/[^0-9.]/g, '')), 'USD')}</td>}
                   
                   {/* Actions Column */}
                   <td className="px-4 py-3 text-center space-x-1">

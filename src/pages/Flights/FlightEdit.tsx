@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Save, Copy, ArrowRightLeft, Plus, TrendingUp, Plane, PlaneTakeoff, PlaneLanding, Trash2, Search as SearchIcon, Briefcase, Star } from 'lucide-react';
 import { airports } from '../../data/airports';
 import { airlines } from '../../data/airlines';
+import { useCurrency } from '../../context/CurrencyContext';
 
 // -------------------------------------------------------------
 // REUSABLE AIRPORT AUTOCOMPLETE (Alphabetically Sorted)
@@ -163,8 +164,10 @@ const AirlineAutocomplete = ({ label, value, onChange, placeholder }: { label: s
 export default function FlightEdit() {
   const navigate = useNavigate();
   const { id } = useParams();
+  const { currency, exchangeRates } = useCurrency();
   
   const isNew = id === 'new' || !id;
+  const convertDefaultPrice = (amount: number) => (amount * exchangeRates.USD / exchangeRates[currency]).toFixed(2);
 
   const [legs, setLegs] = useState(isNew ? [{
     id: Date.now(),
@@ -196,10 +199,10 @@ export default function FlightEdit() {
     business: { adult: '', child: '', infant: '' },
     first: { adult: '', child: '', infant: '' },
   } : {
-    economy: { adult: '155.00', child: '116.00', infant: '39.00' },
-    premium: { adult: '50.00', child: '50.00', infant: '50.00' },
-    business: { adult: '450.00', child: '338.00', infant: '113.00' },
-    first: { adult: '50.00', child: '50.00', infant: '50.00' },
+    economy: { adult: convertDefaultPrice(155), child: convertDefaultPrice(116), infant: convertDefaultPrice(39) },
+    premium: { adult: convertDefaultPrice(50), child: convertDefaultPrice(50), infant: convertDefaultPrice(50) },
+    business: { adult: convertDefaultPrice(450), child: convertDefaultPrice(338), infant: convertDefaultPrice(113) },
+    first: { adult: convertDefaultPrice(50), child: convertDefaultPrice(50), infant: convertDefaultPrice(50) },
   });
 
   const [baggage, setBaggage] = useState(isNew ? {
@@ -415,21 +418,21 @@ export default function FlightEdit() {
                   <div>
                     <label className="block text-xs font-medium text-gray-700 mb-1">Adult Price {cls.req && '*'}</label>
                     <div className="relative">
-                      <span className="absolute left-3 top-2 text-gray-400 text-sm">USD</span>
+                      <span className="absolute left-3 top-2 text-gray-400 text-sm">{currency}</span>
                       <input type="text" value={tierData.adult} onChange={(e) => updatePrice(cls.key as any, 'adult', e.target.value)} placeholder="0.00" className="w-full bg-white border border-gray-200 rounded-lg pl-10 pr-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary-500" />
                     </div>
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-gray-700 mb-1">Child Price</label>
                     <div className="relative">
-                      <span className="absolute left-3 top-2 text-gray-400 text-sm">USD</span>
+                      <span className="absolute left-3 top-2 text-gray-400 text-sm">{currency}</span>
                       <input type="text" value={tierData.child} onChange={(e) => updatePrice(cls.key as any, 'child', e.target.value)} placeholder="0.00" className="w-full bg-white border border-gray-200 rounded-lg pl-10 pr-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary-500" />
                     </div>
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-gray-700 mb-1">Infant Price</label>
                     <div className="relative">
-                      <span className="absolute left-3 top-2 text-gray-400 text-sm">USD</span>
+                      <span className="absolute left-3 top-2 text-gray-400 text-sm">{currency}</span>
                       <input type="text" value={tierData.infant} onChange={(e) => updatePrice(cls.key as any, 'infant', e.target.value)} placeholder="0.00" className="w-full bg-white border border-gray-200 rounded-lg pl-10 pr-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary-500" />
                     </div>
                   </div>

@@ -19,6 +19,7 @@ export default function PackageEdit() {
 
   const isNew = id === 'new' || !id;
   const pkg = isNew ? null : mockPackages.find(p => p.id === Number(id));
+  const [flightClass, setFlightClass] = useState(pkg?.flightClass || 'Economy');
 
   const [activeTab, setActiveTab] = useState<'general' | 'pricing' | 'location' | 'itinerary' | 'inclusions' | 'gallery' | 'seo' | 'translations'>('general');
 
@@ -28,7 +29,7 @@ export default function PackageEdit() {
   // Inclusions / Exclusions State
   const defaultInclusions = [
     { name: 'Complimentary Breakfast', selected: false }, { name: 'Lunch', selected: false }, { name: 'Dinner', selected: false }, { name: 'Transportation', selected: false },
-    { name: 'Professional Tour Guide', selected: false }, { name: 'Hotel Pickup and Drop-off', selected: false }, { name: 'Entrance Fees', selected: false }, { name: 'WiFi Access', selected: false },
+    { name: 'Professional Tour Guide', selected: false }, { name: 'Stay Pickup and Drop-off', selected: false }, { name: 'Entrance Fees', selected: false }, { name: 'WiFi Access', selected: false },
     { name: 'Air Conditioning', selected: false }, { name: 'Parking', selected: false }
   ];
   const defaultExclusions = [
@@ -52,7 +53,7 @@ export default function PackageEdit() {
   };
 
   return (
-    <form className="space-y-6 max-w-5xl animate-in fade-in duration-300 pb-10" onSubmit={(e) => { e.preventDefault(); navigate(backPath); }}>
+    <form className="space-y-6 max-w-5xl animate-in fade-in duration-300 pb-10" onSubmit={(e) => { e.preventDefault(); if (pkg) { const savedClasses = JSON.parse(localStorage.getItem('aeropoint-package-flight-classes') || '{}') as Record<number, string>; savedClasses[pkg.id] = flightClass; localStorage.setItem('aeropoint-package-flight-classes', JSON.stringify(savedClasses)); } navigate(backPath); }}>
       
       {/* Header */}
       <div className="flex items-center gap-4 border-b border-gray-200 pb-4">
@@ -100,7 +101,7 @@ export default function PackageEdit() {
                     <input type="text" defaultValue={pkg?.title} placeholder={`Enter ${entityName} Name`} className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-primary-500" required />
                   </div>
                 </div>
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-6 mb-6">
+                <div className="grid grid-cols-2 md:grid-cols-7 gap-6 mb-6">
                   <div className="md:col-span-2">
                     <label className="block text-xs font-bold text-gray-700 mb-1.5">Tour Type</label>
                     <select defaultValue={pkg?.tourType || ''} className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-primary-500 cursor-pointer">
@@ -111,6 +112,12 @@ export default function PackageEdit() {
                       <option value="Umrah">Umrah</option>
                       <option value="Hajj">Hajj</option>
                       <option value="Ziyarat">Ziyarat</option>
+                    </select>
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="block text-xs font-bold text-gray-700 mb-1.5">Flight Class</label>
+                    <select value={flightClass} onChange={event => setFlightClass(event.target.value)} className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-primary-500 cursor-pointer">
+                      <option>Economy</option><option>Premium Economy</option><option>Business Class</option><option>First Class</option>
                     </select>
                   </div>
                   <div>

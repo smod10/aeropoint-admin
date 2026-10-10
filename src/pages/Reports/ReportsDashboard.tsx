@@ -81,7 +81,7 @@ export default function ReportsDashboard() {
         <div className="bg-white rounded-xl p-6 shadow-soft border border-gray-100">
           <div className="flex justify-between items-start">
             <div>
-              <p className="text-sm font-medium text-gray-500">Hotel Nights</p>
+              <p className="text-sm font-medium text-gray-500">Stay Nights</p>
               <h3 className="text-2xl font-bold text-gray-900 mt-2">892</h3>
             </div>
             <div className="p-2 bg-purple-50 rounded-lg text-purple-600"><Building2 size={20} /></div>
@@ -124,7 +124,7 @@ export default function ReportsDashboard() {
           </div>
           <div className="flex justify-center gap-6 mt-4 text-sm text-gray-500">
             <span className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-blue-500"></div> Flights</span>
-            <span className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-purple-500"></div> Hotels</span>
+            <span className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-purple-500"></div> Stays</span>
             <span className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-amber-500"></div> Packages</span>
           </div>
         </div>

@@ -25,19 +25,28 @@ const symbols: Record<Currency, string> = {
   NGN: '₦', USD: '$', GBP: '£', EUR: '€', CAD: 'C$'
 };
 
+const isCurrency = (value: string | null): value is Currency =>
+  value !== null && Object.hasOwn(defaultRates, value);
+
+const getInitialCurrency = (): Currency => {
+  if (typeof window === 'undefined') return 'NGN';
+  const storedCurrency = localStorage.getItem('aeropoint-base-currency');
+  return isCurrency(storedCurrency) ? storedCurrency : 'NGN';
+};
+
 export const CurrencyContext = createContext<CurrencyContextType | undefined>(undefined);
 
 const fallbackContext: CurrencyContextType = {
   currency: 'NGN',
   setCurrency: () => undefined,
   convertAndFormat: (amountInNGN: number) => `₦${amountInNGN.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
-  convertFromAndFormat: (amountInNGN: number) => `₦${amountInNGN.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+  convertFromAndFormat: (amount: number, sourceCurrency: Currency = 'NGN') => `₦${(amount * defaultRates[sourceCurrency]).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
   exchangeRates: defaultRates,
   updateExchangeRates: () => undefined,
 };
 
 export const CurrencyProvider: React.FC<{children: React.ReactNode}> = ({ children }) => {
-  const [currency, setCurrency] = useState<Currency>('NGN');
+  const [currency, setCurrencyState] = useState<Currency>(getInitialCurrency);
   const [exchangeRates, setExchangeRates] = useState<Record<Currency, number>>(defaultRates);
 
   const convertAndFormat = (amountInNGN: number) => {
@@ -46,7 +55,13 @@ export const CurrencyProvider: React.FC<{children: React.ReactNode}> = ({ childr
     return `${symbols[currency]}${converted.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   };
 
-  const convertFromAndFormat = (amountInNGN: number) => convertAndFormat(amountInNGN);
+  const setCurrency = (nextCurrency: Currency) => {
+    setCurrencyState(nextCurrency);
+    localStorage.setItem('aeropoint-base-currency', nextCurrency);
+  };
+
+  const convertFromAndFormat = (amount: number, sourceCurrency: Currency = 'NGN') =>
+    convertAndFormat(amount * exchangeRates[sourceCurrency]);
 
   const updateExchangeRates = (newRates: Record<Currency, number>) => {
     setExchangeRates(newRates);

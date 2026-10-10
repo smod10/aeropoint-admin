@@ -23,11 +23,12 @@ type BookingRow = {
   ref: string;
   createdAt: string;
   managed: boolean;
+  currency: string;
 };
 
 const creationTypes: { type: BookingType; label: string; path: string }[] = [
   { type: 'flights', label: 'Flight', path: 'flights' },
-  { type: 'stays', label: 'Hotel', path: 'stays' },
+  { type: 'stays', label: 'Stay', path: 'stays' },
   { type: 'tours', label: 'Tour / Package', path: 'tours' },
   { type: 'visa', label: 'Visa', path: 'visa' },
   { type: 'umrah', label: 'Umrah', path: 'umrah' },
@@ -36,7 +37,7 @@ const creationTypes: { type: BookingType; label: string; path: string }[] = [
 export default function BookingList() {
   const navigate = useNavigate();
   const { moduleType } = useParams(); 
-  const { convertAndFormat } = useCurrency();
+  const { convertFromAndFormat } = useCurrency();
   const canManage = canManageTeam(getCurrentActorRole());
   const [isTypePickerOpen, setIsTypePickerOpen] = useState(false);
   
@@ -73,12 +74,13 @@ export default function BookingList() {
       price: bookingOverrides[booking.invoice]?.price ?? booking.price,
       user: `${bookingOverrides[booking.invoice]?.customerName ?? booking.user.split('\n')[0]}\n${bookingOverrides[booking.invoice]?.customerEmail ?? booking.user.split('\n')[1]}`,
       managed: false,
+      currency: 'USD',
     })),
     ...readManagedBookings().map(booking => ({
       id: booking.bookingId,
       invoice: booking.bookingId,
       moduleType: booking.bookingType,
-      moduleName: `${booking.bookingType === 'stays' ? 'Hotel' : booking.bookingType.charAt(0).toUpperCase() + booking.bookingType.slice(1)}\nManual booking`,
+      moduleName: `${booking.bookingType === 'stays' ? 'Stay' : booking.bookingType.charAt(0).toUpperCase() + booking.bookingType.slice(1)}\nManual booking`,
       booking: booking.bookingStatus.toUpperCase(),
       payment: booking.paymentStatus.toUpperCase(),
       price: String(booking.amount),
@@ -87,6 +89,7 @@ export default function BookingList() {
       ref: booking.guestBooking ? 'Guest booking' : booking.customerId ? `Customer #${booking.customerId}` : 'New customer',
       createdAt: booking.createdAt,
       managed: true,
+      currency: booking.currency,
     })),
   ];
   const filteredBookings = moduleType
@@ -182,19 +185,6 @@ export default function BookingList() {
       : <ArrowDown size={12} className="text-primary-600" />;
   };
 
-  const showAllColumns = () => {
-    setVisibleColumns({
-      invoice: true,
-      module: true,
-      booking: true,
-      payment: true,
-      price: true,
-      customer: true,
-      ref: false,
-      createdAt: true,
-    });
-  };
-
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
       
@@ -217,7 +207,7 @@ export default function BookingList() {
             >
               <option value="/bookings">All Bookings</option>
               <option value="/bookings/type/flights">Flights</option>
-              <option value="/bookings/type/stays">Hotels</option>
+              <option value="/bookings/type/stays">Stays</option>
               <option value="/bookings/type/tours">Tours</option>
               <option value="/bookings/type/visa">Visa</option>
               <option value="/bookings/type/umrah">Umrah</option>
@@ -239,7 +229,6 @@ export default function BookingList() {
               <option value="50">50</option>
               <option value="100">100</option>
             </select>
-            <span className="text-gray-500">entries</span>
           </div>
 
           <div className="relative">
@@ -252,9 +241,6 @@ export default function BookingList() {
             </button>
             {isColumnMenuOpen && (
               <div className="absolute right-0 mt-2 w-56 bg-white border border-gray-200 rounded-lg shadow-lg z-20 p-2">
-                <button type="button" onClick={showAllColumns} className="w-full text-left text-xs font-semibold text-primary-600 hover:bg-primary-50 rounded px-2 py-1.5 mb-1">
-                  Show All Columns
-                </button>
                 {[
                   { key: 'invoice', label: 'Booking ID' },
                   { key: 'module', label: 'Booking Type' },
@@ -328,9 +314,9 @@ export default function BookingList() {
                     </td>}
 
                     {visibleColumns.customer && <td className="px-4 py-3"><div className="font-bold text-gray-900">{b.user.split('\n')[0]}</div><div className="text-xs text-gray-500">{b.user.split('\n')[1] || 'Guest booking'}</div></td>}
-                    {visibleColumns.module && <td className="px-4 py-3"><div className="font-bold capitalize text-gray-800">{b.moduleType === 'stays' ? 'Hotel' : b.moduleType}</div><div className="text-xs text-gray-500">{b.moduleName.split('\n')[1]}</div></td>}
+                    {visibleColumns.module && <td className="px-4 py-3"><div className="font-bold capitalize text-gray-800">{b.moduleType === 'stays' ? 'Stay' : b.moduleType}</div><div className="text-xs text-gray-500">{b.moduleName.split('\n')[1]}</div></td>}
                     {visibleColumns.createdAt && <td className="px-4 py-3 text-gray-800 text-sm font-medium">{b.createdAt}</td>}
-                    {visibleColumns.price && <td className="px-4 py-3"><div className="font-bold text-gray-900">{convertAndFormat(Number(b.price))}</div></td>}
+                    {visibleColumns.price && <td className="px-4 py-3"><div className="font-bold text-gray-900">{convertFromAndFormat(Number(b.price), b.currency as 'NGN' | 'USD' | 'GBP' | 'EUR' | 'CAD')}</div></td>}
                     {visibleColumns.payment && <td className="px-4 py-3"><span className={`px-2.5 py-1 text-[10px] uppercase font-bold rounded border ${b.payment === 'PAID' ? 'bg-emerald-100 text-emerald-700 border-emerald-200' : b.payment === 'REFUNDED' ? 'bg-purple-100 text-purple-700 border-purple-200' : 'bg-gray-50 text-gray-600 border-gray-200'}`}>{b.payment}</span></td>}
 
                     {visibleColumns.booking && <td className="px-4 py-3 space-y-1">

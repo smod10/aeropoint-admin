@@ -1,15 +1,19 @@
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { 
-  ArrowLeft, User as UserIcon, Info, History, Bookmark, 
-  CreditCard, AlignLeft, Wallet, Save, XCircle, 
-  CheckCircle2, Columns, Image as ImageIcon, ChevronDown, 
-  MapPin, Shield, Building 
+  ArrowLeft, User as UserIcon, Info, History, Bookmark,
+  CreditCard, AlignLeft, Eye, EyeOff, Save, XCircle,
+  CheckCircle2, Columns, ChevronDown,
+  MapPin, Shield
 } from 'lucide-react'; 
 import { mockUsers } from '../../data/mockUsers';
-import { countries } from '../../data/countries';
+import { mockBookings } from '../../data/mockBookings';
+import { mockTransactions } from '../../data/mockTransactions';
 import { useCurrency } from '../../context/CurrencyContext';
+import type { Currency } from '../../context/CurrencyContext';
+import { countries } from '../../data/countries';
 import { canEditAccount, getCurrentActorRole, readAccountOverrides, saveAccountOverride } from '../../utils/accountAccess';
+import apiClient from '../../services/apiClient';
 
 type TabType = 'profile' | 'information' | 'activity' | 'bookings' | 'transactions' | 'notes';
 type ActivityColumn = 'recordId' | 'details' | 'date';
@@ -18,13 +22,34 @@ type TransactionColumn = 'trxId' | 'type' | 'amount' | 'currency' | 'gatewayId' 
 export default function UserEdit() {
   const navigate = useNavigate();
   const { id } = useParams();
-  const { convertFromAndFormat } = useCurrency();
-  
   const isNew = id === 'new' || !id;
   const accountOverrides = readAccountOverrides();
   const originalUser = isNew ? null : mockUsers.find(account => account.id === Number(id)) ?? null;
   const user = originalUser ? { ...originalUser, ...accountOverrides[originalUser.id] } : null;
   const actorRole = getCurrentActorRole();
+  const relatedBookings = user ? mockBookings.filter(booking => booking.user.split('\n')[1]?.toLowerCase() === user.email.toLowerCase()) : [];
+  const bookingRows = user ? (relatedBookings.length ? relatedBookings : [{
+    id: `SAMPLE-${user.id}`, invoice: `SAMPLE-${user.id}`, moduleType: 'flights', booking: 'SAMPLE BOOKING',
+    payment: 'PAID', price: '450.00', createdAt: user.createdAt, user: `${user.firstName} ${user.lastName}\n${user.email}`,
+  }]) : [];
+  const activityRows = user ? [
+    { recordId: `ACT-${user.id}-01`, details: 'Account created', date: user.createdAt },
+    ...bookingRows.map(booking => ({ recordId: `ACT-${booking.invoice}`, details: `${booking.moduleType} booking ${booking.invoice} ${booking.booking.split('\n')[0].toLowerCase()}`, date: booking.createdAt })),
+  ] : [];
+  const transactionRows = user ? [
+    ...mockTransactions.filter(transaction => transaction.email.toLowerCase() === user.email.toLowerCase()),
+    ...bookingRows.map(booking => ({
+      id: `TRX-${booking.invoice}`,
+      type: booking.payment === 'REFUNDED' ? 'Refund' : 'Booking payment',
+      amount: booking.price,
+      currency: 'USD',
+      gateway: 'Booking payment',
+      reference: booking.invoice,
+      date: booking.createdAt,
+    })),
+  ] : [];
+  const noteRows = user ? [{ recordId: `NOTE-${user.id}-01`, details: 'Customer profile reviewed during account onboarding.', date: user.createdAt }] : [];
+  const { convertFromAndFormat } = useCurrency();
 
   const [activeTab, setActiveTab] = useState<TabType>('profile');
   const [isColumnMenuOpen, setIsColumnMenuOpen] = useState(false);
@@ -50,25 +75,46 @@ export default function UserEdit() {
       email: user?.email ?? '',
       phonePrefix: phoneParts[0],
       phoneNumber: phoneParts.slice(1).join(' '),
-      role: user?.role ?? 'customer',
       status: user?.status ?? true,
     };
   });
   const [isSaved, setIsSaved] = useState(false);
+  const [password, setPassword] = useState('');
+  const [passwordConfirmation, setPasswordConfirmation] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [saveError, setSaveError] = useState('');
 
   const phonePrefix = profile.phonePrefix;
   const phoneNumber = profile.phoneNumber;
 
-  const saveProfile = () => {
+  const saveProfile = async () => {
     if (!user || !canEditAccount(actorRole, user)) return;
+    setSaveError('');
+    if (password && password.length < 15) {
+      setSaveError('Use a new password with at least 15 characters.');
+      return;
+    }
+    if (password && password !== passwordConfirmation) {
+      setSaveError('The new passwords do not match.');
+      return;
+    }
+    if (password) {
+      try {
+        await apiClient.put(`/users/${user.id}/password`, { password });
+      } catch (requestError) {
+        setSaveError(requestError instanceof Error ? requestError.message : 'Could not update the password.');
+        return;
+      }
+    }
     saveAccountOverride(user.id, {
       firstName: profile.firstName,
       lastName: profile.lastName,
       email: profile.email,
       phone: `${profile.phonePrefix} ${profile.phoneNumber}`.trim(),
-      role: profile.role,
       status: profile.status,
     });
+    setPassword('');
+    setPasswordConfirmation('');
     setIsSaved(true);
   };
 
@@ -115,16 +161,6 @@ export default function UserEdit() {
             </select>
           </div>
           <div>
-            <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Role</label>
-            <select value={profile.role} onChange={event => { setIsSaved(false); setProfile(current => ({ ...current, role: event.target.value })); }} className="bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none w-full md:w-32 capitalize">
-              <option value="admin">Admin</option>
-              <option value="agent">Agent</option>
-              <option value="supplier">Supplier</option>
-              <option value="employee">Employee</option>
-              <option value="customer">Customer</option>
-            </select>
-          </div>
-          <div>
             <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Banned Status</label>
             <select defaultValue={isNew ? 'no' : (user?.banned ? 'yes' : 'no')} className="bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none w-full md:w-32">
               <option value="no">No</option>
@@ -135,10 +171,10 @@ export default function UserEdit() {
       </div>
 
       {/* Main Layout Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className={`grid grid-cols-1 gap-6 ${isNew ? '' : 'lg:grid-cols-3'}`}>
         
         {/* Left Area: Tabs & Form Content */}
-        <div className="lg:col-span-2 bg-white rounded-xl shadow-soft border border-gray-100 overflow-hidden flex flex-col min-h-[600px]">
+        <div className={`${isNew ? '' : 'lg:col-span-2'} bg-white rounded-xl shadow-soft border border-gray-100 overflow-hidden flex flex-col min-h-[600px]`}>
           
           {/* Tabs Navigation */}
           <div className="flex border-b border-gray-100 pt-2 overflow-x-auto hide-scrollbar bg-gray-50/50 px-2">
@@ -146,10 +182,10 @@ export default function UserEdit() {
               { id: 'profile', label: 'Profile', icon: UserIcon },
               { id: 'information', label: 'Information', icon: Info },
               { id: 'activity', label: 'Activity', icon: History },
-              { id: 'bookings', label: 'Bookings', icon: Bookmark, badge: isNew ? '0' : '1' },
+              { id: 'bookings', label: 'Bookings', icon: Bookmark, badge: isNew ? '0' : String(bookingRows.length) },
               { id: 'transactions', label: 'Transactions', icon: CreditCard },
               { id: 'notes', label: 'Notes', icon: AlignLeft }
-            ].map((tab) => (
+            ].filter(tab => !isNew || tab.id === 'profile').map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as TabType)}
@@ -195,8 +231,10 @@ export default function UserEdit() {
 
                 <div className="bg-orange-50/50 border border-orange-100 rounded-xl p-6">
                   <h3 className="text-sm font-bold text-orange-800 flex items-center gap-2 mb-4"><Shield size={16} /> Security</h3>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">Password (leave blank to keep current password)</label>
-                  <input type="password" placeholder={isNew ? "Create a secure password" : "Enter new password to change"} className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-primary-500" />
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <label className="block text-xs font-medium text-gray-700">New password (leave blank to keep current password)<span className="relative mt-1 block"><input type={showPassword ? 'text' : 'password'} autoComplete="new-password" minLength={15} value={password} onChange={event => { setIsSaved(false); setPassword(event.target.value); }} placeholder="Enter new password to change" className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 pr-11 text-sm outline-none focus:border-primary-500" /><button type="button" aria-label={showPassword ? 'Hide password' : 'Show password'} onClick={() => setShowPassword(current => !current)} className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1.5 text-gray-500 hover:bg-gray-100">{showPassword ? <EyeOff size={16} /> : <Eye size={16} />}</button></span><span className="mt-1 block font-normal text-gray-500">Use at least 15 characters. Password is sent to the account service and is not stored here.</span></label>
+                    <label className="block text-xs font-medium text-gray-700">Confirm new password<input type="password" autoComplete="new-password" minLength={15} value={passwordConfirmation} onChange={event => { setIsSaved(false); setPasswordConfirmation(event.target.value); }} className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-primary-500" /></label>
+                  </div>
                 </div>
 
                 <div>
@@ -259,13 +297,13 @@ export default function UserEdit() {
               </div>
             )}
 
-            {/* TRANSACTIONS & OTHERS EMPTY STATE */}
+            {/* ACCOUNT RECORDS */}
             {['activity', 'bookings', 'transactions', 'notes'].includes(activeTab) && (
               <div className="animate-in fade-in h-full flex flex-col">
                 <div className="flex justify-between items-center mb-6">
                   <div>
                     <h3 className="text-lg font-bold text-gray-800 capitalize">{activeTab} Logs</h3>
-                    <p className="text-sm text-gray-500">Total: 0 records</p>
+                    <p className="text-sm text-gray-500">Total: {activeTab === 'activity' ? activityRows.length : activeTab === 'transactions' ? transactionRows.length : activeTab === 'notes' ? noteRows.length : relatedBookings.length} records</p>
                   </div>
                   <div className="relative">
                     <button type="button" onClick={() => setIsColumnMenuOpen(prev => !prev)} className="flex items-center gap-2 bg-white border border-gray-200 text-gray-700 px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-gray-50">
@@ -303,17 +341,16 @@ export default function UserEdit() {
                   </div>
                 </div>
                 
-                <table className="w-full text-left text-sm text-gray-600 whitespace-nowrap mb-8 border-b border-gray-100">
-                  <thead className="text-[10px] text-gray-400 uppercase bg-white border-b border-gray-100 font-bold tracking-wider">
-                    {activeTab === 'transactions' && <tr><th className="px-4 py-3 w-10">#</th>{visibleTransactionColumns.trxId && <th className="px-4 py-3">TRX ID</th>}{visibleTransactionColumns.type && <th className="px-4 py-3">TYPE</th>}{visibleTransactionColumns.amount && <th className="px-4 py-3">AMOUNT</th>}{visibleTransactionColumns.currency && <th className="px-4 py-3">CURRENCY</th>}{visibleTransactionColumns.gatewayId && <th className="px-4 py-3">GATEWAY ID</th>}{visibleTransactionColumns.description && <th className="px-4 py-3">DESCRIPTION</th>}{visibleTransactionColumns.date && <th className="px-4 py-3">DATE</th>}</tr>}
-                    {activeTab !== 'transactions' && <tr><th className="px-4 py-3 w-10">#</th>{visibleActivityColumns.recordId && <th className="px-4 py-3">RECORD ID</th>}{visibleActivityColumns.details && <th className="px-4 py-3">DETAILS</th>}{visibleActivityColumns.date && <th className="px-4 py-3">DATE</th>}</tr>}
-                  </thead>
-                </table>
-
-                <div className="flex-1 flex flex-col items-center justify-center text-center pb-20">
-                  <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center text-gray-300 mb-4"><ImageIcon size={24} /></div>
-                  <h4 className="text-gray-800 font-bold mb-1">No Content Available</h4>
-                  <p className="text-sm text-gray-500 max-w-xs">No records found in this table. Start by adding a new record.</p>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-sm text-gray-600 whitespace-nowrap mb-8 border-b border-gray-200">
+                    <thead className="text-[10px] text-gray-500 uppercase bg-white border-b border-gray-200 font-bold tracking-wider">
+                      {activeTab === 'transactions' ? <tr><th className="px-4 py-3 w-10">#</th>{visibleTransactionColumns.trxId && <th className="px-4 py-3">TRX ID</th>}{visibleTransactionColumns.type && <th className="px-4 py-3">TYPE</th>}{visibleTransactionColumns.amount && <th className="px-4 py-3">AMOUNT</th>}{visibleTransactionColumns.currency && <th className="px-4 py-3">CURRENCY</th>}{visibleTransactionColumns.gatewayId && <th className="px-4 py-3">REFERENCE</th>}{visibleTransactionColumns.description && <th className="px-4 py-3">GATEWAY</th>}{visibleTransactionColumns.date && <th className="px-4 py-3">DATE</th>}</tr> : <tr><th className="px-4 py-3 w-10">#</th>{visibleActivityColumns.recordId && <th className="px-4 py-3">RECORD ID</th>}{visibleActivityColumns.details && <th className="px-4 py-3">DETAILS</th>}{visibleActivityColumns.date && <th className="px-4 py-3">DATE</th>}</tr>}
+                    </thead>
+                    <tbody className="divide-y divide-gray-200">
+                      {activeTab === 'transactions' && transactionRows.map((row, index) => <tr key={row.id}><td className="px-4 py-3">{index + 1}</td>{visibleTransactionColumns.trxId && <td className="px-4 py-3 font-mono">{row.id}</td>}{visibleTransactionColumns.type && <td className="px-4 py-3">{row.type}</td>}{visibleTransactionColumns.amount && <td className="px-4 py-3">{convertFromAndFormat(Number(row.amount.replace(/,/g, '')), row.currency as Currency)}</td>}{visibleTransactionColumns.currency && <td className="px-4 py-3">{row.currency}</td>}{visibleTransactionColumns.gatewayId && <td className="px-4 py-3">{row.reference}</td>}{visibleTransactionColumns.description && <td className="px-4 py-3">{row.gateway}</td>}{visibleTransactionColumns.date && <td className="px-4 py-3">{row.date}</td>}</tr>)}
+                      {activeTab !== 'transactions' && (activeTab === 'activity' ? activityRows : activeTab === 'notes' ? noteRows : bookingRows.map(booking => ({ recordId: booking.invoice, details: `${booking.moduleType} · ${booking.booking.split('\n')[0]} · ${booking.payment} · ${convertFromAndFormat(Number(booking.price), 'USD')}`, date: booking.createdAt }))).map((row, index) => <tr key={row.recordId}><td className="px-4 py-3">{index + 1}</td>{visibleActivityColumns.recordId && <td className="px-4 py-3 font-mono">{row.recordId}</td>}{visibleActivityColumns.details && <td className="px-4 py-3">{row.details}</td>}{visibleActivityColumns.date && <td className="px-4 py-3">{row.date}</td>}</tr>)}
+                    </tbody>
+                  </table>
                 </div>
               </div>
             )}
@@ -321,6 +358,7 @@ export default function UserEdit() {
           
           {activeTab === 'profile' && (
             <div className="p-6 bg-gray-50 border-t border-gray-100 flex justify-end gap-3 mt-auto">
+              {saveError && <span role="alert" className="mr-auto self-center text-sm text-red-700">{saveError}</span>}
               <button type="button" onClick={saveProfile} className="flex items-center gap-2 bg-primary-600 text-white px-6 py-2.5 rounded-lg text-sm font-medium hover:bg-primary-700 shadow-sm transition-colors">
                 <Save size={16} /> Save Profile Changes
               </button>
@@ -329,47 +367,29 @@ export default function UserEdit() {
           )}
         </div>
 
-        {/* Right Sidebar: Wallet & Stats */}
-        <div className="space-y-6">
-          
-          <div className="bg-gradient-to-br from-[#2b64ff] to-[#1a4de5] rounded-xl shadow-md p-6 text-white relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-white opacity-5 rounded-bl-full transform translate-x-10 -translate-y-10"></div>
-            <div className="flex items-center gap-3 mb-8">
-              <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center backdrop-blur-sm"><Wallet size={20}/></div>
-              <div><h4 className="text-sm font-bold">Digital Wallet</h4><p className="text-xs text-blue-100">{isNew ? 'Pending Creation' : user?.id}</p></div>
-            </div>
-            <div className="mb-6">
-              <p className="text-xs text-blue-100 mb-1">Available Balance</p>
-              <h2 className="text-3xl font-black">{convertFromAndFormat(Number(isNew ? '0.00' : (user?.balance || '0.00')), 'USD')}</h2>
-            </div>
-            <button className="w-full flex items-center justify-center gap-2 bg-white/20 hover:bg-white/30 transition-colors backdrop-blur-sm border border-white/10 text-white py-2.5 rounded-lg text-sm font-bold">
-              <Building size={16} /> Manage Funds
-            </button>
-          </div>
-
-          <div className="bg-white rounded-xl shadow-soft border border-gray-100 p-6">
+        {!isNew && <div className="space-y-6">
+          <div className="bg-white rounded-xl shadow-soft border border-gray-200 p-6">
             <h3 className="text-sm font-bold text-gray-800 mb-4">Statistics</h3>
             <div className="grid grid-cols-2 gap-4">
               <div className="bg-blue-50/50 border border-blue-100 rounded-xl p-4 flex flex-col justify-between h-24">
                 <div className="flex items-center gap-2 text-blue-600"><Bookmark size={16}/> <span className="text-xs font-bold uppercase">Bookings</span></div>
-                <span className="text-2xl font-black text-blue-900">{isNew ? '0' : '1'}</span>
+                <span className="text-2xl font-black text-blue-900">{bookingRows.length}</span>
               </div>
               <div className="bg-orange-50/50 border border-orange-100 rounded-xl p-4 flex flex-col justify-between h-24">
                 <div className="flex items-center gap-2 text-orange-600"><History size={16}/> <span className="text-xs font-bold uppercase">Activities</span></div>
-                <span className="text-2xl font-black text-orange-900">0</span>
+                <span className="text-2xl font-black text-orange-900">{activityRows.length}</span>
               </div>
               <div className="bg-emerald-50/50 border border-emerald-100 rounded-xl p-4 flex flex-col justify-between h-24">
                 <div className="flex items-center gap-2 text-emerald-600"><CreditCard size={16}/> <span className="text-xs font-bold uppercase">Transactions</span></div>
-                <span className="text-2xl font-black text-emerald-900">0</span>
+                <span className="text-2xl font-black text-emerald-900">{transactionRows.length}</span>
               </div>
               <div className="bg-purple-50/50 border border-purple-100 rounded-xl p-4 flex flex-col justify-between h-24">
                 <div className="flex items-center gap-2 text-purple-600"><AlignLeft size={16}/> <span className="text-xs font-bold uppercase">Notes</span></div>
-                <span className="text-2xl font-black text-purple-900">0</span>
+                <span className="text-2xl font-black text-purple-900">{noteRows.length}</span>
               </div>
             </div>
           </div>
-
-        </div>
+        </div>}
 
       </div>
     </div>

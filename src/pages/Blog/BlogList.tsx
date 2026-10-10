@@ -80,18 +80,6 @@ export default function BlogList() {
     setVisibleColumns(previous => ({ ...previous, [column]: !previous[column] }));
   };
 
-  const showAllColumns = () => {
-    setVisibleColumns({
-      status: true,
-      image: true,
-      title: true,
-      category: true,
-      featured: true,
-      createdAt: true,
-      actions: true,
-    });
-  };
-
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
       
@@ -131,10 +119,6 @@ export default function BlogList() {
             )}
           </div>
 
-          <button type="button" onClick={showAllColumns} className="flex items-center gap-2 bg-white border border-gray-200 text-gray-700 px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-gray-50">
-            All Columns
-          </button>
-
           <div className="flex items-center gap-2 bg-white border border-gray-200 text-gray-700 px-3 py-2.5 rounded-lg text-sm">
             <span className="text-gray-500">Show</span>
             <select value={rowsPerPage} onChange={handleRowsChange} className="bg-transparent font-medium outline-none cursor-pointer">
@@ -143,7 +127,6 @@ export default function BlogList() {
               <option value="25">25</option>
               <option value="50">50</option>
             </select>
-            <span className="text-gray-500">entries</span>
           </div>
 
           <div className="flex relative">

@@ -1,19 +1,15 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Bell, User, CalendarCheck, CreditCard, UserRoundPlus, LogOut, CircleUserRound } from 'lucide-react';
+import { Search, Bell, User, LogOut, CircleUserRound } from 'lucide-react';
 import { useCurrency, type Currency } from '../../context/CurrencyContext';
-
-const notifications = [
-  { id: 'booking', title: 'New flight booking', detail: 'A booking is waiting for review.', time: '10 min ago', icon: CalendarCheck, path: '/bookings' },
-  { id: 'payment', title: 'Payment received', detail: 'A transaction has been completed.', time: '32 min ago', icon: CreditCard, path: '/payments' },
-  { id: 'user', title: 'New customer registered', detail: 'Review the latest customer profile.', time: '1 hour ago', icon: UserRoundPlus, path: '/users' },
-];
+import { getReadNotificationIds, markNotificationRead, notifications } from '../../data/notifications';
 
 export default function Header() {
   const { currency, setCurrency } = useCurrency();
   const navigate = useNavigate();
   const [openMenu, setOpenMenu] = useState<'notifications' | 'profile' | null>(null);
-  const [unread, setUnread] = useState(() => notifications.map(item => item.id));
+  const [readIds, setReadIds] = useState(getReadNotificationIds);
+  const unread = notifications.filter(item => !readIds.includes(item.id));
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -32,9 +28,16 @@ export default function Header() {
   }, []);
 
   const openNotification = (id: string, path: string) => {
-    setUnread(current => current.filter(notificationId => notificationId !== id));
+    markNotificationRead(id);
+    setReadIds(current => current.includes(id) ? current : [...current, id]);
     setOpenMenu(null);
     navigate(path);
+  };
+
+  const markAllRead = () => {
+    const allIds = notifications.map(item => item.id);
+    localStorage.setItem('aeropoint-read-notifications', JSON.stringify(allIds));
+    setReadIds(allIds);
   };
 
   return (
@@ -85,12 +88,12 @@ export default function Header() {
               <div className="absolute right-0 top-12 z-50 w-80 max-w-[calc(100vw-2rem)] bg-white border border-gray-200 rounded-lg shadow-xl overflow-hidden">
                 <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
                   <h2 className="text-sm font-semibold text-gray-900">Notifications</h2>
-                  {unread.length > 0 && <button onClick={() => setUnread([])} className="text-xs font-medium text-primary-600 hover:text-primary-800">Mark all read</button>}
+                  {unread.length > 0 && <button onClick={markAllRead} className="text-xs font-medium text-primary-600 hover:text-primary-800">Mark all read</button>}
                 </div>
                 <div className="max-h-80 overflow-y-auto divide-y divide-gray-100">
                   {notifications.map(item => {
                     const Icon = item.icon;
-                    const isUnread = unread.includes(item.id);
+                    const isUnread = !readIds.includes(item.id);
                     return (
                       <button key={item.id} onClick={() => openNotification(item.id, item.path)} className="w-full text-left flex gap-3 px-4 py-3 hover:bg-gray-50">
                         <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary-50 text-primary-600"><Icon size={16} /></span>
@@ -104,7 +107,7 @@ export default function Header() {
                   })}
                 </div>
                 <div className="px-4 py-2 border-t border-gray-100 text-right">
-                  <button onClick={() => { setOpenMenu(null); navigate('/bookings'); }} className="text-xs font-medium text-primary-600 hover:text-primary-800">View bookings</button>
+                  <button onClick={() => { setOpenMenu(null); navigate('/notifications'); }} className="text-xs font-medium text-primary-600 hover:text-primary-800">View all notifications</button>
                 </div>
               </div>
             )}

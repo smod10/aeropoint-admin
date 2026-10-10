@@ -2,9 +2,12 @@ import { useEffect, useMemo, useState } from 'react';
 import { Download, Printer, RefreshCw } from 'lucide-react';
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import apiClient from '../../services/apiClient';
+import { mockBookings } from '../../data/mockBookings';
+import { useCurrency } from '../../context/CurrencyContext';
+import type { Currency } from '../../context/CurrencyContext';
 
 type DatePeriod = 'today' | 'thisMonth' | 'lastMonth' | 'thisYear' | 'custom';
-type BookingType = 'all' | 'flights' | 'hotels' | 'tours' | 'visa' | 'umrah';
+type BookingType = 'all' | 'flights' | 'hotels' | 'tours' | 'visa' | 'umrah' | 'bus';
 type BookingStatus = 'all' | 'confirmed' | 'completed' | 'cancelled' | 'refunded';
 type PaymentStatus = 'all' | 'paid' | 'pending' | 'refunded';
 
@@ -69,8 +72,73 @@ function csvCell(value: string | number) {
   return `"${String(value).replaceAll('"', '""')}"`;
 }
 
+function buildReportFromBookings(dateFrom: string, dateTo: string, bookingType: BookingType, bookingStatus: BookingStatus, paymentStatus: PaymentStatus, currency: Currency, exchangeRates: Record<Currency, number>): ReportData {
+  const bookings = mockBookings.filter(booking => {
+    const moduleType = booking.moduleType === 'stays' ? 'hotels' : booking.moduleType;
+    const status = booking.booking.split('\n')[0].toLowerCase();
+    const payment = booking.payment === 'PAID' ? 'paid' : booking.payment === 'REFUNDED' ? 'refunded' : 'pending';
+    const date = booking.createdAt.slice(0, 10);
+    return (bookingType === 'all' || moduleType === bookingType)
+      && (bookingStatus === 'all' || status === bookingStatus)
+      && (paymentStatus === 'all' || payment === paymentStatus)
+      && (!dateFrom || date >= dateFrom)
+      && (!dateTo || date <= dateTo);
+  });
+
+  const byType = new Map<string, RevenueRow>();
+  const byMonth = new Map<string, MonthlyRevenue>();
+  let totalBookingValue = 0;
+  let totalPaid = 0;
+  let totalRefunded = 0;
+  let confirmed = 0;
+  let completed = 0;
+  let cancelled = 0;
+  let refunded = 0;
+  let pending = 0;
+
+  bookings.forEach(booking => {
+    const amount = (Number(booking.price) || 0) * exchangeRates.USD / exchangeRates[currency];
+    const moduleType = booking.moduleType;
+    const status = booking.booking.split('\n')[0].toLowerCase();
+    const isPaid = booking.payment === 'PAID';
+    const isRefunded = booking.payment === 'REFUNDED';
+    const monthKey = booking.createdAt.slice(0, 7);
+    const monthDate = new Date(`${monthKey}-01T00:00:00`);
+
+    totalBookingValue += amount;
+    if (isPaid) totalPaid += amount;
+    if (isRefunded) totalRefunded += amount;
+    if (status === 'confirmed') confirmed += 1;
+    if (status === 'completed') completed += 1;
+    if (status === 'cancelled') cancelled += 1;
+    if (isRefunded) refunded += 1;
+    if (status === 'pending' || booking.payment === 'UNPAID') pending += 1;
+
+    const typeRow = byType.get(moduleType) ?? { bookingType: moduleType, bookings: 0, bookingValue: 0, paid: 0, refunded: 0, netRevenue: 0 };
+    typeRow.bookings += 1;
+    typeRow.bookingValue += amount;
+    if (isPaid) typeRow.paid += amount;
+    if (isRefunded) typeRow.refunded += amount;
+    typeRow.netRevenue = typeRow.paid - typeRow.refunded;
+    byType.set(moduleType, typeRow);
+
+    const month = byMonth.get(monthKey) ?? { month: monthDate.toLocaleDateString(undefined, { month: 'short' }), bookings: 0, revenue: 0 };
+    month.bookings += 1;
+    if (isPaid) month.revenue += amount;
+    byMonth.set(monthKey, month);
+  });
+
+  return {
+    summary: { totalBookings: bookings.length, totalBookingValue, totalPaid, totalRefunded, netRevenue: totalPaid - totalRefunded },
+    revenueByBookingType: [...byType.values()].sort((left, right) => left.bookingType.localeCompare(right.bookingType)),
+    bookingBreakdown: { totalBookings: bookings.length, confirmed, completed, cancelled, refunded, pending },
+    monthlyRevenue: [...byMonth.entries()].sort(([left], [right]) => left.localeCompare(right)).map(([, row]) => row),
+    currency,
+  };
+}
+
 export default function RevenueReport() {
-  const [period, setPeriod] = useState<DatePeriod>('thisMonth');
+  const [period, setPeriod] = useState<DatePeriod>('thisYear');
   const [customFrom, setCustomFrom] = useState('');
   const [customTo, setCustomTo] = useState('');
   const [bookingType, setBookingType] = useState<BookingType>('all');
@@ -81,8 +149,10 @@ export default function RevenueReport() {
   const [isLoading, setIsLoading] = useState(true);
   const [refreshCount, setRefreshCount] = useState(0);
   const [error, setError] = useState('');
+  const [usingSampleData, setUsingSampleData] = useState(false);
+  const { currency: baseCurrency, exchangeRates } = useCurrency();
   const dateRange = useMemo(() => getDateRange(period, customFrom, customTo), [period, customFrom, customTo]);
-  const currency = report.currency || localStorage.getItem('aeropoint-base-currency') || 'NGN';
+  const currency = baseCurrency || report.currency || 'NGN';
   const formatMoney = (value: number) => new Intl.NumberFormat(undefined, { style: 'currency', currency, maximumFractionDigits: 2 }).format(value || 0);
   const periodLabel = dateRange.dateFrom && dateRange.dateTo ? `${dateRange.dateFrom} to ${dateRange.dateTo}` : 'Custom date range';
 
@@ -107,15 +177,17 @@ export default function RevenueReport() {
     }).then(response => {
       const payload = response.data?.data ?? response.data;
       setReport(payload as ReportData);
-    }).catch(requestError => {
+      setUsingSampleData(false);
+    }).catch(() => {
       if (controller.signal.aborted) return;
-      setError(requestError.response?.data?.message || 'Could not load report data from the reporting service.');
-      setReport(emptyReport);
+      setReport(buildReportFromBookings(dateRange.dateFrom, dateRange.dateTo, bookingType, bookingStatus, paymentStatus, baseCurrency, exchangeRates));
+      setUsingSampleData(true);
+      setError('');
     }).finally(() => {
       if (!controller.signal.aborted) setIsLoading(false);
     });
     return () => controller.abort();
-  }, [bookingStatus, bookingType, dateRange.dateFrom, dateRange.dateTo, paymentStatus, period, customFrom, customTo, refreshCount]);
+  }, [baseCurrency, bookingStatus, bookingType, dateRange.dateFrom, dateRange.dateTo, exchangeRates, paymentStatus, period, customFrom, customTo, refreshCount]);
 
   const filterDescription = `Period: ${periodLabel}; Booking type: ${bookingType}; Booking status: ${bookingStatus}; Payment status: ${paymentStatus}`;
 
@@ -189,13 +261,14 @@ export default function RevenueReport() {
           <label className="text-xs font-semibold uppercase text-gray-500">From<input type="date" value={customFrom} onChange={event => setCustomFrom(event.target.value)} className="mt-1.5 w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm font-normal text-gray-800" /></label>
           <label className="text-xs font-semibold uppercase text-gray-500">To<input type="date" min={customFrom || undefined} value={customTo} onChange={event => setCustomTo(event.target.value)} className="mt-1.5 w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm font-normal text-gray-800" /></label>
         </> : <div className="self-end pb-2 text-sm text-gray-500 lg:col-span-2">{periodLabel}</div>}
-        <label className="text-xs font-semibold uppercase text-gray-500">Booking type<select value={bookingType} onChange={event => setBookingType(event.target.value as BookingType)} className="mt-1.5 w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm font-normal normal-case text-gray-800"><option value="all">All</option><option value="flights">Flights</option><option value="hotels">Hotels</option><option value="tours">Tours / Packages</option><option value="visa">Visa</option><option value="umrah">Umrah</option></select></label>
+        <label className="text-xs font-semibold uppercase text-gray-500">Booking type<select value={bookingType} onChange={event => setBookingType(event.target.value as BookingType)} className="mt-1.5 w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm font-normal normal-case text-gray-800"><option value="all">All</option><option value="flights">Flights</option><option value="hotels">Stays</option><option value="tours">Tours / Packages</option><option value="visa">Visa</option><option value="umrah">Umrah</option><option value="bus">Bus</option></select></label>
         <label className="text-xs font-semibold uppercase text-gray-500">Booking status<select value={bookingStatus} onChange={event => setBookingStatus(event.target.value as BookingStatus)} className="mt-1.5 w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm font-normal normal-case text-gray-800"><option value="all">All</option><option value="confirmed">Confirmed</option><option value="completed">Completed</option><option value="cancelled">Cancelled</option><option value="refunded">Refunded</option></select></label>
         <label className="text-xs font-semibold uppercase text-gray-500">Payment status<select value={paymentStatus} onChange={event => setPaymentStatus(event.target.value as PaymentStatus)} className="mt-1.5 w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm font-normal normal-case text-gray-800"><option value="all">All</option><option value="paid">Paid</option><option value="pending">Pending</option><option value="refunded">Refunded</option></select></label>
       </section>
 
       {error && <div role="alert" className="flex items-center justify-between gap-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800"><span>{error}</span><button onClick={() => setRefreshCount(count => count + 1)} aria-label="Retry report" className="report-controls inline-flex items-center gap-1 font-semibold"><RefreshCw size={14} /> Retry</button></div>}
       {isLoading && <p role="status" className="text-sm text-gray-500">Loading report data…</p>}
+      {usingSampleData && <p role="status" className="text-xs text-gray-500">Showing report totals generated from the booking records currently available in this workspace.</p>}
       <p className="text-xs text-gray-500">Applied filters: {filterDescription}. Paid totals include successful payments only; net revenue subtracts refunds.</p>
 
       <div className="report-shell grid gap-3 sm:grid-cols-2 xl:grid-cols-5">

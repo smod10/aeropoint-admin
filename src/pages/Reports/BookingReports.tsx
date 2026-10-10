@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Columns, ChevronDown, ChevronLeft, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
+import { Search, Download, Columns, ChevronDown, ChevronLeft, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { mockBookings } from '../../data/mockBookings';
+import { useCurrency } from '../../context/CurrencyContext';
 
 type BookingReportSortKey = 'invoice' | 'module' | 'firstName' | 'lastName' | 'email' | 'bookingStatus' | 'paymentStatus' | 'currency' | 'basePrice' | 'markup' | 'tax' | 'dateTime';
 
@@ -9,6 +10,7 @@ const formatDateTime = (date: string) => `${date} 14:30:00`;
 
 export default function BookingReports() {
   const navigate = useNavigate();
+  const { currency, exchangeRates } = useCurrency();
   const [bookings] = useState(mockBookings);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
@@ -36,8 +38,8 @@ export default function BookingReports() {
       const firstName = nameParts[0];
       const lastName = nameParts.slice(1).join(' ');
       const email = booking.user.split('\n')[1];
-      const totalPrice = Number(booking.price);
-      const markup = Number(booking.earning);
+      const totalPrice = Number(booking.price) * exchangeRates.USD / exchangeRates[currency];
+      const markup = Number(booking.earning) * exchangeRates.USD / exchangeRates[currency];
       const basePrice = totalPrice - markup;
       const bookingStatus = booking.booking.split('\n')[0].toLowerCase();
       const paymentStatus = booking.payment.toLowerCase();
@@ -54,10 +56,10 @@ export default function BookingReports() {
         tax: Number((basePrice * 0.05).toFixed(2)),
         bookingStatus,
         paymentStatus,
-        currency: index % 5 === 0 ? 'EUR' : 'USD',
+        currency,
       };
     });
-  }, [bookings]);
+  }, [bookings, currency, exchangeRates]);
 
   const sortedRows = useMemo(() => {
     return [...tableRows].sort((left, right) => {
@@ -131,21 +133,21 @@ export default function BookingReports() {
     setVisibleColumns(previous => ({ ...previous, [column]: !previous[column] }));
   };
 
-  const showAllColumns = () => {
-    setVisibleColumns({
-      invoice: true,
-      module: true,
-      firstName: true,
-      lastName: true,
-      email: true,
-      bookingStatus: true,
-      paymentStatus: true,
-      currency: true,
-      basePrice: true,
-      markup: true,
-      tax: true,
-      dateTime: true,
-    });
+  const exportReport = () => {
+    const columns = ['Invoice', 'Module', 'First Name', 'Last Name', 'Email', 'Booking Status', 'Payment Status', 'Currency', 'Base Price', 'Markup', 'Tax', 'Date & Time'];
+    const csvCell = (value: string | number) => `"${String(value).replaceAll('"', '""')}"`;
+    const rows = sortedRows.map(row => [
+      row.booking.invoice, row.booking.moduleType, row.firstName, row.lastName, row.email,
+      row.bookingStatus, row.paymentStatus, row.currency, row.basePrice.toFixed(2),
+      row.markup.toFixed(2), row.tax.toFixed(2), row.booking.createdAt,
+    ]);
+    const csv = [columns, ...rows].map(row => row.map(csvCell).join(',')).join('\r\n');
+    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'booking-report.csv';
+    link.click();
+    URL.revokeObjectURL(url);
   };
 
   return (
@@ -167,9 +169,6 @@ export default function BookingReports() {
             </button>
             {isColumnMenuOpen && (
               <div className="absolute right-0 mt-2 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-20 p-2 max-h-80 overflow-y-auto">
-                <button type="button" onClick={showAllColumns} className="w-full text-left text-xs font-semibold text-primary-600 hover:bg-primary-50 rounded px-2 py-1.5 mb-1">
-                  Show All Columns
-                </button>
                 {([
                   ['invoice', 'Invoice'],
                   ['module', 'Module'],
@@ -200,8 +199,8 @@ export default function BookingReports() {
               <option value="25">25</option>
               <option value="50">50</option>
             </select>
-            <span className="text-gray-500">entries</span>
           </div>
+          <button type="button" onClick={exportReport} className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50"><Download size={15} /> Export CSV</button>
           <div className="flex relative">
             <input type="text" placeholder="Search records..." className="bg-white border border-gray-200 rounded-l-lg px-4 py-2.5 text-sm outline-none focus:border-[#0d6efd] w-48" />
             <button className="bg-[#0d6efd] text-white px-4 py-2.5 rounded-r-lg hover:bg-blue-700 transition-colors">
@@ -257,9 +256,9 @@ export default function BookingReports() {
                     {visibleColumns.bookingStatus && <td className="px-4 py-3"><span className={`lowercase text-xs ${bookingStatus.includes('confirmed') ? 'text-gray-800' : 'text-gray-500'}`}>{bookingStatus}</span></td>}
                     {visibleColumns.paymentStatus && <td className="px-4 py-3"><span className={`lowercase text-xs ${paymentStatus === 'paid' ? 'text-gray-800' : 'text-gray-500'}`}>{paymentStatus}</span></td>}
                     {visibleColumns.currency && <td className="px-4 py-3 text-gray-500 font-medium">{currency}</td>}
-                    {visibleColumns.basePrice && <td className="px-4 py-3 text-gray-800">{basePrice.toFixed(2)}</td>}
-                    {visibleColumns.markup && <td className="px-4 py-3 text-gray-800">{markup.toFixed(2)}</td>}
-                    {visibleColumns.tax && <td className="px-4 py-3 text-gray-800">{tax.toFixed(2)}</td>}
+                    {visibleColumns.basePrice && <td className="px-4 py-3 text-gray-800">{new Intl.NumberFormat(undefined, { style: 'currency', currency, maximumFractionDigits: 2 }).format(basePrice)}</td>}
+                    {visibleColumns.markup && <td className="px-4 py-3 text-gray-800">{new Intl.NumberFormat(undefined, { style: 'currency', currency, maximumFractionDigits: 2 }).format(markup)}</td>}
+                    {visibleColumns.tax && <td className="px-4 py-3 text-gray-800">{new Intl.NumberFormat(undefined, { style: 'currency', currency, maximumFractionDigits: 2 }).format(tax)}</td>}
                     {visibleColumns.dateTime && <td className="px-4 py-3 text-gray-600">{formatDateTime(booking.createdAt)}</td>}
                   </tr>
                 );

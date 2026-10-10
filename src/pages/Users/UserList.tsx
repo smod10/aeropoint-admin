@@ -2,7 +2,6 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Search, Plus, Edit2, Trash2, Columns, ChevronDown } from 'lucide-react';
 import { mockUsers } from '../../data/mockUsers';
-import { useCurrency } from '../../context/CurrencyContext';
 import { canDeleteAccount, canEditAccount, getCurrentActorRole, moveAccountToTrash, readAccountOverrides, readAccountTrash } from '../../utils/accountAccess';
 
 function getActiveUsers(role?: string) {
@@ -27,7 +26,6 @@ function getActiveUsers(role?: string) {
 export default function UserList() {
   const navigate = useNavigate();
   const { role } = useParams(); 
-  const { convertAndFormat } = useCurrency(); 
 
   const actorRole = getCurrentActorRole();
   const [users, setUsers] = useState(() => getActiveUsers(role));
@@ -46,7 +44,6 @@ export default function UserList() {
     email: true,
     phone: true,
     role: true,
-    balance: true,
   });
 
   const columnLabels = {
@@ -57,7 +54,6 @@ export default function UserList() {
     email: 'Email',
     phone: 'Phone',
     role: 'Role',
-    balance: 'Balance'
   };
 
   // Close dropdown when clicking outside
@@ -93,11 +89,6 @@ export default function UserList() {
     if (!window.confirm(`Move ${user.firstName} ${user.lastName} to Trash?`)) return;
     moveAccountToTrash(user.id, actorRole);
     setUsers(current => current.filter(account => account.id !== user.id));
-  };
-
-  const showAllColumns = () => {
-    setColumns({ status: true, uid: true, firstName: true, lastName: true, email: true, phone: true, role: true, balance: true });
-    setIsColumnDropdownOpen(false);
   };
 
   const handleRowsChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
@@ -152,9 +143,6 @@ export default function UserList() {
             )}
           </div>
 
-          <button onClick={showAllColumns} className="flex items-center gap-2 bg-white border border-gray-200 text-gray-700 px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors">
-            All Columns
-          </button>
           <div className="flex items-center gap-2 bg-white border border-gray-200 text-gray-700 px-3 py-2.5 rounded-lg text-sm">
             <span className="text-gray-500">Show</span>
             <select value={rowsPerPage} onChange={handleRowsChange} className="bg-transparent font-medium outline-none cursor-pointer">
@@ -163,7 +151,6 @@ export default function UserList() {
               <option value="25">25</option>
               <option value="50">50</option>
             </select>
-            <span className="text-gray-500">entries</span>
           </div>
           
           <div className="flex relative">
@@ -193,7 +180,6 @@ export default function UserList() {
                 {columns.email && <th className="px-4 py-4">Email</th>}
                 {columns.phone && <th className="px-4 py-4">Phone</th>}
                 {columns.role && <th className="px-4 py-4">Role</th>}
-                {columns.balance && <th className="px-4 py-4">Balance</th>}
                 <th className="px-4 py-4 text-center">Actions</th>
               </tr>
             </thead>
@@ -230,12 +216,6 @@ export default function UserList() {
                     </td>
                   )}
 
-                  {columns.balance && (
-                    <td className="px-4 py-3 text-gray-800 font-medium">
-                      {convertAndFormat(Number(user.balance || 0))}
-                    </td>
-                  )}
-                  
                   <td className="px-4 py-3 text-center space-x-1">
                     {canEditAccount(actorRole, user) && <button onClick={() => navigate(`/users/edit/${user.id}`)} className="inline-flex p-1.5 text-gray-400 hover:text-[#0d6efd] border border-gray-200 rounded hover:bg-gray-50 transition-colors" title="Edit" aria-label={`Edit ${user.firstName} ${user.lastName}`}>
                       <Edit2 size={14} />

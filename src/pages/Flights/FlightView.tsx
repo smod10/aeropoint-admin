@@ -1,9 +1,11 @@
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Edit, Info, PlaneTakeoff, PlaneLanding, DollarSign, Briefcase, Star, CheckCircle2 } from 'lucide-react';
+import { useCurrency } from '../../context/CurrencyContext';
 
 export default function FlightView() {
   const navigate = useNavigate();
   const { id } = useParams(); // e.g., PK304
+  const { convertFromAndFormat } = useCurrency();
 
   // Mock data representing the flight details
   const flight = {
@@ -151,15 +153,15 @@ export default function FlightView() {
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between border-b border-gray-100 pb-1">
                   <span className="text-gray-500">Adult Price</span>
-                  <span className="font-medium text-gray-900">USD {prices.adult}</span>
+                  <span className="font-medium text-gray-900">{convertFromAndFormat(Number(prices.adult), 'USD')}</span>
                 </div>
                 <div className="flex justify-between border-b border-gray-100 pb-1">
                   <span className="text-gray-500">Child Price</span>
-                  <span className="font-medium text-gray-900">USD {prices.child}</span>
+                  <span className="font-medium text-gray-900">{convertFromAndFormat(Number(prices.child), 'USD')}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-500">Infant Price</span>
-                  <span className="font-medium text-gray-900">USD {prices.infant}</span>
+                  <span className="font-medium text-gray-900">{convertFromAndFormat(Number(prices.infant), 'USD')}</span>
                 </div>
               </div>
             </div>

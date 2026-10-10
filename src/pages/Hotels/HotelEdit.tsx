@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Save } from 'lucide-react';
+import { useCurrency } from '../../context/CurrencyContext';
 
 type StayBooking = {
   id: string;
@@ -36,7 +37,7 @@ type StayForm = Omit<StayBooking, 'id' | 'amount' | 'provider' | 'managed' | 'ro
 const emptyForm: StayForm = {
   guest: '', hotel: '', location: '', address: '', room: '', checkIn: '', checkOut: '',
   status: 'Pending', paymentStatus: 'Unpaid', email: '', phone: '', rooms: '1', adults: '1',
-  children: '0', ratePerNight: '', currency: 'USD',
+  children: '0', ratePerNight: '', currency: 'NGN',
 };
 
 function getNights(checkIn: string, checkOut: string) {
@@ -54,6 +55,7 @@ function nextDate(date: string) {
 export default function HotelEdit() {
   const navigate = useNavigate();
   const { id } = useParams();
+  const { currency } = useCurrency();
   const isNew = !id || id === 'new';
   const savedBookings = JSON.parse(localStorage.getItem('aeropoint-hotel-bookings') || '[]') as StayBooking[];
   const existing = savedBookings.find(booking => booking.id === id);
@@ -63,7 +65,7 @@ export default function HotelEdit() {
     paymentStatus: existing.paymentStatus, email: existing.email, phone: existing.phone,
     rooms: String(existing.rooms), adults: String(existing.adults), children: String(existing.children),
     ratePerNight: String(existing.ratePerNight), currency: existing.currency,
-  } : emptyForm);
+  } : { ...emptyForm, currency });
 
   const nights = getNights(form.checkIn, form.checkOut);
   const total = nights * Number(form.rooms || 0) * Number(form.ratePerNight || 0);
@@ -92,7 +94,7 @@ export default function HotelEdit() {
   };
 
   if (!isNew && !existing) {
-    return <div className="rounded-lg border border-gray-200 bg-white p-8 text-center text-gray-600">Hotel booking not found.</div>;
+    return <div className="rounded-lg border border-gray-200 bg-white p-8 text-center text-gray-600">Stay booking not found.</div>;
   }
 
   const inputClass = 'mt-1.5 w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-100';
@@ -101,8 +103,8 @@ export default function HotelEdit() {
     <form onSubmit={handleSubmit} className="mx-auto max-w-5xl space-y-6">
       <header className="flex flex-col gap-4 border-b border-gray-200 pb-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
-          <Link to="/hotels" aria-label="Back to hotel bookings" className="rounded-lg border border-gray-200 bg-white p-2 text-gray-600 hover:bg-gray-50"><ArrowLeft size={18} /></Link>
-          <div><p className="text-xs font-semibold uppercase tracking-wider text-primary-600">Hotels / Stay booking</p><h1 className="mt-1 text-2xl font-bold text-gray-900">{isNew ? 'Create stay booking' : 'Edit stay booking'}</h1></div>
+          <Link to="/hotels" aria-label="Back to stay bookings" className="rounded-lg border border-gray-200 bg-white p-2 text-gray-600 hover:bg-gray-50"><ArrowLeft size={18} /></Link>
+          <div><p className="text-xs font-semibold uppercase tracking-wider text-primary-600">Stays / Stay booking</p><h1 className="mt-1 text-2xl font-bold text-gray-900">{isNew ? 'Create stay booking' : 'Edit stay booking'}</h1></div>
         </div>
         <button type="submit" className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary-700"><Save size={16} /> Save booking</button>
       </header>
@@ -117,9 +119,9 @@ export default function HotelEdit() {
       </section>
 
       <section className="rounded-lg border border-gray-200 bg-white p-6">
-        <h2 className="text-sm font-semibold text-gray-900">Hotel and stay</h2>
+        <h2 className="text-sm font-semibold text-gray-900">Stay details</h2>
         <div className="mt-5 grid gap-5 sm:grid-cols-2">
-          <label className="text-sm font-medium text-gray-700">Hotel name<input required value={form.hotel} onChange={event => update('hotel', event.target.value)} className={inputClass} /></label>
+          <label className="text-sm font-medium text-gray-700">Stay name<input required value={form.hotel} onChange={event => update('hotel', event.target.value)} className={inputClass} /></label>
           <label className="text-sm font-medium text-gray-700">City and country<input required value={form.location} onChange={event => update('location', event.target.value)} className={inputClass} /></label>
           <label className="text-sm font-medium text-gray-700 sm:col-span-2">Street address<textarea required rows={2} value={form.address} onChange={event => update('address', event.target.value)} className={inputClass} /></label>
           <label className="text-sm font-medium text-gray-700">Room type<input required value={form.room} onChange={event => update('room', event.target.value)} className={inputClass} /></label>

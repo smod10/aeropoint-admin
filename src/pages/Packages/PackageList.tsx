@@ -5,17 +5,21 @@ import { mockPackages } from '../../data/mockPackages';
 import { useCurrency } from '../../context/CurrencyContext';
 import { ChevronLeft, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 
-type PackageColumn = 'status' | 'image' | 'name' | 'location' | 'duration' | 'price' | 'tourType';
-type PackageSortKey = 'status' | 'name' | 'location' | 'duration' | 'price' | 'tourType';
+type PackageColumn = 'status' | 'image' | 'name' | 'location' | 'duration' | 'price' | 'tourType' | 'flightClass';
+type PackageSortKey = 'status' | 'name' | 'location' | 'duration' | 'price' | 'tourType' | 'flightClass';
 
 export default function PackageList() {
   const navigate = useNavigate();
   const { convertAndFormat } = useCurrency(); // Global Currency Hook
-  const [packages, setPackages] = useState(mockPackages);
+  const [packages, setPackages] = useState(() => {
+    const savedClasses = JSON.parse(localStorage.getItem('aeropoint-package-flight-classes') || '{}') as Record<number, string>;
+    return mockPackages.map(pkg => ({ ...pkg, flightClass: savedClasses[pkg.id] || pkg.flightClass }));
+  });
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
   const [isColumnMenuOpen, setIsColumnMenuOpen] = useState(false);
   const [sortKey, setSortKey] = useState<PackageSortKey>('name');
+  const [flightClassFilter, setFlightClassFilter] = useState('all');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [visibleColumns, setVisibleColumns] = useState<Record<PackageColumn, boolean>>({
     status: true,
@@ -25,6 +29,7 @@ export default function PackageList() {
     duration: true,
     price: true,
     tourType: true,
+    flightClass: true,
   });
 
   const toggleStatus = (id: number) => {
@@ -38,14 +43,14 @@ export default function PackageList() {
         : sortKey === 'location' ? left.location
         : sortKey === 'duration' ? left.days * 10 + left.nights
         : sortKey === 'price' ? left.basePriceNGN
-        : left.tourType;
+        : sortKey === 'tourType' ? left.tourType : left.flightClass;
 
       const rightValue = sortKey === 'name' ? right.title
         : sortKey === 'status' ? right.isActive
         : sortKey === 'location' ? right.location
         : sortKey === 'duration' ? right.days * 10 + right.nights
         : sortKey === 'price' ? right.basePriceNGN
-        : right.tourType;
+        : sortKey === 'tourType' ? right.tourType : right.flightClass;
 
       if (sortKey === 'status') {
         return sortDirection === 'asc'
@@ -71,11 +76,12 @@ export default function PackageList() {
     });
   }, [packages, sortDirection, sortKey]);
 
-  const totalItems = sortedPackages.length;
+  const filteredPackages = sortedPackages.filter(pkg => flightClassFilter === 'all' || pkg.flightClass === flightClassFilter);
+  const totalItems = filteredPackages.length;
   const totalPages = Math.max(1, Math.ceil(totalItems / rowsPerPage));
   const startIndex = (currentPage - 1) * rowsPerPage;
   const endIndex = startIndex + rowsPerPage;
-  const paginatedPackages = sortedPackages.slice(startIndex, endIndex);
+  const paginatedPackages = filteredPackages.slice(startIndex, endIndex);
   const pageNumbers = Array.from({ length: totalPages }, (_, index) => index + 1);
 
   const handleRowsChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
@@ -132,6 +138,7 @@ export default function PackageList() {
                   { key: 'duration', label: 'Duration' },
                   { key: 'price', label: 'Price' },
                   { key: 'tourType', label: 'Tour Type' },
+                  { key: 'flightClass', label: 'Flight Class' },
                 ].map(col => (
                   <label key={col.key} className="flex items-center gap-2 text-sm text-gray-700 px-2 py-1.5 rounded hover:bg-gray-50 cursor-pointer">
                     <input type="checkbox" checked={visibleColumns[col.key as PackageColumn]} onChange={() => toggleColumn(col.key as PackageColumn)} className="rounded border-gray-300" />
@@ -142,9 +149,10 @@ export default function PackageList() {
             )}
           </div>
           
-          <button className="flex items-center gap-2 bg-white border border-gray-200 text-gray-700 px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-gray-50">
-            All Columns <ChevronDown size={14} className="text-gray-400 ml-1" />
-          </button>
+          <select aria-label="Filter by flight class" value={flightClassFilter} onChange={event => { setFlightClassFilter(event.target.value); setCurrentPage(1); }} className="bg-white border border-gray-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-primary-500">
+            <option value="all">All flight classes</option>
+            <option>Economy</option><option>Premium Economy</option><option>Business Class</option><option>First Class</option>
+          </select>
 
           <div className="flex relative">
             <input type="text" placeholder="Search records..." className="bg-white border border-gray-200 rounded-l-lg px-4 py-2.5 text-sm outline-none focus:border-primary-500 w-48" />
@@ -174,6 +182,7 @@ export default function PackageList() {
                 {visibleColumns.duration && <th className="px-4 py-4"><button type="button" onClick={() => handleSort('duration')} className="inline-flex items-center gap-1 hover:text-primary-600">Duration {sortIcon('duration')}</button></th>}
                 {visibleColumns.price && <th className="px-4 py-4"><button type="button" onClick={() => handleSort('price')} className="inline-flex items-center gap-1 hover:text-primary-600">Price {sortIcon('price')}</button></th>}
                 {visibleColumns.tourType && <th className="px-4 py-4"><button type="button" onClick={() => handleSort('tourType')} className="inline-flex items-center gap-1 hover:text-primary-600">Tour Type {sortIcon('tourType')}</button></th>}
+                {visibleColumns.flightClass && <th className="px-4 py-4"><button type="button" onClick={() => handleSort('flightClass')} className="inline-flex items-center gap-1 hover:text-primary-600">Flight Class {sortIcon('flightClass')}</button></th>}
                 <th className="px-4 py-4 text-center">Actions</th>
               </tr>
             </thead>
@@ -209,6 +218,7 @@ export default function PackageList() {
                   </td>}
 
                   {visibleColumns.tourType && <td className="px-4 py-3 text-gray-700">{pkg.tourType}</td>}
+                  {visibleColumns.flightClass && <td className="px-4 py-3"><span className="rounded bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700">{pkg.flightClass}</span></td>}
                   
                   {/* Actions */}
                   <td className="px-4 py-3 text-center space-x-1">

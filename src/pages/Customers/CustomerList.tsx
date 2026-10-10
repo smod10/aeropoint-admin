@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { Search, Filter, Download, Eye, Mail, Phone, ShoppingBag, MapPin, LifeBuoy } from 'lucide-react';
+import { Search, Filter, Download, Eye, Mail, Phone, ShoppingBag, MapPin } from 'lucide-react';
 import SlideOver from '../../components/Shared/SlideOver';
+import { useCurrency } from '../../context/CurrencyContext';
 
 // Mock Data
 const mockCustomers = [
@@ -12,10 +13,9 @@ const mockCustomers = [
     location: 'London, UK',
     status: 'Active',
     totalBookings: 12,
-    totalSpent: '$14,250.00',
+    totalSpent: '14250.00',
     joinedDate: '12 Jan 2024',
-    recentActivity: 'Booked Flight LHR → DXB',
-    supportTickets: 0
+    recentActivity: 'Booked Flight LHR → DXB'
   },
   {
     id: 'CUS-8022',
@@ -25,10 +25,9 @@ const mockCustomers = [
     location: 'New York, USA',
     status: 'Active',
     totalBookings: 3,
-    totalSpent: '$4,100.00',
+    totalSpent: '4100.00',
     joinedDate: '05 Mar 2025',
-    recentActivity: 'Cancelled Hotel in Paris',
-    supportTickets: 1
+    recentActivity: 'Cancelled stay in Paris'
   },
   {
     id: 'CUS-8023',
@@ -38,14 +37,14 @@ const mockCustomers = [
     location: 'Dubai, UAE',
     status: 'Inactive',
     totalBookings: 1,
-    totalSpent: '$850.00',
+    totalSpent: '850.00',
     joinedDate: '22 Nov 2025',
-    recentActivity: 'Completed Umrah Package',
-    supportTickets: 0
+    recentActivity: 'Completed Umrah Package'
   }
 ];
 
 export default function CustomerList() {
+  const { convertFromAndFormat } = useCurrency();
   const [selectedCustomer, setSelectedCustomer] = useState<typeof mockCustomers[0] | null>(null);
   const [isSlideOverOpen, setIsSlideOverOpen] = useState(false);
 
@@ -117,7 +116,7 @@ export default function CustomerList() {
                     <div className="text-xs text-gray-400">{customer.phone}</div>
                   </td>
                   <td className="px-6 py-4 text-gray-900">{customer.totalBookings}</td>
-                  <td className="px-6 py-4 font-medium text-emerald-600">{customer.totalSpent}</td>
+                  <td className="px-6 py-4 font-medium text-emerald-600">{convertFromAndFormat(Number(customer.totalSpent), 'USD')}</td>
                   <td className="px-6 py-4">
                     <span className={`px-2.5 py-1 text-xs font-medium rounded-full ${
                       customer.status === 'Active' ? 'bg-emerald-50 text-emerald-600' : 'bg-gray-100 text-gray-600'
@@ -159,7 +158,7 @@ export default function CustomerList() {
             <div className="grid grid-cols-2 gap-4">
               <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm text-center">
                 <p className="text-xs text-gray-500 uppercase font-semibold mb-1">Total Revenue</p>
-                <p className="text-xl font-bold text-emerald-600">{selectedCustomer.totalSpent}</p>
+                <p className="text-xl font-bold text-emerald-600">{convertFromAndFormat(Number(selectedCustomer.totalSpent), 'USD')}</p>
               </div>
               <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm text-center">
                 <p className="text-xs text-gray-500 uppercase font-semibold mb-1">Bookings</p>
@@ -201,9 +200,6 @@ export default function CustomerList() {
             <div className="pt-6 mt-6 border-t border-gray-100 space-y-3">
               <button className="w-full flex items-center justify-center gap-2 bg-primary-600 text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-primary-700 transition-colors shadow-sm">
                 <ShoppingBag size={16} /> View All Bookings
-              </button>
-              <button className="w-full flex items-center justify-center gap-2 bg-white border border-gray-200 text-gray-700 px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors shadow-sm">
-                <LifeBuoy size={16} /> Support Tickets ({selectedCustomer.supportTickets})
               </button>
             </div>
           </div>

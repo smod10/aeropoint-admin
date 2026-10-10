@@ -78,9 +78,6 @@ export default function BlogCategories() {
           <button className="flex items-center gap-2 bg-white border border-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors">
             <Columns size={16} /> View Columns <ChevronDown size={14} className="text-gray-400 ml-1" />
           </button>
-          <button className="flex items-center gap-2 bg-white border border-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors">
-            All Columns <ChevronDown size={14} className="text-gray-400 ml-1" />
-          </button>
           <div className="flex relative">
             <input type="text" placeholder="Search records..." className="bg-white border border-gray-200 rounded-l-lg px-4 py-2 text-sm outline-none focus:border-[#0d6efd] w-48" />
             <button className="bg-[#0d6efd] text-white px-4 py-2 rounded-r-lg hover:bg-blue-700 transition-colors">

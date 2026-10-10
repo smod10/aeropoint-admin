@@ -135,9 +135,6 @@ export default function VisaSettings() {
                   </div>
                 )}
               </div>
-              <button className="flex items-center justify-between gap-2 bg-white border border-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50">
-                All Columns <span className="text-gray-400 text-xs ml-1">▼</span>
-              </button>
               <div className="flex relative">
                 <input type="text" placeholder="Search records..." className="bg-white border border-gray-200 rounded-l-lg px-4 py-2 text-sm outline-none focus:border-primary-500 w-48 lg:w-64" />
                 <button className="bg-primary-600 text-white px-4 py-2 rounded-r-lg hover:bg-primary-700 transition-colors">

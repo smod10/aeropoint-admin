@@ -95,7 +95,6 @@ export default function VisaList() {
               <option value="25">25</option>
               <option value="50">50</option>
             </select>
-            <span className="text-gray-500">entries</span>
           </div>
           <div className="flex relative">
             <input type="text" placeholder="Search destination..." className="bg-white border border-gray-200 rounded-l-lg px-4 py-2 text-sm outline-none focus:border-primary-500 w-48" />

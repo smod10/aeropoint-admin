@@ -2,13 +2,14 @@ import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, Columns, ChevronDown, ArrowUpRight, ChevronLeft, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { mockTransactions } from '../../data/mockTransactions';
+import { useCurrency } from '../../context/CurrencyContext';
+import type { Currency } from '../../context/CurrencyContext';
 
 type TransactionSortKey = 'id' | 'customer' | 'gateway' | 'type' | 'amount' | 'status' | 'date';
 
-const formatAmount = (amount: string, currency: string) => `${currency} ${Number(amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-
 export default function TransactionReports() {
   const navigate = useNavigate();
+  const { convertFromAndFormat } = useCurrency();
   const [transactions] = useState(mockTransactions);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
@@ -78,18 +79,6 @@ export default function TransactionReports() {
     setVisibleColumns(previous => ({ ...previous, [column]: !previous[column] }));
   };
 
-  const showAllColumns = () => {
-    setVisibleColumns({
-      id: true,
-      customer: true,
-      gateway: true,
-      type: true,
-      amount: true,
-      status: true,
-      date: true,
-    });
-  };
-
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
       
@@ -109,9 +98,6 @@ export default function TransactionReports() {
             </button>
             {isColumnMenuOpen && (
               <div className="absolute right-0 mt-2 w-56 bg-white border border-gray-200 rounded-lg shadow-lg z-20 p-2 max-h-80 overflow-y-auto">
-                <button type="button" onClick={showAllColumns} className="w-full text-left text-xs font-semibold text-primary-600 hover:bg-primary-50 rounded px-2 py-1.5 mb-1">
-                  Show All Columns
-                </button>
                 {([
                   ['id', 'TRX ID'],
                   ['customer', 'Customer'],
@@ -137,7 +123,6 @@ export default function TransactionReports() {
               <option value="25">25</option>
               <option value="50">50</option>
             </select>
-            <span className="text-gray-500">entries</span>
           </div>
           <div className="flex relative">
             <input type="text" placeholder="Search records..." className="bg-white border border-gray-200 rounded-l-lg px-4 py-2.5 text-sm outline-none focus:border-[#0d6efd] w-48" />
@@ -177,7 +162,7 @@ export default function TransactionReports() {
                   )}
                   {visibleColumns.gateway && <td className="px-4 py-3 text-gray-600">{trx.gateway}</td>}
                   {visibleColumns.type && <td className="px-4 py-3 text-gray-600">{trx.type}</td>}
-                  {visibleColumns.amount && <td className="px-4 py-3 text-gray-800 font-medium">{formatAmount(trx.amount, trx.currency)}</td>}
+                    {visibleColumns.amount && <td className="px-4 py-3 text-gray-800 font-medium">{convertFromAndFormat(Number(trx.amount.replace(/,/g, '')), trx.currency as Currency)}</td>}
                   {visibleColumns.status && (
                     <td className="px-4 py-3 text-center">
                       <span className={`inline-flex px-2.5 py-1 text-[10px] font-bold uppercase rounded-full ${trx.status === 'Success' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>

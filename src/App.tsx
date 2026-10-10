@@ -51,6 +51,7 @@ import TransactionView from './pages/Reports/TransactionView';
 import ExchangeRates from './pages/Settings/ExchangeRates';
 import SettingsPage from './pages/Settings/SettingsPage';
 import TeamMemberEdit from './pages/Settings/TeamMemberEdit';
+import TeamMemberCreate from './pages/Settings/TeamMemberCreate';
 import RoleEdit from './pages/Settings/RoleEdit';
 
 // Other Modules
@@ -61,6 +62,7 @@ import PublicHotels from './pages/Hotels/PublicHotels';
 import PaymentList from './pages/Payments/PaymentList';
 import Modules from './pages/Integrations/modules';
 import MediaLibrary from './pages/Media/MediaLibrary';
+import Notifications from './pages/Notifications';
 
 export default function App() {
   return (
@@ -72,6 +74,7 @@ export default function App() {
 
           <Route path="/" element={<AdminLayout />}>
             <Route index element={<DashboardHome />} />
+            <Route path="notifications" element={<Notifications />} />
             
             {/* Bookings */}
             <Route path="bookings" element={<BookingList />} />
@@ -121,12 +124,13 @@ export default function App() {
             <Route path="settings" element={<SettingsPage />} />
             <Route path="settings/team" element={<SettingsPage />} />
             <Route path="settings/team/trash" element={<UserTrash />} />
+            <Route path="settings/team/new" element={<TeamMemberCreate />} />
             <Route path="settings/team/:id" element={<TeamMemberEdit />} />
             <Route path="settings/roles/:role" element={<RoleEdit />} />
             <Route path="settings/exchange-rates" element={<ExchangeRates />} />
             
             <Route path="hotels" element={<HotelCatalog />} />
-            <Route path="hotels/inventory" element={<HotelInventory />} />
+            <Route path="hotels/inventory/:hotelId" element={<HotelInventory />} />
             <Route path="hotels/edit/:id" element={<HotelListingEdit />} />
             <Route path="payments" element={<PaymentList />} />
             <Route path="modules" element={<Modules />} /> 
