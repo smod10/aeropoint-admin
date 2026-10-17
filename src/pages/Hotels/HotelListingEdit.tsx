@@ -260,11 +260,10 @@ export default function HotelListingEdit() {
 
         <div className="min-w-0 rounded-lg border border-gray-200 bg-white">
           <section id="hotel-section-general" className={sectionClass}>
-            <div role="tablist" aria-label="Content language" className="mb-5 flex flex-wrap gap-2">{languages.map(([code, label]) => <button key={code} type="button" role="tab" aria-selected={language === code} onClick={() => setLanguage(code)} className={`rounded-lg border px-4 py-2 text-xs font-semibold ${language === code ? 'border-primary-600 bg-primary-600 text-white' : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'}`}>{label}</button>)}</div>
             <div className={panelClass}>
               <h2 className="flex items-center gap-2 border-b border-gray-200 pb-2 text-sm font-semibold text-gray-900"><BedDouble size={16} className="text-primary-600" /> Basic Information</h2>
               <div className="mt-4 grid gap-4 sm:grid-cols-2">
-                <label className="text-sm font-medium text-gray-900">{language === 'en' ? 'Name *' : 'Name'}<input value={translation ? translation.name : hotel.name} onChange={event => translation ? setTranslation({ name: event.target.value }) : update('name', event.target.value)} aria-invalid={Boolean(errors.name)} placeholder={translation ? hotel.name : undefined} className={inputClass} />{fieldError('name')}{fieldError('duplicate')}</label>
+                <label className="text-sm font-medium text-gray-900">Name *<input value={hotel.name} onChange={event => update('name', event.target.value)} aria-invalid={Boolean(errors.name)} className={inputClass} />{fieldError('name')}{fieldError('duplicate')}</label>
                 <div className="relative text-sm font-medium text-gray-700">
                   <label htmlFor="hotel-owner">Property Owner</label>
                   {owner ? <div className="mt-1.5 flex items-center justify-between rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm"><span>{owner.name} <span className="text-gray-500">({owner.email})</span></span><button type="button" onClick={() => update('ownerId', null)} aria-label="Clear owner" className="text-gray-400 hover:text-gray-700"><X size={15} /></button></div>
@@ -280,8 +279,8 @@ export default function HotelListingEdit() {
                 <label className="text-sm font-medium text-gray-700">Currency *<select value={hotel.currency} disabled={!isNew} onChange={event => update('currency', event.target.value as Currency)} title={isNew ? undefined : 'The currency cannot change after creation because room rates use it'} className={inputClass}>{supportedCurrencies.map(code => <option key={code}>{code}</option>)}</select></label>
               </div>
               <div className="mt-4">
-                <p className="text-sm font-medium text-gray-900">Description{translation ? ` (${language.toUpperCase()})` : ''}</p>
-                <div className="mt-1.5"><RichTextEditor key={language} label="Description" value={translation ? translation.description : hotel.description} onChange={html => translation ? setTranslation({ description: html }) : update('description', html)} placeholder="Describe the property" /></div>
+                <p className="text-sm font-medium text-gray-900">Description</p>
+                <div className="mt-1.5"><RichTextEditor label="Description" value={hotel.description} onChange={html => update('description', html)} placeholder="Describe the property" /></div>
               </div>
             </div>
 
