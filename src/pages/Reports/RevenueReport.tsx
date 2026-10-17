@@ -7,7 +7,7 @@ import { useCurrency } from '../../context/CurrencyContext';
 import type { Currency } from '../../context/CurrencyContext';
 
 type DatePeriod = 'today' | 'thisMonth' | 'lastMonth' | 'thisYear' | 'custom';
-type BookingType = 'all' | 'flights' | 'hotels' | 'tours' | 'visa' | 'umrah' | 'bus';
+type BookingType = 'all' | 'flights' | 'hotels' | 'tours' | 'visa';
 type BookingStatus = 'all' | 'confirmed' | 'completed' | 'cancelled' | 'refunded';
 type PaymentStatus = 'all' | 'paid' | 'pending' | 'refunded';
 
@@ -74,7 +74,7 @@ function csvCell(value: string | number) {
 
 function buildReportFromBookings(dateFrom: string, dateTo: string, bookingType: BookingType, bookingStatus: BookingStatus, paymentStatus: PaymentStatus, currency: Currency, exchangeRates: Record<Currency, number>): ReportData {
   const bookings = mockBookings.filter(booking => {
-    const moduleType = booking.moduleType === 'stays' ? 'hotels' : booking.moduleType;
+    const moduleType = booking.moduleType === 'stays' ? 'hotels' : booking.moduleType === 'umrah' ? 'tours' : booking.moduleType;
     const status = booking.booking.split('\n')[0].toLowerCase();
     const payment = booking.payment === 'PAID' ? 'paid' : booking.payment === 'REFUNDED' ? 'refunded' : 'pending';
     const date = booking.createdAt.slice(0, 10);
@@ -98,7 +98,7 @@ function buildReportFromBookings(dateFrom: string, dateTo: string, bookingType: 
 
   bookings.forEach(booking => {
     const amount = (Number(booking.price) || 0) * exchangeRates.USD / exchangeRates[currency];
-    const moduleType = booking.moduleType;
+    const moduleType = booking.moduleType === 'umrah' ? 'tours' : booking.moduleType;
     const status = booking.booking.split('\n')[0].toLowerCase();
     const isPaid = booking.payment === 'PAID';
     const isRefunded = booking.payment === 'REFUNDED';
@@ -261,7 +261,7 @@ export default function RevenueReport() {
           <label className="text-xs font-semibold uppercase text-gray-500">From<input type="date" value={customFrom} onChange={event => setCustomFrom(event.target.value)} className="mt-1.5 w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm font-normal text-gray-800" /></label>
           <label className="text-xs font-semibold uppercase text-gray-500">To<input type="date" min={customFrom || undefined} value={customTo} onChange={event => setCustomTo(event.target.value)} className="mt-1.5 w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm font-normal text-gray-800" /></label>
         </> : <div className="self-end pb-2 text-sm text-gray-500 lg:col-span-2">{periodLabel}</div>}
-        <label className="text-xs font-semibold uppercase text-gray-500">Booking type<select value={bookingType} onChange={event => setBookingType(event.target.value as BookingType)} className="mt-1.5 w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm font-normal normal-case text-gray-800"><option value="all">All</option><option value="flights">Flights</option><option value="hotels">Stays</option><option value="tours">Tours / Packages</option><option value="visa">Visa</option><option value="umrah">Umrah</option><option value="bus">Bus</option></select></label>
+        <label className="text-xs font-semibold uppercase text-gray-500">Booking type<select value={bookingType} onChange={event => setBookingType(event.target.value as BookingType)} className="mt-1.5 w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm font-normal normal-case text-gray-800"><option value="all">All</option><option value="flights">Flights</option><option value="hotels">Stays</option><option value="tours">Tours / Packages</option><option value="visa">Visa</option></select></label>
         <label className="text-xs font-semibold uppercase text-gray-500">Booking status<select value={bookingStatus} onChange={event => setBookingStatus(event.target.value as BookingStatus)} className="mt-1.5 w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm font-normal normal-case text-gray-800"><option value="all">All</option><option value="confirmed">Confirmed</option><option value="completed">Completed</option><option value="cancelled">Cancelled</option><option value="refunded">Refunded</option></select></label>
         <label className="text-xs font-semibold uppercase text-gray-500">Payment status<select value={paymentStatus} onChange={event => setPaymentStatus(event.target.value as PaymentStatus)} className="mt-1.5 w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm font-normal normal-case text-gray-800"><option value="all">All</option><option value="paid">Paid</option><option value="pending">Pending</option><option value="refunded">Refunded</option></select></label>
       </section>

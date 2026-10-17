@@ -164,10 +164,10 @@ const AirlineAutocomplete = ({ label, value, onChange, placeholder }: { label: s
 export default function FlightEdit() {
   const navigate = useNavigate();
   const { id } = useParams();
-  const { currency, exchangeRates } = useCurrency();
+  const { exchangeRates } = useCurrency();
   
   const isNew = id === 'new' || !id;
-  const convertDefaultPrice = (amount: number) => (amount * exchangeRates.USD / exchangeRates[currency]).toFixed(2);
+  const convertDefaultPrice = (amount: number) => (amount * exchangeRates.USD / exchangeRates.NGN).toFixed(2);
 
   const [legs, setLegs] = useState(isNew ? [{
     id: Date.now(),
@@ -401,7 +401,7 @@ export default function FlightEdit() {
       <div className="bg-white rounded-xl shadow-soft border border-gray-100 p-6">
         <h3 className="text-sm font-bold text-gray-800 flex items-center gap-2 mb-4">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary-500"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M12 12h.01"/><path d="M17 12h.01"/><path d="M7 12h.01"/></svg>
-          Pricing
+          Pricing (NGN)
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {[
@@ -418,21 +418,21 @@ export default function FlightEdit() {
                   <div>
                     <label className="block text-xs font-medium text-gray-700 mb-1">Adult Price {cls.req && '*'}</label>
                     <div className="relative">
-                      <span className="absolute left-3 top-2 text-gray-400 text-sm">{currency}</span>
+                      <span className="absolute left-3 top-2 text-gray-400 text-sm">₦</span>
                       <input type="text" value={tierData.adult} onChange={(e) => updatePrice(cls.key as any, 'adult', e.target.value)} placeholder="0.00" className="w-full bg-white border border-gray-200 rounded-lg pl-10 pr-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary-500" />
                     </div>
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-gray-700 mb-1">Child Price</label>
                     <div className="relative">
-                      <span className="absolute left-3 top-2 text-gray-400 text-sm">{currency}</span>
+                      <span className="absolute left-3 top-2 text-gray-400 text-sm">₦</span>
                       <input type="text" value={tierData.child} onChange={(e) => updatePrice(cls.key as any, 'child', e.target.value)} placeholder="0.00" className="w-full bg-white border border-gray-200 rounded-lg pl-10 pr-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary-500" />
                     </div>
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-gray-700 mb-1">Infant Price</label>
                     <div className="relative">
-                      <span className="absolute left-3 top-2 text-gray-400 text-sm">{currency}</span>
+                      <span className="absolute left-3 top-2 text-gray-400 text-sm">₦</span>
                       <input type="text" value={tierData.infant} onChange={(e) => updatePrice(cls.key as any, 'infant', e.target.value)} placeholder="0.00" className="w-full bg-white border border-gray-200 rounded-lg pl-10 pr-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary-500" />
                     </div>
                   </div>

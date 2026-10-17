@@ -22,6 +22,7 @@ const fieldsByType: Record<BookingType, Field[]> = {
     { key: 'from', label: 'Departure city / airport', required: true },
     { key: 'to', label: 'Destination city / airport', required: true },
     { key: 'flightNumber', label: 'Flight number' },
+    { key: 'pnr', label: 'PNR' },
     { key: 'departureDate', label: 'Departure date', type: 'date', required: true },
     { key: 'returnDate', label: 'Return date', type: 'date' },
     { key: 'baggage', label: 'Baggage allowance', options: ['Cabin only', '1 checked bag', '2 checked bags', 'Other'] },
@@ -30,6 +31,7 @@ const fieldsByType: Record<BookingType, Field[]> = {
   stays: [
     { key: 'hotel', label: 'Stay / property', required: true },
     { key: 'room', label: 'Room type', required: true },
+    { key: 'bookingReference', label: 'Booking reference' },
     { key: 'checkIn', label: 'Check-in', type: 'date', required: true },
     { key: 'checkOut', label: 'Check-out', type: 'date', required: true },
     { key: 'adults', label: 'Adults', type: 'number', required: true },
@@ -38,12 +40,14 @@ const fieldsByType: Record<BookingType, Field[]> = {
   ],
   tours: [
     { key: 'package', label: 'Tour / package', required: true },
+    { key: 'bookingReference', label: 'Booking reference' },
     { key: 'travelDate', label: 'Travel date', type: 'date', required: true },
     { key: 'travellers', label: 'Number of travellers', type: 'number', required: true },
     { key: 'requirements', label: 'Requirements', rows: 3 },
   ],
   visa: [
     { key: 'applicantName', label: 'Applicant full name', required: true },
+    { key: 'bookingReference', label: 'Booking reference' },
     { key: 'destination', label: 'Destination country', required: true },
     { key: 'visaType', label: 'Visa type', options: ['Tourist', 'Business', 'Transit', 'Student', 'Work', 'Other'], required: true },
     { key: 'travelDate', label: 'Planned travel date', type: 'date', required: true },
@@ -52,6 +56,7 @@ const fieldsByType: Record<BookingType, Field[]> = {
   ],
   umrah: [
     { key: 'package', label: 'Umrah / Hajj package', required: true },
+    { key: 'bookingReference', label: 'Booking reference' },
     { key: 'departureDate', label: 'Departure date', type: 'date', required: true },
     { key: 'returnDate', label: 'Return date', type: 'date', required: true },
     { key: 'travellers', label: 'Number of travellers', type: 'number', required: true },

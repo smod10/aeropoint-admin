@@ -17,8 +17,9 @@ import InvoiceView from './pages/Bookings/InvoiceView';
 
 // Flights Module
 import FlightList from './pages/Flights/FlightList';
-import FlightView from './pages/Flights/FlightView';
+import FlightRecordView from './pages/Flights/FlightRecordView';
 import FlightEdit from './pages/Flights/FlightEdit';
+import FlightImport from './pages/Flights/FlightImport';
 import AirlinesList from './pages/Flights/AirlinesList';
 import AirportsList from './pages/Flights/AirportsList';
 
@@ -59,6 +60,7 @@ import HotelCatalog from './pages/Hotels/HotelCatalog';
 import HotelInventory from './pages/Hotels/HotelInventory';
 import HotelListingEdit from './pages/Hotels/HotelListingEdit';
 import PublicHotels from './pages/Hotels/PublicHotels';
+import StayManagement from './pages/Stays/StayManagement';
 import PaymentList from './pages/Payments/PaymentList';
 import Modules from './pages/Integrations/modules';
 import MediaLibrary from './pages/Media/MediaLibrary';
@@ -87,7 +89,8 @@ export default function App() {
             
             {/* Flights */}
             <Route path="flights" element={<FlightList />} />
-            <Route path="flights/view/:id" element={<FlightView />} />
+            <Route path="flights/import" element={<FlightImport />} />
+            <Route path="flights/view/:id" element={<FlightRecordView />} />
             <Route path="flights/edit/:id" element={<FlightEdit />} />
             <Route path="flights/airlines" element={<AirlinesList />} />
             <Route path="flights/airports" element={<AirportsList />} />
@@ -132,6 +135,7 @@ export default function App() {
             <Route path="hotels" element={<HotelCatalog />} />
             <Route path="hotels/inventory/:hotelId" element={<HotelInventory />} />
             <Route path="hotels/edit/:id" element={<HotelListingEdit />} />
+            <Route path="stays/settings" element={<StayManagement />} />
             <Route path="payments" element={<PaymentList />} />
             <Route path="modules" element={<Modules />} /> 
             <Route path="media" element={<MediaLibrary />} />

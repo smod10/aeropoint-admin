@@ -10,16 +10,16 @@ export default function HotelInventory() {
   const navigate = useNavigate();
   const { hotelId } = useParams();
   const canManage = canManageTeam(getCurrentActorRole());
-  const { convertAndFormat } = useCurrency();
+  const { convertToNGNAndFormat } = useCurrency();
   const [hotels, setHotels] = useState(readHotelListings);
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [availability, setAvailability] = useState<'all' | HotelRoom['availability']>('all');
 
   const selectedListing = hotels.find(hotel => hotel.id === hotelId);
   const visibleHotels = hotelId ? hotels.filter(hotel => hotel.id === hotelId) : hotels;
-  const categories = [...new Set(visibleHotels.map(hotel => hotel.category === 'Hotel' ? 'Stay' : hotel.category))].sort();
+  const categories = [...new Set(visibleHotels.map(hotel => hotel.category))].sort();
   const rooms = useMemo(() => visibleHotels.flatMap(hotel => hotel.rooms.map(room => ({ hotel, room }))).filter(({ hotel, room }) => {
-    const normalizedCategory = hotel.category === 'Hotel' ? 'Stay' : hotel.category;
+    const normalizedCategory = hotel.category;
     const matchesCategory = selectedCategory === 'all' || normalizedCategory === selectedCategory;
     const matchesAvailability = availability === 'all' || room.availability === availability;
     return matchesCategory && matchesAvailability;
@@ -36,8 +36,8 @@ export default function HotelInventory() {
   return (
     <div className="space-y-6">
       <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-3"><button onClick={() => navigate('/hotels')} aria-label="Back to stays" className="rounded-lg border border-gray-200 bg-white p-2 text-gray-600 hover:bg-gray-50"><ArrowLeft size={18} /></button><div><p className="text-xs font-semibold uppercase tracking-wider text-primary-600">Stay inventory</p><h1 className="mt-1 text-2xl font-bold text-gray-900">Room inventory</h1><p className="mt-1 text-sm text-gray-500">{selectedListing?.name || 'Availability and rates across registered properties.'}</p></div></div>
-        {canManage && selectedListing && <button onClick={() => navigate(`/hotels/edit/${selectedListing.id}`)} className="rounded-lg bg-primary-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary-700">Edit stay</button>}
+        <div className="flex items-center gap-3"><button onClick={() => navigate('/hotels')} aria-label="Back to hotels" className="rounded-lg border border-gray-200 bg-white p-2 text-gray-600 hover:bg-gray-50"><ArrowLeft size={18} /></button><div><p className="text-xs font-semibold uppercase tracking-wider text-primary-600">Stay inventory</p><h1 className="mt-1 text-2xl font-bold text-gray-900">Room inventory</h1><p className="mt-1 text-sm text-gray-500">{selectedListing?.name || 'Availability and rates across registered properties.'}</p></div></div>
+        {canManage && selectedListing && <button onClick={() => navigate(`/hotels/edit/${selectedListing.id}`)} className="rounded-lg bg-primary-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary-700">Edit hotel</button>}
       </header>
 
       {hotelId && !selectedListing && <div className="rounded-lg border border-gray-200 bg-white p-8 text-center text-gray-600">Stay listing not found.</div>}
@@ -57,10 +57,10 @@ export default function HotelInventory() {
         <table className="w-full min-w-[850px] text-left text-sm">
           <thead className="border-b border-gray-200 bg-gray-50 text-xs uppercase text-gray-500"><tr><th className="px-5 py-3 font-semibold">Property</th><th className="px-4 py-3 font-semibold">Room type</th><th className="px-4 py-3 font-semibold">Capacity</th><th className="px-4 py-3 font-semibold">Rate / night</th><th className="px-4 py-3 font-semibold">Units</th><th className="px-4 py-3 font-semibold">Availability</th><th className="px-5 py-3 text-right font-semibold">Action</th></tr></thead>
           <tbody className="divide-y divide-gray-100">{rooms.map(({ hotel, room }) => <tr key={`${hotel.id}-${room.id}`} className="hover:bg-gray-50/70">
-            <td className="px-5 py-4"><p className="font-medium text-gray-900">{hotel.name}</p><p className="mt-0.5 text-xs text-gray-500">{hotel.city}, {hotel.country} · {hotel.category === 'Hotel' ? 'Stay' : hotel.category}</p></td>
-            <td className="px-4 py-4"><p className="font-medium text-gray-900">{room.name}</p><p className="mt-0.5 text-xs text-gray-500">{room.bedType || 'Bed type not set'}</p></td>
+            <td className="px-5 py-4"><p className="font-medium text-gray-900">{hotel.name}</p><p className="mt-0.5 text-xs text-gray-500">{hotel.city}, {hotel.country} · {hotel.category}</p></td>
+            <td className="px-4 py-4"><p className="font-medium text-gray-900">{room.name || room.roomType}</p><p className="mt-0.5 text-xs text-gray-500">{room.bedType || 'Bed type not set'}</p></td>
             <td className="px-4 py-4 text-gray-700">Up to {room.maxGuests}</td>
-            <td className="px-4 py-4 font-medium text-gray-800">{convertAndFormat(room.price)}</td>
+            <td className="px-4 py-4 font-medium text-gray-800">{convertToNGNAndFormat(room.price, hotel.currency)}</td>
             <td className="px-4 py-4">{canManage ? <input aria-label={`${room.name} available units`} type="number" min="0" value={room.availableUnits ?? 0} onChange={event => updateRoom(hotel, room.id, { availableUnits: Number(event.target.value) })} className="w-20 rounded border border-gray-200 px-2 py-1.5 text-sm" /> : <span className="text-gray-700">{room.availableUnits ?? 0}</span>}</td>
             <td className="px-4 py-4">{canManage ? <select aria-label={`${room.name} availability`} value={room.availability} onChange={event => updateRoom(hotel, room.id, { availability: event.target.value as HotelRoom['availability'] })} className="rounded border border-gray-200 px-2 py-1.5 text-sm"><option>Available</option><option>Unavailable</option></select> : <span className="inline-flex items-center gap-1.5 text-gray-700">{room.availability === 'Available' ? <PackageCheck size={14} className="text-emerald-600" /> : <BedDouble size={14} className="text-gray-400" />}{room.availability}</span>}</td>
             <td className="px-5 py-4 text-right"><button onClick={() => navigate(`/hotels/edit/${hotel.id}`)} className="inline-flex items-center gap-1.5 rounded border border-gray-200 px-2.5 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"><Building2 size={14} /> Manage</button></td>

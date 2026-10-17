@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Search, LayoutIcon, Plus, Eye, Edit2, Trash2, Check } from 'lucide-react';
 import SlideOver from '../../components/Shared/SlideOver';
+import DataFileUpload from '../../components/Shared/DataFileUpload';
 
 type AirlineColumn = 'status' | 'name' | 'code' | 'iata' | 'country';
 
@@ -16,7 +17,10 @@ const initialAirlines = [
 ];
 
 export default function AirlinesList() {
-  const [airlines, setAirlines] = useState(initialAirlines);
+  const [airlines, setAirlines] = useState(() => {
+    const saved = localStorage.getItem('aeropoint-imported-airlines');
+    return saved ? JSON.parse(saved) as typeof initialAirlines : initialAirlines;
+  });
   const [isSlideOverOpen, setIsSlideOverOpen] = useState(false);
   const [editingAirline, setEditingAirline] = useState<any>(null);
   const [isColumnMenuOpen, setIsColumnMenuOpen] = useState(false);
@@ -30,6 +34,28 @@ export default function AirlinesList() {
 
   const toggleStatus = (id: number) => {
     setAirlines(airlines.map(a => a.id === id ? { ...a, status: !a.status } : a));
+  };
+
+  const importAirlines = (rows: Record<string, string>[]) => {
+    const imported = rows.flatMap((row, index) => {
+      const read = (...keys: string[]) => keys.map(key => row[key]).find(Boolean) || '';
+      const name = read('airlinename', 'name', 'airline', 'carrier');
+      if (!name) return [];
+      return [{
+        id: Date.now() + index,
+        status: !['false', '0', 'inactive', 'no'].includes(read('status').toLowerCase()),
+        name,
+        code: read('iatacode', 'code', 'iata'),
+        iata: read('icaocode', 'icao'),
+        country: read('country', 'countryoforigin'),
+      }];
+    });
+    if (imported.length) setAirlines(current => {
+      const updated = [...current, ...imported];
+      localStorage.setItem('aeropoint-imported-airlines', JSON.stringify(updated));
+      return updated;
+    });
+    return imported.length;
   };
 
   const openForm = (airline: any = null) => {
@@ -77,6 +103,7 @@ export default function AirlinesList() {
               <Search size={16} />
             </button>
           </div>
+          <DataFileUpload onUpload={importAirlines} />
           <button onClick={() => openForm()} className="flex items-center gap-2 bg-primary-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary-700 transition-colors shadow-sm">
             <Plus size={16} /> Create New
           </button>

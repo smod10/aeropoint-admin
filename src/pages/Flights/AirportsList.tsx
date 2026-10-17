@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Search, LayoutIcon, Plus, Eye, Edit2, Trash2, Check } from 'lucide-react';
 import SlideOver from '../../components/Shared/SlideOver';
+import DataFileUpload from '../../components/Shared/DataFileUpload';
 
 type AirportColumn = 'status' | 'name' | 'city' | 'country' | 'iata';
 
@@ -15,7 +16,10 @@ const initialAirports = [
 ];
 
 export default function AirportsList() {
-  const [airports, setAirports] = useState(initialAirports);
+  const [airports, setAirports] = useState(() => {
+    const saved = localStorage.getItem('aeropoint-imported-airports');
+    return saved ? JSON.parse(saved) as typeof initialAirports : initialAirports;
+  });
   const [isSlideOverOpen, setIsSlideOverOpen] = useState(false);
   const [editingAirport, setEditingAirport] = useState<any>(null);
   const [isColumnMenuOpen, setIsColumnMenuOpen] = useState(false);
@@ -29,6 +33,28 @@ export default function AirportsList() {
 
   const toggleStatus = (id: number) => {
     setAirports(airports.map(a => a.id === id ? { ...a, status: !a.status } : a));
+  };
+
+  const importAirports = (rows: Record<string, string>[]) => {
+    const imported = rows.flatMap((row, index) => {
+      const read = (...keys: string[]) => keys.map(key => row[key]).find(Boolean) || '';
+      const iata = read('iatacode', 'iata', 'code');
+      if (!iata) return [];
+      return [{
+        id: Date.now() + index,
+        status: !['false', '0', 'inactive', 'no'].includes(read('status').toLowerCase()),
+        name: read('airportname', 'name', 'airport'),
+        city: read('city'),
+        country: read('country'),
+        iata,
+      }];
+    });
+    if (imported.length) setAirports(current => {
+      const updated = [...current, ...imported];
+      localStorage.setItem('aeropoint-imported-airports', JSON.stringify(updated));
+      return updated;
+    });
+    return imported.length;
   };
 
   const openForm = (airport: any = null) => {
@@ -75,6 +101,7 @@ export default function AirportsList() {
               <Search size={16} />
             </button>
           </div>
+          <DataFileUpload onUpload={importAirports} />
           <button onClick={() => openForm()} className="flex items-center gap-2 bg-primary-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary-700 transition-colors shadow-sm">
             <Plus size={16} /> Create New
           </button>

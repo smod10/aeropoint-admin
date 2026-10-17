@@ -7,7 +7,7 @@ import { readManagedBookings } from '../../utils/bookingStorage';
 import type { BookingType } from '../../types/booking';
 import { canManageTeam, getCurrentActorRole } from '../../utils/accountAccess';
 
-type BookingColumn = 'invoice' | 'module' | 'booking' | 'payment' | 'price' | 'customer' | 'ref' | 'createdAt';
+type BookingColumn = 'invoice' | 'module' | 'booking' | 'payment' | 'price' | 'customer' | 'reference' | 'createdAt';
 type BookingSortKey = BookingColumn;
 
 type BookingRow = {
@@ -20,7 +20,7 @@ type BookingRow = {
   price: string;
   earning: string;
   user: string;
-  ref: string;
+  reference: string;
   createdAt: string;
   managed: boolean;
   currency: string;
@@ -30,8 +30,8 @@ const creationTypes: { type: BookingType; label: string; path: string }[] = [
   { type: 'flights', label: 'Flight', path: 'flights' },
   { type: 'stays', label: 'Stay', path: 'stays' },
   { type: 'tours', label: 'Tour / Package', path: 'tours' },
+  { type: 'umrah', label: 'Tours: Umrah package', path: 'umrah' },
   { type: 'visa', label: 'Visa', path: 'visa' },
-  { type: 'umrah', label: 'Umrah', path: 'umrah' },
 ];
 
 export default function BookingList() {
@@ -54,7 +54,7 @@ export default function BookingList() {
     payment: true,
     price: true,
     customer: true,
-    ref: false,
+    reference: true,
     createdAt: true,
   });
 
@@ -72,6 +72,7 @@ export default function BookingList() {
       booking: bookingOverrides[booking.invoice]?.bookingStatus ?? booking.booking,
       payment: bookingOverrides[booking.invoice]?.paymentStatus ?? booking.payment,
       price: bookingOverrides[booking.invoice]?.price ?? booking.price,
+      reference: booking.ref,
       user: `${bookingOverrides[booking.invoice]?.customerName ?? booking.user.split('\n')[0]}\n${bookingOverrides[booking.invoice]?.customerEmail ?? booking.user.split('\n')[1]}`,
       managed: false,
       currency: 'USD',
@@ -86,15 +87,21 @@ export default function BookingList() {
       price: String(booking.amount),
       earning: '0',
       user: `${booking.customerName}${booking.customerEmail ? `\n${booking.customerEmail}` : ''}`,
-      ref: booking.guestBooking ? 'Guest booking' : booking.customerId ? `Customer #${booking.customerId}` : 'New customer',
+      reference: booking.bookingType === 'flights'
+        ? booking.details.pnr ?? booking.details.bookingReference ?? booking.details.reference ?? ''
+        : booking.details.bookingReference ?? booking.details.reference ?? '',
       createdAt: booking.createdAt,
       managed: true,
       currency: booking.currency,
     })),
   ];
-  const filteredBookings = moduleType
-    ? bookings.filter(booking => booking.moduleType === (moduleType === 'hotels' ? 'stays' : moduleType))
+  const selectedModuleType = moduleType === 'umrah' ? 'tours' : moduleType;
+  const filteredBookings = selectedModuleType
+    ? bookings.filter(booking => selectedModuleType === 'tours'
+      ? booking.moduleType === 'tours' || booking.moduleType === 'umrah'
+      : booking.moduleType === (selectedModuleType === 'hotels' ? 'stays' : selectedModuleType))
     : bookings;
+  const referenceColumnLabel = selectedModuleType && selectedModuleType !== 'flights' ? 'Booking Ref.' : 'PNR';
 
   const sortedBookings = useMemo(() => {
     return [...filteredBookings].sort((left, right) => {
@@ -104,7 +111,7 @@ export default function BookingList() {
         : sortKey === 'payment' ? left.payment
         : sortKey === 'price' ? Number(left.price)
         : sortKey === 'customer' ? left.user
-        : sortKey === 'ref' ? left.ref
+        : sortKey === 'reference' ? left.reference
         : left.createdAt;
 
       const rightValue = sortKey === 'invoice' ? right.invoice
@@ -113,7 +120,7 @@ export default function BookingList() {
         : sortKey === 'payment' ? right.payment
         : sortKey === 'price' ? Number(right.price)
         : sortKey === 'customer' ? right.user
-        : sortKey === 'ref' ? right.ref
+        : sortKey === 'reference' ? right.reference
         : right.createdAt;
 
       if (sortKey === 'price') {
@@ -153,13 +160,21 @@ export default function BookingList() {
     else setIsTypePickerOpen(true);
   };
 
-  const pageTitle = moduleType 
-    ? `${moduleType.charAt(0).toUpperCase() + moduleType.slice(1)} Bookings` 
+  const pageTitle = selectedModuleType 
+    ? `${selectedModuleType.charAt(0).toUpperCase() + selectedModuleType.slice(1)} Bookings` 
     : 'All Bookings';
 
   // Generate an array of page numbers to render the pagination buttons
   const pageNumbers = Array.from({ length: totalPages }, (_, i) => i + 1);
-  const visibleColumnCount = 3 + Object.values(visibleColumns).filter(Boolean).length;
+  const visibleColumnCount = 3
+    + Number(visibleColumns.invoice)
+    + Number(visibleColumns.customer)
+    + Number(visibleColumns.module)
+    + Number(visibleColumns.createdAt)
+    + Number(visibleColumns.price)
+    + Number(visibleColumns.payment)
+    + Number(visibleColumns.booking)
+    + Number(visibleColumns.reference);
 
   const toggleColumn = (column: BookingColumn) => {
     setVisibleColumns(prev => ({ ...prev, [column]: !prev[column] }));
@@ -210,8 +225,6 @@ export default function BookingList() {
               <option value="/bookings/type/stays">Stays</option>
               <option value="/bookings/type/tours">Tours</option>
               <option value="/bookings/type/visa">Visa</option>
-              <option value="/bookings/type/umrah">Umrah</option>
-              <option value="/bookings/type/bus">Bus</option>
             </select>
           </div>
 
@@ -248,7 +261,7 @@ export default function BookingList() {
                   { key: 'payment', label: 'Payment Status' },
                   { key: 'price', label: 'Amount' },
                   { key: 'customer', label: 'Customer' },
-                  { key: 'ref', label: 'Booking Reference' },
+                  { key: 'reference', label: referenceColumnLabel },
                   { key: 'createdAt', label: 'Date' },
                 ].map(col => (
                   <label key={col.key} className="flex items-center gap-2 text-sm text-gray-700 px-2 py-1.5 rounded hover:bg-gray-50 cursor-pointer">
@@ -296,7 +309,7 @@ export default function BookingList() {
                 {visibleColumns.price && <th className="px-4 py-4"><button type="button" onClick={() => handleSort('price')} className="inline-flex items-center gap-1 hover:text-primary-600">Amount {sortIcon('price')}</button></th>}
                 {visibleColumns.payment && <th className="px-4 py-4"><button type="button" onClick={() => handleSort('payment')} className="inline-flex items-center gap-1 hover:text-primary-600">Payment Status {sortIcon('payment')}</button></th>}
                 {visibleColumns.booking && <th className="px-4 py-4"><button type="button" onClick={() => handleSort('booking')} className="inline-flex items-center gap-1 hover:text-primary-600">Booking Status {sortIcon('booking')}</button></th>}
-                {visibleColumns.ref && <th className="px-4 py-4 text-center"><button type="button" onClick={() => handleSort('ref')} className="inline-flex items-center gap-1 hover:text-primary-600 justify-center">Booking Reference {sortIcon('ref')}</button></th>}
+                {visibleColumns.reference && <th className="px-4 py-4"><button type="button" onClick={() => handleSort('reference')} className="inline-flex items-center gap-1 hover:text-primary-600">{referenceColumnLabel} {sortIcon('reference')}</button></th>}
                 <th className="px-4 py-4 text-center">Actions</th>
               </tr>
             </thead>
@@ -314,7 +327,7 @@ export default function BookingList() {
                     </td>}
 
                     {visibleColumns.customer && <td className="px-4 py-3"><div className="font-bold text-gray-900">{b.user.split('\n')[0]}</div><div className="text-xs text-gray-500">{b.user.split('\n')[1] || 'Guest booking'}</div></td>}
-                    {visibleColumns.module && <td className="px-4 py-3"><div className="font-bold capitalize text-gray-800">{b.moduleType === 'stays' ? 'Stay' : b.moduleType}</div><div className="text-xs text-gray-500">{b.moduleName.split('\n')[1]}</div></td>}
+                    {visibleColumns.module && <td className="px-4 py-3"><div className="font-bold capitalize text-gray-800">{b.moduleType === 'stays' ? 'Stay' : b.moduleType === 'umrah' ? 'Tours' : b.moduleType}</div><div className="text-xs text-gray-500">{b.moduleName.split('\n')[1]}</div></td>}
                     {visibleColumns.createdAt && <td className="px-4 py-3 text-gray-800 text-sm font-medium">{b.createdAt}</td>}
                     {visibleColumns.price && <td className="px-4 py-3"><div className="font-bold text-gray-900">{convertFromAndFormat(Number(b.price), b.currency as 'NGN' | 'USD' | 'GBP' | 'EUR' | 'CAD')}</div></td>}
                     {visibleColumns.payment && <td className="px-4 py-3"><span className={`px-2.5 py-1 text-[10px] uppercase font-bold rounded border ${b.payment === 'PAID' ? 'bg-emerald-100 text-emerald-700 border-emerald-200' : b.payment === 'REFUNDED' ? 'bg-purple-100 text-purple-700 border-purple-200' : 'bg-gray-50 text-gray-600 border-gray-200'}`}>{b.payment}</span></td>}
@@ -332,7 +345,7 @@ export default function BookingList() {
                       )}
                     </td>}
 
-                    {visibleColumns.ref && <td className="px-4 py-3 text-center text-gray-400 italic text-xs font-mono">{b.ref}</td>}
+                    {visibleColumns.reference && <td className="px-4 py-3 text-gray-700 font-mono text-xs">{b.reference || '—'}</td>}
                     
                     <td className="px-4 py-3 text-center space-x-1">
                       <button onClick={() => navigate(`/bookings/view/${b.invoice}`)} className="inline-flex p-1.5 text-gray-400 hover:text-primary-600 border border-gray-200 rounded hover:bg-gray-50 transition-colors" title="View details" aria-label={`View booking ${b.invoice}`}>

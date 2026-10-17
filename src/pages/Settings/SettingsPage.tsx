@@ -5,7 +5,7 @@ import { mockUsers } from '../../data/mockUsers';
 import { useCurrency } from '../../context/CurrencyContext';
 import type { Currency } from '../../context/CurrencyContext';
 import NotificationSettings from './NotificationSettings';
-import companyLogo from '../../assets/aeropoint-express-logo.png';
+import companyLogo from '../../assets/aeropoint-express-logo-square.png';
 import { canEditAccount, canManageTeam, getCurrentAccountId, getCurrentActorRole, moveAccountToTrash, readAccountTrash } from '../../utils/accountAccess';
 import { readCreatedTeamMembers } from '../../utils/teamMembers';
 
@@ -107,7 +107,7 @@ export default function SettingsPage() {
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Company Information</h3>
                 <div className="flex items-center gap-6 mb-6">
                   <div className="w-24 h-24 bg-white border border-gray-200 rounded-lg flex items-center justify-center p-2">
-                    <img src={companyLogo} alt="Aeropoint Express Travel Ltd" className="w-full h-auto" />
+                    <img src={companyLogo} alt="Aeropoint Express Travel Ltd" className="max-w-full max-h-full object-contain" />
                   </div>
                   <div>
                     <h4 className="text-sm font-medium text-gray-900">Company Logo</h4>

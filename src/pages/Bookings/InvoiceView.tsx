@@ -2,7 +2,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { 
   FileText, Plane, Briefcase, Download, Mail,
   Home, Clock, Ban, Users, PackagePlus, Building2, MapPin,
-  Flag, FileCheck, Moon, Bus, CheckCircle2
+  Flag, FileCheck, Moon, CheckCircle2
 } from 'lucide-react';
 import { mockBookings } from '../../data/mockBookings'; 
 import { useCurrency } from '../../context/CurrencyContext';
@@ -175,24 +175,6 @@ export default function InvoiceView() {
                 <div><p className="text-[10px] font-bold text-gray-400 uppercase">Transport</p><p className="font-bold text-gray-900 text-sm">{details.transport}</p></div>
                 <div><p className="text-[10px] font-bold text-gray-400 uppercase">Visa Included</p><p className="font-bold text-emerald-600 text-sm">{details.visaIncluded}</p></div>
                 <div><p className="text-[10px] font-bold text-gray-400 uppercase">Flights Included</p><p className="font-bold text-red-600 text-sm">{details.flightsIncluded}</p></div>
-              </div>
-            </div>
-          )}
-
-          {/* --- BUS DETAILS --- */}
-          {booking.moduleType === 'bus' && (
-            <div className="bg-white rounded-xl shadow-soft border border-gray-100 p-6">
-              <h3 className="text-sm font-bold text-gray-800 flex items-center gap-2 mb-6 pb-2 border-b border-gray-100"><Bus size={16} className="text-gray-500" /> Bus Travel Details</h3>
-              <div className="flex items-center gap-4 mb-6">
-                <div className="w-12 h-12 border border-gray-200 rounded-lg flex items-center justify-center bg-gray-50"><Bus size={24} className="text-blue-600" /></div>
-                <div><h4 className="font-bold text-gray-900">{details.operator}</h4><p className="text-xs text-gray-500">{details.busType}</p></div>
-              </div>
-              <div className="grid grid-cols-2 gap-6 border-t border-gray-100 pt-6 mb-6">
-                <div><p className="text-[10px] font-bold text-gray-400 uppercase">Departure</p><p className="font-bold text-gray-900 text-sm">{details.from}</p><p className="text-xs text-gray-500">{details.depDate} • {details.depTime}</p></div>
-                <div><p className="text-[10px] font-bold text-gray-400 uppercase">Arrival</p><p className="font-bold text-gray-900 text-sm">{details.to}</p><p className="text-xs text-gray-500">{details.arrTime} (Est.)</p></div>
-              </div>
-              <div className="bg-gray-50 rounded-xl p-5 border border-gray-100 flex justify-between items-center">
-                <div><p className="text-[10px] font-bold text-gray-400 uppercase mb-1">Seat Number</p><p className="font-bold text-gray-900">{details.seat}</p></div>
               </div>
             </div>
           )}

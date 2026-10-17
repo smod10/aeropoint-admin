@@ -166,29 +166,4 @@ export const mockBookings = [
     details: { package: '14 Days Standard Umrah', makkahHotel: 'Dar Al Tawhid (4★) - 7 Nights', madinahHotel: 'Oberoi Madinah (5★) - 7 Nights', transport: 'Shared Bus', visaIncluded: 'Yes', flightsIncluded: 'No' }
   },
 
-  // ─── BUS ─────────────────────────────────────────────────────────
-  {
-    id: 16, invoice: 'B99812A', moduleType: 'bus', moduleName: 'Internal\nBus', booking: 'CONFIRMED', payment: 'PAID', price: '25.00', earning: '2.50', user: 'Samuel Ojo\nsamuel.o@example.com', ref: 'TK-1102', createdAt: '2026-07-14 08:10 AM',
-    passengers: [{ name: 'Mr. Samuel Ojo', type: 'Adult', nationality: 'Nigeria', document: 'Seat 14A' }],
-    ancillaries: [],
-    details: { operator: 'GUO Transport', from: 'Lagos (Jibowu)', to: 'Abuja (Utako)', depDate: '18-07-2026', depTime: '06:00 AM', arrTime: '18:00 PM', seat: '14A (Window)', busType: 'AC Executive' }
-  },
-  {
-    id: 34, invoice: 'B1105241', moduleType: 'bus', moduleName: 'Internal\nBus', booking: 'CONFIRMED', payment: 'PAID', price: '18.00', earning: '1.80', user: 'Chinedu Okafor\nchinedu@example.com', ref: 'TK-2291', createdAt: '2026-07-12 07:30 AM',
-    passengers: [{ name: 'Mr. Chinedu Okafor', type: 'Adult', nationality: 'Nigeria', document: 'Seat 7B' }],
-    ancillaries: [],
-    details: { operator: 'ABC Transport', from: 'Lagos (Mile 2)', to: 'Benin City', depDate: '15-07-2026', depTime: '07:00 AM', arrTime: '13:00 PM', seat: '7B (Aisle)', busType: 'AC Standard' }
-  },
-  {
-    id: 35, invoice: 'B2216352', moduleType: 'bus', moduleName: 'Internal\nBus', booking: 'PENDING', payment: 'UNPAID', price: '35.00', earning: '3.50', user: 'Ngozi Eze\nngozi.e@aeropoint.com', ref: 'Pending', createdAt: '2026-07-14 12:00 PM',
-    passengers: [{ name: 'Ms. Ngozi Eze', type: 'Adult', nationality: 'Nigeria', document: 'Pending' }],
-    ancillaries: [],
-    details: { operator: 'Peace Mass Transit', from: 'Abuja (Utako)', to: 'Enugu (New Market)', depDate: '19-07-2026', depTime: '08:00 AM', arrTime: '14:30 PM', seat: 'Pending', busType: 'AC Executive' }
-  },
-  {
-    id: 36, invoice: 'B3327463', moduleType: 'bus', moduleName: 'Internal\nBus', booking: 'CANCELLED', payment: 'REFUNDED', price: '22.00', earning: '0.00', user: 'Emeka Nwosu\nemeka.n@example.com', ref: 'TK-3302', createdAt: '2026-07-10 09:00 AM',
-    passengers: [{ name: 'Mr. Emeka Nwosu', type: 'Adult', nationality: 'Nigeria', document: 'Cancelled' }],
-    ancillaries: [],
-    details: { operator: 'Young Shall Grow Motors', from: 'Lagos (Ojota)', to: 'Port Harcourt (Rumuola)', depDate: '13-07-2026', depTime: '06:30 AM', arrTime: '16:00 PM', seat: '11C', busType: 'AC Standard' }
-  },
 ];

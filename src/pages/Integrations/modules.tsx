@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plane, Building2, Flag, Bus, FileText, Moon, Ship, Smartphone, Car, Settings, FileCode2, ArrowLeft, Key, Percent, Info, Save } from 'lucide-react';
+import { Plane, Building2, Flag, FileText, Moon, Ship, Smartphone, Car, Settings, FileCode2, ArrowLeft, Key, Percent, Info, Save } from 'lucide-react';
 
 type Module = {
   id: number;
@@ -55,7 +55,6 @@ const categoryTypes = [
   { id: 'Flights', icon: Plane },
   { id: 'Stays', icon: Building2 },
   { id: 'Tours', icon: Flag },
-  { id: 'Bus', icon: Bus },
   { id: 'Visa', icon: FileText },
   { id: 'Umrah', icon: Moon },
   { id: 'Ferries', icon: Ship },
