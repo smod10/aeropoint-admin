@@ -40,7 +40,7 @@ export type HotelListing = {
   contactEmail: string;
   contactPhone: string;
   website: string;
-  // Accommodation type, one of the Accommodation settings in Stay Management.
+  // Accommodation type, one of the Accommodation settings in Stay Settings.
   category: string;
   stars: number;
   rating: number;

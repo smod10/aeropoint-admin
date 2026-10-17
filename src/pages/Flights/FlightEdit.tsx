@@ -1,8 +1,10 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Save, Copy, ArrowRightLeft, Plus, TrendingUp, Plane, PlaneTakeoff, PlaneLanding, Trash2, Search as SearchIcon, Briefcase, Star } from 'lucide-react';
-import { airports } from '../../data/airports';
-import { airlines } from '../../data/airlines';
+import { getAvailableAirports } from '../../data/airports';
+import { getAvailableAirlines } from '../../data/airlines';
+import { readFlightInventory, writeFlightInventory } from '../../utils/flightStorage';
+import type { FlightInventoryRecord } from '../../types/flight';
 import { useCurrency } from '../../context/CurrencyContext';
 
 // -------------------------------------------------------------
@@ -12,6 +14,7 @@ const AirportAutocomplete = ({ label, value, onChange, placeholder }: { label: s
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState(value);
   const wrapperRef = useRef<HTMLDivElement>(null);
+  const availableAirports = useMemo(() => getAvailableAirports(), []);
 
   useEffect(() => { setSearchTerm(value); }, [value]);
 
@@ -25,8 +28,8 @@ const AirportAutocomplete = ({ label, value, onChange, placeholder }: { label: s
 
   const normalizedSearch = searchTerm.trim().toLowerCase();
   
-  // Filter AND Sort alphabetically by City
-  const filteredAirports = airports.filter(airport => {
+  // Filter AND Sort alphabetically by City / IATA
+  const filteredAirports = availableAirports.filter(airport => {
     if (!normalizedSearch) return true; // Show all if clicked and empty
     const searchableText = `${airport.iata} - ${airport.city} ${airport.name} ${airport.country}`.toLowerCase();
     return searchableText.includes(normalizedSearch);
@@ -34,7 +37,7 @@ const AirportAutocomplete = ({ label, value, onChange, placeholder }: { label: s
   .sort((a, b) => a.city.localeCompare(b.city)) // Sorts alphabetically A-Z
   .slice(0, 50); // Limit results to prevent lag
 
-  const handleSelect = (airport: typeof airports[0]) => {
+  const handleSelect = (airport: typeof availableAirports[0]) => {
     const formattedValue = `${airport.iata} - ${airport.city}`;
     setSearchTerm(formattedValue);
     onChange(formattedValue);
@@ -90,6 +93,7 @@ const AirlineAutocomplete = ({ label, value, onChange, placeholder }: { label: s
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState(value);
   const wrapperRef = useRef<HTMLDivElement>(null);
+  const availableAirlines = useMemo(() => getAvailableAirlines(), []);
 
   useEffect(() => { setSearchTerm(value); }, [value]);
 
@@ -104,16 +108,16 @@ const AirlineAutocomplete = ({ label, value, onChange, placeholder }: { label: s
   const normalizedSearch = searchTerm.trim().toLowerCase();
   
   // Filter AND Sort alphabetically by Airline Name
-  const filteredAirlines = airlines.filter(airline => {
+  const filteredAirlines = availableAirlines.filter(airline => {
     if (!normalizedSearch) return true;
-    const searchableText = `${airline.name} (${airline.iata}) ${airline.country}`.toLowerCase();
+    const searchableText = `${airline.name} (${airline.code || airline.iata}) ${airline.country}`.toLowerCase();
     return searchableText.includes(normalizedSearch);
   })
   .sort((a, b) => a.name.localeCompare(b.name)) // Sorts alphabetically A-Z
   .slice(0, 50);
 
-  const handleSelect = (airline: typeof airlines[0]) => {
-    const formattedValue = airline.iata;
+  const handleSelect = (airline: typeof availableAirlines[0]) => {
+    const formattedValue = airline.name;
     setSearchTerm(formattedValue);
     onChange(formattedValue);
     setIsOpen(false);
@@ -145,9 +149,12 @@ const AirlineAutocomplete = ({ label, value, onChange, placeholder }: { label: s
           {filteredAirlines.length > 0 ? (
             <ul className="py-1">
               {filteredAirlines.map((airline) => (
-                <li key={airline.iata} onClick={() => handleSelect(airline)} className="px-3 py-2 hover:bg-gray-50 cursor-pointer flex justify-between items-center transition-colors border-b border-gray-50 last:border-0">
-                  <span className="font-semibold text-gray-800 text-sm truncate pr-2">{airline.name}</span>
-                  <span className="text-xs font-bold bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded flex-shrink-0">{airline.iata}</span>
+                <li key={`${airline.code || airline.iata}-${airline.name}`} onClick={() => handleSelect(airline)} className="px-3 py-2 hover:bg-gray-50 cursor-pointer flex justify-between items-center transition-colors border-b border-gray-50 last:border-0">
+                  <div className="flex flex-col truncate pr-2">
+                    <span className="font-semibold text-gray-800 text-sm truncate">{airline.name}</span>
+                    {airline.country && <span className="text-xs text-gray-400">{airline.country}</span>}
+                  </div>
+                  <span className="text-xs font-bold bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded flex-shrink-0">{airline.code || airline.iata}</span>
                 </li>
               ))}
             </ul>
@@ -262,8 +269,73 @@ export default function FlightEdit() {
 
   const stopText = legs.length === 1 ? 'Direct Flight' : `${legs.length - 1} Stop${legs.length > 2 ? 's' : ''}`;
 
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const firstLeg = legs[0];
+    if (!firstLeg) return;
+
+    const inventory = readFlightInventory();
+    const flightId = isNew ? `fl-${Date.now()}` : (id || `fl-${Date.now()}`);
+
+    const originIata = firstLeg.from.split(' - ')[0] || firstLeg.from || 'LOS';
+    const lastLeg = legs[legs.length - 1];
+    const destinationIata = lastLeg.to.split(' - ')[0] || lastLeg.to || 'DXB';
+
+    const economyPrice = Number(pricing.economy.adult) || 150000;
+    const samplePrices = {
+      Adult: economyPrice,
+      Child: Number(pricing.economy.child) || Math.round(economyPrice * 0.75),
+      Infant: Number(pricing.economy.infant) || Math.round(economyPrice * 0.25),
+    };
+
+    const newRecord: FlightInventoryRecord = {
+      id: flightId,
+      status: 'active',
+      sourceType: 'import',
+      sourceName: 'Manual Entry (Staff)',
+      airline: firstLeg.airline || 'Airline not specified',
+      flightNumber: firstLeg.flightNumber || 'FL' + Math.floor(100 + Math.random() * 900),
+      origin: originIata,
+      destination: destinationIata,
+      departure: `${firstLeg.depDate} ${firstLeg.depTime}`.trim() || 'Not specified',
+      arrival: `${lastLeg.arrDate} ${lastLeg.arrTime}`.trim() || undefined,
+      cabinClass: 'Economy',
+      fareType: legs.length === 1 ? 'Direct Flight' : `${legs.length - 1} Stop(s)`,
+      availability: baggage.availableSeats ? `${baggage.availableSeats} seats` : 'Available',
+      offers: [
+        {
+          id: `${flightId}-offer-1`,
+          cabinClass: 'Economy',
+          fareBrand: 'Standard',
+          currency: 'NGN',
+          availability: baggage.availableSeats ? `${baggage.availableSeats} seats` : 'Available',
+          prices: [
+            {
+              passengerType: 'Adult',
+              sellingPrice: economyPrice,
+            },
+          ],
+        },
+      ],
+      samplePrices,
+    };
+
+    let updatedInventory: FlightInventoryRecord[];
+    if (isNew) {
+      updatedInventory = [newRecord, ...inventory];
+    } else {
+      updatedInventory = inventory.map(item => item.id === flightId || item.flightNumber === id ? newRecord : item);
+      if (!updatedInventory.some(item => item.id === flightId || item.flightNumber === id)) {
+        updatedInventory = [newRecord, ...inventory];
+      }
+    }
+
+    writeFlightInventory(updatedInventory);
+    navigate('/flights');
+  };
+
   return (
-    <form className="space-y-6 max-w-6xl animate-in fade-in duration-300" onSubmit={(e) => { e.preventDefault(); navigate('/flights'); }}>
+    <form className="space-y-6 max-w-6xl animate-in fade-in duration-300" onSubmit={handleSubmit}>
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-gray-200 pb-4">
         <div className="flex items-center gap-4">
           <button type="button" onClick={() => navigate('/flights')} className="p-2 bg-gray-700 text-white rounded-lg hover:bg-gray-800 transition-colors shadow-sm">

@@ -4,7 +4,7 @@ import { readHotelListings, writeHotelListings } from './hotelStorage';
 const KEY = 'aeropoint-stay-settings';
 const SEED_KEY = 'aeropoint-stay-settings-seeded';
 
-// Defaults are listed in creation order; Stay Management shows the newest first.
+// Defaults are listed in creation order; Stay Settings shows the newest first.
 const defaults: Record<StaySettingKind, string[]> = {
   stayAmenity: ['Free WiFi', 'Swimming Pool', 'Parking', 'Restaurant', 'Gym/Fitness Center', 'Spa', '24-Hour Front Desk', 'Airport Shuttle', 'Bar/Lounge', 'Conference Rooms'],
   roomType: ['Single Room', 'Double Room', 'Twin Room', 'Triple Room', 'Family Room', 'Suite', 'Deluxe Room', 'Executive Room', 'King Room', 'Queen Room'],
@@ -37,7 +37,7 @@ function readAll(): StaySetting[] {
   return all;
 }
 
-// Newest first, matching the Stay Management lists.
+// Newest first, matching the Stay Settings lists.
 export function readStaySettings(kind: StaySettingKind): StaySetting[] {
   return readAll().filter(setting => setting.kind === kind).sort((left, right) => right.order - left.order);
 }

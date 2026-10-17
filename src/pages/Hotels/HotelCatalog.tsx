@@ -100,7 +100,7 @@ export default function HotelCatalog() {
     <div className="space-y-4">
       <div className="rounded-xl border border-gray-100 bg-white shadow-soft">
         <div className="flex flex-col gap-4 p-5 lg:flex-row lg:items-center lg:justify-between">
-          <div><h1 className="text-lg font-bold text-gray-900">Hotels Management</h1><p className="mt-0.5 text-sm text-gray-500">{hotels.length} records</p></div>
+          <div><h1 className="text-lg font-bold text-gray-900">Stay Management</h1><p className="mt-0.5 text-sm text-gray-500">{hotels.length} records</p></div>
           <div className="flex flex-wrap items-center gap-2">
             <div className="relative">
               <button type="button" onClick={() => setColumnMenuOpen(open => !open)} className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"><Columns size={16} /> View Columns</button>

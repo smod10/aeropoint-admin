@@ -206,7 +206,7 @@ export default function HotelListingEdit() {
     navigate('/hotels');
   };
 
-  if (!isNew && !existing) return <div className="rounded-lg border border-gray-200 bg-white p-8 text-center text-gray-600">Hotel not found. <Link to="/hotels" className="text-primary-600 underline">Back to Hotels Management</Link></div>;
+  if (!isNew && !existing) return <div className="rounded-lg border border-gray-200 bg-white p-8 text-center text-gray-600">Hotel not found. <Link to="/hotels" className="text-primary-600 underline">Back to Stay Management</Link></div>;
   if (!canManage) return <div role="alert" className="rounded-lg border border-red-200 bg-white p-8 text-center text-gray-600">You do not have permission to manage hotels.</div>;
 
   const errorMessages = Object.values(errors);
@@ -219,7 +219,7 @@ export default function HotelListingEdit() {
     <form onSubmit={handleSubmit} noValidate className="space-y-5">
       <header className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-4">
-          <button type="button" onClick={cancel} aria-label="Back to Hotels Management" className="rounded-lg bg-gray-700 p-3 text-white hover:bg-gray-800"><ArrowLeft size={20} /></button>
+          <button type="button" onClick={cancel} aria-label="Back to Stay Management" className="rounded-lg bg-gray-700 p-3 text-white hover:bg-gray-800"><ArrowLeft size={20} /></button>
           <h1 className="text-xl font-bold text-gray-900">{isNew ? 'Create New Hotel' : `Edit: ${existing?.name}`}</h1>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -349,7 +349,7 @@ export default function HotelListingEdit() {
             <h2 className="flex items-center gap-2 text-base font-semibold text-gray-900"><Sparkles size={18} /> Amenities ({amenityOptions.length} available)</h2>
             <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">{amenityOptions.map(amenity => <label key={amenity} className="flex cursor-pointer items-center gap-2 rounded-lg border border-gray-200 px-4 py-3 text-sm text-gray-800 hover:bg-gray-50"><input type="checkbox" checked={hotel.amenities.includes(amenity)} onChange={() => update('amenities', hotel.amenities.includes(amenity) ? hotel.amenities.filter(item => item !== amenity) : [...hotel.amenities, amenity])} className="rounded border-gray-300" />{amenity}</label>)}</div>
             <p role="status" className="mt-4 flex items-center gap-2 rounded-lg border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-700"><CheckCircle2 size={17} />{hotel.amenities.length} {hotel.amenities.length === 1 ? 'amenity' : 'amenities'} selected</p>
-            <p className="mt-2 text-xs text-gray-500">Amenity options are managed in Stay Management.</p>
+            <p className="mt-2 text-xs text-gray-500">Amenity options are managed in Stay Settings.</p>
           </section>
 
           <section id="hotel-section-gallery" className={sectionClass}>

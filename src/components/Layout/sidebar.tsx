@@ -42,8 +42,8 @@ const navItems = [
     name: 'Stays',
     icon: Building2,
     subItems: [
-      { name: 'Hotel Management', path: '/hotels' },
-      { name: 'Stay Management', path: '/stays/settings' }
+      { name: 'Stay Management', path: '/hotels' },
+      { name: 'Stay Settings', path: '/stays/settings' }
     ]
   },
   { name: 'Tours & Umrah', path: '/packages', icon: Package },

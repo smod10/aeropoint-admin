@@ -101,7 +101,7 @@ export default function StayManagement() {
   return (
     <div className="space-y-4">
       <header className="flex items-center justify-between gap-4">
-        <div className="flex items-center gap-3"><Settings size={22} className="text-gray-700" /><div><h1 className="text-xl font-bold text-gray-900">Settings Management</h1><p className="text-sm text-gray-500">Stay Management · options used by Hotel Management and the hotel form</p></div></div>
+        <div className="flex items-center gap-3"><Settings size={22} className="text-gray-700" /><div><h1 className="text-xl font-bold text-gray-900">Stay Settings</h1><p className="text-sm text-gray-500">Stay Settings · options used by Stay Management and the hotel form</p></div></div>
         {canManage && <button onClick={() => openForm('new')} className="inline-flex items-center gap-2 rounded-lg bg-primary-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary-700"><Plus size={16} /> Add New Setting</button>}
       </header>
 

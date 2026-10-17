@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AlertTriangle, ArrowDown, ArrowUp, ArrowUpDown, ChevronLeft, ChevronRight, Edit2, Eye, Plus, Trash2, Upload } from 'lucide-react';
+import { AlertTriangle, ArrowDown, ArrowUp, ArrowUpDown, ChevronLeft, ChevronRight, Edit2, Eye, FileUp, Plus, Trash2 } from 'lucide-react';
 import { useCurrency, type Currency } from '../../context/CurrencyContext';
 import type { FlightInventoryRecord } from '../../types/flight';
 import { readFlightInventory, writeFlightInventory } from '../../utils/flightStorage';
 import { fetchApiFlights, getFlightInventoryEndpoint } from '../../services/flightInventoryApi';
+import FlightBulkUpload from './FlightBulkUpload';
 
 type FlightSortKey = 'airline' | 'flightNumber' | 'origin' | 'departure' | 'cabinClass' | 'price' | 'availability' | 'source' | 'status';
 
@@ -89,6 +90,8 @@ export default function FlightList() {
   const [apiLoading, setApiLoading] = useState(false);
   const [apiError, setApiError] = useState('');
   const apiEndpoint = getFlightInventoryEndpoint();
+  const [uploadOpen, setUploadOpen] = useState(false);
+  const [message, setMessage] = useState('');
 
   useEffect(() => {
     if (!apiEndpoint) return;
@@ -159,18 +162,25 @@ export default function FlightList() {
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <input value={search} onChange={event => { setSearch(event.target.value); setCurrentPage(1); }} type="search" placeholder="Search flights..." className="w-48 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:border-primary-500" />
-          <button type="button" onClick={() => navigate('/flights/import')} aria-label="Manage AIR/CSV imports" title="Manage AIR/CSV imports" className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 hover:text-primary-600">
-            <Upload size={17} />
-          </button>
           <button
             onClick={() => navigate('/flights/edit/new')}
-            className="flex items-center gap-2 bg-primary-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary-700 transition-colors shadow-sm"
+            className="inline-flex items-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700"
           >
             <Plus size={16} />
             Create New
           </button>
+          <button
+            type="button"
+            onClick={() => setUploadOpen(true)}
+            className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700"
+          >
+            <FileUp size={16} />
+            Upload Bulk
+          </button>
         </div>
       </div>
+
+      {message && <p role="status" className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm text-emerald-800">{message}</p>}
 
       <div className="flex items-start gap-3 border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900"><AlertTriangle size={17} className="mt-0.5 shrink-0" /><p>{apiEndpoint ? 'API inventory is loaded from the configured endpoint; provider prices and availability are dynamic and must be revalidated before booking. Supplier revalidation is not configured.' : 'API inventory is not connected. Set VITE_FLIGHT_INVENTORY_ENDPOINT to a flight API endpoint. Sample rows are not live inventory; imported records must be verified with a compatible supplier before booking.'}{apiError && <span className="mt-1 block" role="alert">{apiError}</span>}</p></div>
 
@@ -231,6 +241,17 @@ export default function FlightList() {
           </div>
         </div>
       </div>
+
+      {uploadOpen && (
+        <FlightBulkUpload
+          onClose={() => setUploadOpen(false)}
+          onImported={result => {
+            setUploadOpen(false);
+            setMessage(result);
+            setFlights(readFlightInventory());
+          }}
+        />
+      )}
     </div>
   );
 }
