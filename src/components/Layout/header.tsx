@@ -56,20 +56,35 @@ export default function Header() {
       {/* Right: Controls & Profile */}
       <div className="flex items-center gap-6">
         
-        {/* GLOBAL CURRENCY SWITCHER */}
-        <div className="flex items-center gap-2 border-r border-gray-200 pr-6">
-          <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Currency</span>
-          <select 
-            value={currency} 
-            onChange={(e) => setCurrency(e.target.value as Currency)}
-            className="bg-white border border-gray-200 rounded-lg px-2 py-1.5 text-sm font-bold text-gray-700 outline-none cursor-pointer focus:ring-2 focus:ring-primary-500"
-          >
-            <option value="NGN">NGN (₦)</option>
-            <option value="USD">USD ($)</option>
-            <option value="GBP">GBP (£)</option>
-            <option value="EUR">EUR (€)</option>
-            <option value="CAD">CAD (C$)</option>
-          </select>
+        {/* GLOBAL CURRENCY PRICE BUTTONS */}
+        <div className="flex items-center gap-2 border-r border-gray-200 pr-4 sm:pr-6">
+          <span className="text-xs font-bold text-gray-400 uppercase tracking-wider hidden lg:inline">Currency</span>
+          <div className="inline-flex rounded-lg bg-gray-100 p-0.5 border border-gray-200" role="group" aria-label="Currency selection">
+            {([
+              { code: 'NGN', label: '₦ NGN' },
+              { code: 'USD', label: '$ USD' },
+              { code: 'GBP', label: '£ GBP' },
+              { code: 'EUR', label: '€ EUR' },
+              { code: 'CAD', label: 'C$ CAD' },
+            ] as const).map(({ code, label }) => {
+              const isSelected = currency === code;
+              return (
+                <button
+                  key={code}
+                  type="button"
+                  onClick={() => setCurrency(code as Currency)}
+                  aria-pressed={isSelected}
+                  className={`px-2 py-1 text-xs font-bold rounded-md transition-all ${
+                    isSelected
+                      ? 'bg-primary-600 text-white shadow-xs'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-200/70'
+                  }`}
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         <div ref={menuRef} className="flex items-center gap-4">

@@ -84,7 +84,7 @@ export const CurrencyProvider: React.FC<{children: React.ReactNode}> = ({ childr
     if (!isCurrency(sourceCurrency)) return `Rate unavailable (${sourceCurrency || 'source currency not provided'})`;
     const rate = exchangeRates[sourceCurrency];
     if (!Number.isFinite(rate) || rate <= 0) return `Rate unavailable (${sourceCurrency})`;
-    return formatNGN(amount * rate);
+    return convertAndFormat(amount * rate);
   };
 
   const updateExchangeRates = (newRates: Record<Currency, number>) => {

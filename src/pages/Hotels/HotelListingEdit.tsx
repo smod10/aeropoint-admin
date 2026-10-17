@@ -18,9 +18,6 @@ import HotelRoomForm from './HotelRoomForm';
 import type { TripadvisorMatch } from '../../services/tripadvisorApi';
 import type { Currency } from '../../context/CurrencyContext';
 import type { HotelListing, HotelRoom } from '../../types/hotel';
-
-const languages = [['en', 'English'], ['de', 'DE'], ['tr', 'TR'], ['fr', 'FR'], ['es', 'ES'], ['ch', 'CH'], ['ar', 'AR'], ['bg', 'BG'], ['ru', 'RU'], ['pl', 'PL'], ['vn', 'VN'], ['it', 'IT']] as const;
-
 const sections = [
   { id: 'general', label: 'General Info', icon: Info },
   { id: 'rooms', label: 'Rooms', icon: BedDouble },
@@ -58,7 +55,6 @@ export default function HotelListingEdit() {
     boards: readActiveStayNames('board'),
   }), []);
 
-  const [language, setLanguage] = useState<string>('en');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [activeSection, setActiveSection] = useState<string>('general');
   const [ownerQuery, setOwnerQuery] = useState('');
@@ -78,17 +74,48 @@ export default function HotelListingEdit() {
   const [taLoading, setTaLoading] = useState(false);
 
   useEffect(() => {
-    const observer = new IntersectionObserver(entries => {
-      const visible = entries.filter(entry => entry.isIntersecting).sort((left, right) => left.boundingClientRect.top - right.boundingClientRect.top)[0];
-      if (visible) setActiveSection(visible.target.id.replace('hotel-section-', ''));
-    }, { rootMargin: '-15% 0px -65% 0px' });
-    sections.forEach(section => { const element = document.getElementById(`hotel-section-${section.id}`); if (element) observer.observe(element); });
-    return () => observer.disconnect();
-  }, [existing, isNew]);
+    const handleScroll = () => {
+      const scrollPosition = window.innerHeight + window.scrollY;
+      const documentHeight = document.documentElement.scrollHeight;
+      if (scrollPosition >= documentHeight - 60) {
+        setActiveSection(sections[sections.length - 1].id);
+        return;
+      }
+
+      const offset = 140;
+      let currentSection = sections[0].id;
+      for (const section of sections) {
+        const el = document.getElementById(`hotel-section-${section.id}`);
+        if (el) {
+          const top = el.getBoundingClientRect().top;
+          if (top <= offset) {
+            currentSection = section.id;
+          }
+        }
+      }
+      setActiveSection(currentSection);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll();
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   const update = <K extends keyof HotelListing>(key: K, value: HotelListing[K]) => setHotel(current => ({ ...current, [key]: value }));
   const fieldError = (key: string) => errors[key] ? <p role="alert" className="mt-1 text-xs text-red-700">{errors[key]}</p> : null;
-  const goTo = (sectionId: string) => document.getElementById(`hotel-section-${sectionId}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  const goTo = (sectionId: string) => {
+    setActiveSection(sectionId);
+    const element = document.getElementById(`hotel-section-${sectionId}`);
+    if (element) {
+      const headerOffset = 80;
+      const elementPosition = element.getBoundingClientRect().top;
+      const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+      window.scrollTo({
+        top: offsetPosition,
+        behavior: 'smooth'
+      });
+    }
+  };
 
   const destination = findDestination(hotel.city);
   const owner = findHotelOwner(hotel.ownerId);
@@ -99,13 +126,8 @@ export default function HotelListingEdit() {
   const ratingValue = String(hotel.rating);
   const ratingOptions = ratingSteps.includes(ratingValue) ? ratingSteps : [...ratingSteps, ratingValue].sort((left, right) => Number(left) - Number(right));
   const active = hotel.status === 'Published';
-  const translation = language === 'en' ? undefined : hotel.translations[language] ?? { name: '', description: '' };
 
   const setActive = (next: boolean) => update('status', next ? 'Published' : isNew || existing?.status === 'Draft' ? 'Draft' : 'Unpublished');
-  const setTranslation = (changes: Partial<{ name: string; description: string }>) => setHotel(current => {
-    const previous: { name: string; description: string } | undefined = current.translations[language];
-    return { ...current, translations: { ...current.translations, [language]: { name: previous?.name ?? '', description: previous?.description ?? '', ...changes } } };
-  });
 
   const chooseDestination = (item: (typeof destinations)[number]) => {
     setHotel(current => ({ ...current, city: item.name, country: item.country, latitude: item.latitude, longitude: item.longitude }));
