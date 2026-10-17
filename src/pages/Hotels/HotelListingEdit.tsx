@@ -83,7 +83,7 @@ export default function HotelListingEdit() {
       }
 
       const offset = 140;
-      let currentSection = sections[0].id;
+      let currentSection: string = sections[0].id;
       for (const section of sections) {
         const el = document.getElementById(`hotel-section-${section.id}`);
         if (el) {
