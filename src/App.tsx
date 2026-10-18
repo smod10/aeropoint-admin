@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { CurrencyProvider } from './context/CurrencyContext'; 
 
 // Layouts & Auth
@@ -36,6 +36,8 @@ import UserTrash from './pages/Users/UserTrash';
 // Packages Module
 import PackageList from './pages/Packages/PackageList';
 import PackageEdit from './pages/Packages/PackageEdit';
+import PackageSettings from './pages/Packages/PackageSettings';
+import UmrahList from './pages/Umrah/UmrahList';
 
 // Blog Module
 import BlogList from './pages/Blog/BlogList';
@@ -58,6 +60,7 @@ import RoleEdit from './pages/Settings/RoleEdit';
 // Other Modules
 import HotelCatalog from './pages/Hotels/HotelCatalog';
 import HotelInventory from './pages/Hotels/HotelInventory';
+import HotelRateCalendar from './pages/Hotels/HotelRateCalendar';
 import HotelListingEdit from './pages/Hotels/HotelListingEdit';
 import PublicHotels from './pages/Hotels/PublicHotels';
 import StayManagement from './pages/Stays/StayManagement';
@@ -106,11 +109,13 @@ export default function App() {
             <Route path="users/role/:role" element={<UserList />} />
             <Route path="users/edit/:id" element={<UserEdit />} />
             
-            {/* Packages / Umrah */}
+            {/* Tours and Umrah */}
             <Route path="packages" element={<PackageList />} />
             <Route path="packages/edit/:id" element={<PackageEdit />} />
-            
-            <Route path="umrah/*" element={<Navigate to="/packages" replace />} />
+            <Route path="packages/settings" element={<PackageSettings module="tour" />} />
+            <Route path="umrah" element={<UmrahList />} />
+            <Route path="umrah/edit/:id" element={<PackageEdit />} />
+            <Route path="umrah/settings" element={<PackageSettings module="umrah" />} />
             
             {/* Blogs */}
             <Route path="blog" element={<BlogList />} />
@@ -134,6 +139,7 @@ export default function App() {
             
             <Route path="hotels" element={<HotelCatalog />} />
             <Route path="hotels/inventory/:hotelId" element={<HotelInventory />} />
+            <Route path="hotels/rates/:hotelId" element={<HotelRateCalendar />} />
             <Route path="hotels/edit/:id" element={<HotelListingEdit />} />
             <Route path="stays/settings" element={<StayManagement />} />
             <Route path="payments" element={<PaymentList />} />

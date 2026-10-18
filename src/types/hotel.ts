@@ -3,7 +3,7 @@ import type { Currency } from '../context/CurrencyContext';
 export type HotelImage = { id: string; name: string; src: string };
 
 // A rate option for one room: the same room can be sold on several board bases at different prices.
-export type RoomOption = { id: string; board: string; price: number };
+export type RoomOption = { id: string; board: string; price: number; dateRates?: Record<string, number> };
 
 export type HotelRoom = {
   id: string;

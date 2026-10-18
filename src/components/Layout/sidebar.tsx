@@ -46,7 +46,22 @@ const navItems = [
       { name: 'Stay Settings', path: '/stays/settings' }
     ]
   },
-  { name: 'Tours & Umrah', path: '/packages', icon: Package },
+  {
+    name: 'Tours',
+    icon: Package,
+    subItems: [
+      { name: 'Tour Management', path: '/packages' },
+      { name: 'Tour Settings', path: '/packages/settings' },
+    ],
+  },
+  {
+    name: 'Umrah',
+    icon: Package,
+    subItems: [
+      { name: 'Umrah Management', path: '/umrah' },
+      { name: 'Umrah Settings', path: '/umrah/settings' },
+    ],
+  },
   { 
     name: 'Visa', 
     icon: FileText,

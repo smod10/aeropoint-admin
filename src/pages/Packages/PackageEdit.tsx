@@ -7,6 +7,8 @@ import {
   List, Save, Settings, User as UserIcon, Shield, UploadCloud, Trash2, Plus, CalendarDays, CheckCircle2, XCircle
 } from 'lucide-react';
 import { mockPackages } from '../../data/mockPackages';
+import { countries } from '../../data/countries';
+import { readActivePackageSettingNames } from '../../utils/packageSettings';
 
 export default function PackageEdit() {
   const navigate = useNavigate();
@@ -14,31 +16,45 @@ export default function PackageEdit() {
   const { id } = useParams();
   
   const isUmrahContext = pathname.includes('/umrah');
-  const entityName = isUmrahContext ? 'Umrah Package' : 'Package';
+  const entityName = isUmrahContext ? 'Umrah Package' : 'Tour';
   const backPath = isUmrahContext ? '/umrah' : '/packages';
+  const settingModule = isUmrahContext ? 'umrah' : 'tour';
+  const configuredTypeOptions = readActivePackageSettingNames(settingModule, isUmrahContext ? 'umrahType' : 'tourType');
+  const inclusionOptions = readActivePackageSettingNames(settingModule, isUmrahContext ? 'service' : 'inclusion');
+  const exclusionOptions = isUmrahContext ? [] : readActivePackageSettingNames('tour', 'exclusion');
+  const amenityOptions = readActivePackageSettingNames(settingModule, 'amenity');
+  const durationOptions = isUmrahContext ? readActivePackageSettingNames('umrah', 'duration') : [];
+  const tagOptions = isUmrahContext ? readActivePackageSettingNames('umrah', 'tag') : [];
 
   const isNew = id === 'new' || !id;
   const pkg = isNew ? null : mockPackages.find(p => p.id === Number(id));
+  const typeOptions = Array.from(new Set([...configuredTypeOptions, ...(pkg?.tourType ? [pkg.tourType] : [])]));
   const [flightClass, setFlightClass] = useState(pkg?.flightClass || 'Economy');
+  const [country, setCountry] = useState(() => {
+    try {
+      const savedCountries = JSON.parse(localStorage.getItem('aeropoint-package-countries') || '{}') as Record<number, string>;
+      return (pkg && savedCountries[pkg.id]) || pkg?.country || '';
+    } catch {
+      return pkg?.country ?? '';
+    }
+  });
 
   const [activeTab, setActiveTab] = useState<'general' | 'pricing' | 'location' | 'itinerary' | 'inclusions' | 'gallery' | 'seo' | 'translations'>('general');
 
   // Itinerary State
   const [itineraryDays, setItineraryDays] = useState([{ day: 1, title: '', description: '', location: '', lat: '', lng: '' }]);
 
-  // Inclusions / Exclusions State
-  const defaultInclusions = [
-    { name: 'Complimentary Breakfast', selected: false }, { name: 'Lunch', selected: false }, { name: 'Dinner', selected: false }, { name: 'Transportation', selected: false },
-    { name: 'Professional Tour Guide', selected: false }, { name: 'Stay Pickup and Drop-off', selected: false }, { name: 'Entrance Fees', selected: false }, { name: 'WiFi Access', selected: false },
-    { name: 'Air Conditioning', selected: false }, { name: 'Parking', selected: false }
-  ];
-  const defaultExclusions = [
-    { name: 'Airfare & Airport Taxes', selected: false }, { name: 'Visa Charges', selected: false }, { name: 'Travel Insurance', selected: false }, { name: 'Tips and Gratuities', selected: false },
-    { name: 'Personal Expenses', selected: false }, { name: 'Optional Tours', selected: false }, { name: 'Alcoholic Beverages', selected: false }
-  ];
+  // Package choices come from the module-specific settings catalog.
+  const defaultInclusions = inclusionOptions.map(name => ({ name, selected: false }));
+  const defaultExclusions = exclusionOptions.map(name => ({ name, selected: false }));
+  const defaultAmenities = amenityOptions.map(name => ({ name, selected: false }));
+  const defaultTags = tagOptions.map(name => ({ name, selected: false }));
 
   const [inclusions, setInclusions] = useState(defaultInclusions);
   const [exclusions, setExclusions] = useState(defaultExclusions);
+  const [amenities, setAmenities] = useState(defaultAmenities);
+  const [tags, setTags] = useState(defaultTags);
+  const [duration, setDuration] = useState('');
 
   const toggleInclusion = (index: number) => {
     const newIncs = [...inclusions];
@@ -53,7 +69,7 @@ export default function PackageEdit() {
   };
 
   return (
-    <form className="space-y-6 max-w-5xl animate-in fade-in duration-300 pb-10" onSubmit={(e) => { e.preventDefault(); if (pkg) { const savedClasses = JSON.parse(localStorage.getItem('aeropoint-package-flight-classes') || '{}') as Record<number, string>; savedClasses[pkg.id] = flightClass; localStorage.setItem('aeropoint-package-flight-classes', JSON.stringify(savedClasses)); } navigate(backPath); }}>
+    <form className="space-y-6 animate-in fade-in duration-300 pb-6" onSubmit={(e) => { e.preventDefault(); if (!isUmrahContext && !country) { setActiveTab('location'); return; } if (pkg) { const savedClasses = JSON.parse(localStorage.getItem('aeropoint-package-flight-classes') || '{}') as Record<number, string>; savedClasses[pkg.id] = flightClass; localStorage.setItem('aeropoint-package-flight-classes', JSON.stringify(savedClasses)); const savedCountries = JSON.parse(localStorage.getItem('aeropoint-package-countries') || '{}') as Record<number, string>; savedCountries[pkg.id] = country; localStorage.setItem('aeropoint-package-countries', JSON.stringify(savedCountries)); } navigate(backPath); }}>
       
       {/* Header */}
       <div className="flex items-center gap-4 border-b border-gray-200 pb-4">
@@ -63,16 +79,14 @@ export default function PackageEdit() {
         <h2 className="text-2xl font-bold text-gray-800">{isNew ? `Add ${entityName}` : `Edit ${entityName}`}</h2>
       </div>
 
-      <div className="bg-white rounded-xl shadow-soft border border-gray-100 overflow-hidden flex flex-col">
-        
-        {/* Tab Navigation */}
-        <div className="flex border-b border-gray-100 px-2 pt-2 bg-white overflow-x-auto hide-scrollbar">
+      <div className="grid items-start gap-5 lg:grid-cols-[13rem_minmax(0,1fr)]">
+        <nav aria-label="Package form sections" className="flex gap-1 overflow-x-auto rounded-lg border border-gray-200 bg-white p-2 lg:sticky lg:top-20 lg:flex-col">
           {[
             { id: 'general', label: 'General Info', icon: Info },
             { id: 'pricing', label: 'Pricing', icon: DollarSign },
             { id: 'location', label: 'Location', icon: MapPin },
             { id: 'itinerary', label: 'Itinerary', icon: Calendar },
-            { id: 'inclusions', label: 'Inclusions & Exclusions', icon: ListChecks },
+            { id: 'inclusions', label: isUmrahContext ? 'Services & Options' : 'Inclusions & Exclusions', icon: ListChecks },
             { id: 'gallery', label: 'Gallery', icon: ImageIcon },
             { id: 'seo', label: 'SEO', icon: Search },
             { id: 'translations', label: 'Translations', icon: Globe },
@@ -81,14 +95,16 @@ export default function PackageEdit() {
               key={tab.id}
               type="button" 
               onClick={() => setActiveTab(tab.id as any)} 
-              className={`px-4 py-3 text-sm font-medium flex items-center gap-2 border-b-2 transition-colors whitespace-nowrap ${activeTab === tab.id ? 'border-[#0d6efd] text-[#0d6efd]' : 'border-transparent text-gray-500 hover:text-gray-800'}`}
+              aria-current={activeTab === tab.id ? 'true' : undefined}
+              className={`flex shrink-0 items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium whitespace-nowrap ${activeTab === tab.id ? 'bg-primary-50 text-primary-700' : 'text-gray-600 hover:bg-gray-50'}`}
             >
               <tab.icon size={16} /> {tab.label}
             </button>
           ))}
-        </div>
+        </nav>
 
-        <div className="p-6 md:p-8 bg-gray-50/30 flex-1">
+        <div className="min-w-0 overflow-visible rounded-xl border border-gray-100 bg-white shadow-soft">
+        <div className="p-6 md:p-8 bg-gray-50/30">
           
           {/* TAB: GENERAL INFO */}
           {activeTab === 'general' && (
@@ -103,15 +119,10 @@ export default function PackageEdit() {
                 </div>
                 <div className="grid grid-cols-2 md:grid-cols-7 gap-6 mb-6">
                   <div className="md:col-span-2">
-                    <label className="block text-xs font-bold text-gray-700 mb-1.5">Tour Type</label>
+                    <label className="block text-xs font-bold text-gray-700 mb-1.5">{isUmrahContext ? 'Umrah Type' : 'Tour Type'}</label>
                     <select defaultValue={pkg?.tourType || ''} className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-primary-500 cursor-pointer">
                       <option value="" disabled>Select Type</option>
-                      <option value="Join-In">Join-In</option>
-                      <option value="Private">Private</option>
-                      <option value="Sightseeing">Sightseeing</option>
-                      <option value="Umrah">Umrah</option>
-                      <option value="Hajj">Hajj</option>
-                      <option value="Ziyarat">Ziyarat</option>
+                      {typeOptions.map(type => <option key={type}>{type}</option>)}
                     </select>
                   </div>
                   <div className="md:col-span-2">
@@ -221,7 +232,8 @@ export default function PackageEdit() {
               <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
                 <h3 className="text-sm font-bold text-blue-900 flex items-center gap-2 mb-6"><MapPin size={16} /> Location Information</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                  <div><label className="block text-sm font-medium text-gray-700 mb-1.5">Location *</label><input type="text" placeholder="Search city or country" defaultValue={pkg?.location} className="w-full bg-white border border-gray-200 rounded-lg px-4 py-2.5 text-sm outline-none focus:border-primary-500" /></div>
+                  <div><label className="block text-sm font-medium text-gray-700 mb-1.5">Location *</label><input type="text" placeholder="Search city or destination" defaultValue={pkg?.location} className="w-full bg-white border border-gray-200 rounded-lg px-4 py-2.5 text-sm outline-none focus:border-primary-500" /></div>
+                  <div><label className="block text-sm font-medium text-gray-700 mb-1.5">Country {isUmrahContext ? '' : '*'}</label><select value={country} onChange={event => setCountry(event.target.value)} required={!isUmrahContext} className="w-full bg-white border border-gray-200 rounded-lg px-4 py-2.5 text-sm outline-none focus:border-primary-500"><option value="">Select country</option>{countries.map(option => <option key={option.name} value={option.name}>{option.name}</option>)}</select></div>
                   <div><label className="block text-sm font-medium text-gray-700 mb-1.5">Address</label><input type="text" placeholder="Full address" className="w-full bg-white border border-gray-200 rounded-lg px-4 py-2.5 text-sm outline-none focus:border-primary-500" /></div>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -291,7 +303,7 @@ export default function PackageEdit() {
                 
                 {/* Inclusions */}
                 <div>
-                  <h3 className="text-sm font-bold text-blue-900 flex items-center gap-2 mb-4 pb-2 border-b border-gray-100"><CheckCircle2 size={16} className="text-[#0d6efd]"/> Inclusions ({inclusions.filter(i => i.selected).length})</h3>
+                  <h3 className="text-sm font-bold text-blue-900 flex items-center gap-2 mb-4 pb-2 border-b border-gray-100"><CheckCircle2 size={16} className="text-[#0d6efd]"/> {isUmrahContext ? 'Services' : 'Inclusions'} ({inclusions.filter(i => i.selected).length})</h3>
                   <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-4 gap-4">
                     {inclusions.map((item, index) => (
                       <button type="button" key={index} onClick={() => toggleInclusion(index)} className={`flex items-center gap-3 p-3 rounded-lg border text-left transition-colors ${item.selected ? 'border-[#0d6efd] bg-blue-50/30' : 'border-gray-200 bg-white hover:bg-gray-50'}`}>
@@ -304,8 +316,7 @@ export default function PackageEdit() {
                   </div>
                 </div>
 
-                {/* Exclusions */}
-                <div>
+                {!isUmrahContext && <div>
                   <h3 className="text-sm font-bold text-blue-900 flex items-center gap-2 mb-4 pb-2 border-b border-gray-100"><XCircle size={16} className="text-[#0d6efd]"/> Exclusions ({exclusions.filter(i => i.selected).length})</h3>
                   <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-4 gap-4">
                     {exclusions.map((item, index) => (
@@ -317,7 +328,25 @@ export default function PackageEdit() {
                       </button>
                     ))}
                   </div>
+                </div>}
+
+                <div>
+                  <h3 className="text-sm font-bold text-blue-900 flex items-center gap-2 mb-4 pb-2 border-b border-gray-100"><CheckCircle2 size={16} className="text-[#0d6efd]"/> Amenities ({amenities.filter(item => item.selected).length})</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-4 gap-4">
+                    {amenities.map((item, index) => <button type="button" key={item.name} onClick={() => setAmenities(current => current.map((choice, choiceIndex) => choiceIndex === index ? { ...choice, selected: !choice.selected } : choice))} className={`flex items-center gap-3 rounded-lg border p-3 text-left ${item.selected ? 'border-[#0d6efd] bg-blue-50/30' : 'border-gray-200 bg-white hover:bg-gray-50'}`}><span className={`flex h-4 w-4 items-center justify-center rounded border ${item.selected ? 'border-[#0d6efd] bg-[#0d6efd]' : 'border-gray-300'}`}>{item.selected && <CheckCircle2 size={12} className="text-white" />}</span><span className="text-sm text-gray-700">{item.name}</span></button>)}
+                  </div>
                 </div>
+
+                {isUmrahContext && <>
+                  <div>
+                    <label className="mb-1.5 block text-sm font-medium text-gray-700">Duration</label>
+                    <select value={duration} onChange={event => setDuration(event.target.value)} className="w-full max-w-sm rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-primary-500"><option value="">Select duration</option>{durationOptions.map(option => <option key={option}>{option}</option>)}</select>
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-blue-900 flex items-center gap-2 mb-4 pb-2 border-b border-gray-100">Tags ({tags.filter(item => item.selected).length})</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-4 gap-4">{tags.map((item, index) => <button type="button" key={item.name} onClick={() => setTags(current => current.map((choice, choiceIndex) => choiceIndex === index ? { ...choice, selected: !choice.selected } : choice))} className={`flex items-center gap-3 rounded-lg border p-3 text-left ${item.selected ? 'border-[#0d6efd] bg-blue-50/30' : 'border-gray-200 bg-white hover:bg-gray-50'}`}><span className={`flex h-4 w-4 items-center justify-center rounded border ${item.selected ? 'border-[#0d6efd] bg-[#0d6efd]' : 'border-gray-300'}`}>{item.selected && <CheckCircle2 size={12} className="text-white" />}</span><span className="text-sm text-gray-700">{item.name}</span></button>)}</div>
+                  </div>
+                </>}
 
               </div>
             </div>
@@ -378,7 +407,7 @@ export default function PackageEdit() {
         </div>
 
         {/* Bottom Actions */}
-        <div className="p-6 bg-white border-t border-gray-200 flex justify-end gap-3">
+        <div className="sticky bottom-0 z-30 flex justify-end gap-3 border-t border-gray-200 bg-white px-6 py-4">
           <button type="button" onClick={() => navigate(backPath)} className="px-6 py-2.5 bg-white border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors">
             Cancel
           </button>
@@ -387,6 +416,7 @@ export default function PackageEdit() {
           </button>
         </div>
 
+        </div>
       </div>
     </form>
   );

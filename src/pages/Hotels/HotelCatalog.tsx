@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AlertTriangle, Building2, CalendarDays, ChevronLeft, ChevronRight, Columns, Edit2, Eye, FileUp, Plus, Search, Trash2 } from 'lucide-react';
+import { AlertTriangle, Building2, CalendarDays, CalendarRange, ChevronLeft, ChevronRight, Columns, Edit2, Eye, FileUp, Plus, Search, Trash2 } from 'lucide-react';
 import { deleteHotelListings, hotelSourceLabel, readHotelListings, saveHotelListing } from '../../utils/hotelStorage';
 import { canManageTeam, getCurrentActorRole } from '../../utils/accountAccess';
 import { findHotelOwner } from '../../data/hotelOwners';
@@ -153,6 +153,7 @@ export default function HotelCatalog() {
                   <td className="border-l border-gray-100 px-4 py-3"><div className="flex justify-end gap-1.5">
                     <button onClick={() => setPreview(hotel)} aria-label={`View ${hotel.name}`} title="View details" className={iconButton}><Eye size={15} /></button>
                     <button onClick={() => navigate(`/hotels/inventory/${hotel.id}`)} aria-label={`${hotel.name} rooms and availability`} title="Rooms and availability" className={iconButton}><CalendarDays size={15} /></button>
+                    <button onClick={() => navigate(`/hotels/rates/${hotel.id}`)} aria-label={`${hotel.name} rates calendar`} title="Rates calendar" className={iconButton}><CalendarRange size={15} /></button>
                     {canManage && <button onClick={() => navigate(`/hotels/edit/${hotel.id}`)} aria-label={`Edit ${hotel.name}`} title="Edit hotel" className={iconButton}><Edit2 size={15} /></button>}
                     {canManage && <button onClick={() => remove([hotel])} aria-label={`Delete ${hotel.name}`} title="Delete hotel" className={`${iconButton} hover:text-red-600`}><Trash2 size={15} /></button>}
                   </div></td>
