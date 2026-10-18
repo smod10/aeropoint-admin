@@ -421,7 +421,7 @@ export default function HotelListingEdit() {
       </div>
     </form>
 
-      <SlideOver isOpen={Boolean(roomEditor)} onClose={() => setRoomEditor(undefined)} title={roomEditor && hotel.rooms.some(room => room.id === roomEditor.id) ? 'Edit Room' : 'Add Room'}>
+      <SlideOver isOpen={Boolean(roomEditor)} onClose={() => setRoomEditor(undefined)} title={roomEditor && hotel.rooms.some(room => room.id === roomEditor.id) ? 'Edit Room' : 'Add Room'} size="wide">
         {roomEditor && <HotelRoomForm key={roomEditor.id} room={roomEditor} currency={hotel.currency} roomTypes={settings.roomTypes} roomAmenities={settings.roomAmenities} boards={settings.boards} onSave={saveRoom} onCancel={() => setRoomEditor(undefined)} />}
       </SlideOver>
     </div>

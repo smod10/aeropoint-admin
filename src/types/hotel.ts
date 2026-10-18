@@ -14,6 +14,10 @@ export type HotelRoom = {
   maxGuests: number;
   bedType: string;
   facilities: string[];
+  breakfastIncluded: boolean;
+  freeCancellation: boolean;
+  refundable: boolean;
+  active: boolean;
   // Lowest option price, kept so booking and inventory screens can show a single "from" rate.
   price: number;
   options: RoomOption[];

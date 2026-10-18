@@ -27,6 +27,10 @@ function normalizeRoom(room: StoredRoom): HotelRoom {
     maxGuests: room.maxGuests ?? 2,
     bedType: room.bedType ?? '',
     facilities: room.facilities ?? [],
+    breakfastIncluded: room.breakfastIncluded ?? false,
+    freeCancellation: room.freeCancellation ?? false,
+    refundable: room.refundable ?? false,
+    active: room.active ?? true,
     options,
     price: Math.min(...options.map(option => option.price)),
     availableUnits: room.availableUnits ?? 0,
@@ -88,7 +92,7 @@ export function hotelDuplicateKey(hotel: Pick<HotelListing, 'name' | 'city'>): s
 function demoRoom(hotelSlug: string, slug: string, name: string, roomType: string, bedType: string, maxGuests: number, price: number, facilities: string[], availableUnits: number): HotelRoom {
   const id = `demo-${hotelSlug}-${slug}`;
   return {
-    id, name, roomType, description: '', images: [], maxGuests, bedType, facilities, price, availableUnits, availability: 'Available',
+    id, name, roomType, description: '', images: [], maxGuests, bedType, facilities, breakfastIncluded: false, freeCancellation: false, refundable: false, active: true, price, availableUnits, availability: 'Available',
     options: [{ id: `${id}-room-only`, board: 'Room Only', price }, { id: `${id}-bed-breakfast`, board: 'Bed & Breakfast', price: Math.round(price * 1.15) }],
   };
 }
@@ -181,7 +185,7 @@ const legacySamples: StoredHotel[] = [
 
 export function createBlankRoom(): HotelRoom {
   const id = crypto.randomUUID();
-  return { id, name: '', roomType: '', description: '', images: [], maxGuests: 2, bedType: '', facilities: [], price: 0, options: [{ id: crypto.randomUUID(), board: 'Room Only', price: 0 }], availableUnits: 0, availability: 'Available' };
+  return { id, name: '', roomType: '', description: '', images: [], maxGuests: 2, bedType: '', facilities: [], breakfastIncluded: false, freeCancellation: false, refundable: false, active: true, price: 0, options: [{ id: crypto.randomUUID(), board: 'Room Only', price: 0 }], availableUnits: 0, availability: 'Available' };
 }
 
 export function createBlankHotel(): HotelListing {
