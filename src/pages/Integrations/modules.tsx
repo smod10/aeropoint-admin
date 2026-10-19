@@ -1,6 +1,9 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plane, Building2, Flag, FileText, Moon, Ship, Smartphone, Car, Settings, FileCode2, ArrowLeft, Key, Percent, Info, Save } from 'lucide-react';
+import AmadeusMarkupRules from '../../components/Integrations/AmadeusMarkupRules';
+import { readDefaultFlightPricing, writeDefaultFlightPricing } from '../../utils/amadeusMarkupRules';
+import type { DefaultFlightPricing } from '../../types/markupRule';
 
 type Module = {
   id: number;
@@ -9,7 +12,6 @@ type Module = {
   category: string;
   status: boolean;
   b2c: string;
-  b2b: string;
   currency: string;
   env: string;
   color: string;
@@ -18,37 +20,37 @@ type Module = {
 // Complete module list reflecting screenshots and primary NGN currency
 const initialModules: Module[] = [
   // Flights
-  { id: 1, name: 'Flights', provider: 'Internal', category: 'Flights', status: true, b2c: '3', b2b: '2', currency: 'NGN', env: 'Production', color: 'bg-blue-400' },
-  { id: 6, name: 'Amadeus', provider: 'Amadeus', category: 'Flights', status: true, b2c: '2', b2b: '2', currency: 'USD', env: 'Development', color: 'bg-[#005eb8]' },
-  { id: 12, name: 'Kiwi', provider: 'Kiwi', category: 'Flights', status: true, b2c: '3', b2b: '2', currency: 'USD', env: 'Production', color: 'bg-[#00a991]' },
-  { id: 15, name: 'Seeru', provider: 'Seeru', category: 'Flights', status: true, b2c: '3', b2b: '2', currency: 'USD', env: 'Production', color: 'bg-[#21b778]' },
-  { id: 31, name: 'Travelpayouts', provider: 'Travelpayouts', category: 'Flights', status: true, b2c: '10', b2b: '5', currency: 'USD', env: 'Production', color: 'bg-[#1b93d3]' },
-  { id: 44, name: 'Duffel', provider: 'Duffel', category: 'Flights', status: true, b2c: '3', b2b: '2', currency: 'NGN', env: 'Development', color: 'bg-[#ff7b88]' },
-  { id: 50, name: 'Travelport', provider: 'Travelport', category: 'Flights', status: true, b2c: '0', b2b: '0', currency: 'NGN', env: 'Production', color: 'bg-[#89d6d2]' },
-  { id: 52, name: 'Kayak', provider: 'Kayak', category: 'Flights', status: false, b2c: '0', b2b: '0', currency: 'USD', env: 'Development', color: 'bg-[#ff690f]' },
-  { id: 60, name: 'Sabre', provider: 'Sabre', category: 'Flights', status: false, b2c: '5', b2b: '3', currency: 'USD', env: 'Development', color: 'bg-[#e50000]' },
-  { id: 65, name: 'Google Flights', provider: 'Google Flights', category: 'Flights', status: false, b2c: '2', b2b: '1', currency: 'USD', env: 'Production', color: 'bg-[#4285f4]' },
+  { id: 1, name: 'Flights', provider: 'Internal', category: 'Flights', status: true, b2c: '3', currency: 'NGN', env: 'Production', color: 'bg-blue-400' },
+  { id: 6, name: 'Amadeus', provider: 'Amadeus', category: 'Flights', status: true, b2c: '2', currency: 'USD', env: 'Development', color: 'bg-[#005eb8]' },
+  { id: 12, name: 'Kiwi', provider: 'Kiwi', category: 'Flights', status: true, b2c: '3', currency: 'USD', env: 'Production', color: 'bg-[#00a991]' },
+  { id: 15, name: 'Seeru', provider: 'Seeru', category: 'Flights', status: true, b2c: '3', currency: 'USD', env: 'Production', color: 'bg-[#21b778]' },
+  { id: 31, name: 'Travelpayouts', provider: 'Travelpayouts', category: 'Flights', status: true, b2c: '10', currency: 'USD', env: 'Production', color: 'bg-[#1b93d3]' },
+  { id: 44, name: 'Duffel', provider: 'Duffel', category: 'Flights', status: true, b2c: '3', currency: 'NGN', env: 'Development', color: 'bg-[#ff7b88]' },
+  { id: 50, name: 'Travelport', provider: 'Travelport', category: 'Flights', status: true, b2c: '0', currency: 'NGN', env: 'Production', color: 'bg-[#89d6d2]' },
+  { id: 52, name: 'Kayak', provider: 'Kayak', category: 'Flights', status: false, b2c: '0', currency: 'USD', env: 'Development', color: 'bg-[#ff690f]' },
+  { id: 60, name: 'Sabre', provider: 'Sabre', category: 'Flights', status: false, b2c: '5', currency: 'USD', env: 'Development', color: 'bg-[#e50000]' },
+  { id: 65, name: 'Google Flights', provider: 'Google Flights', category: 'Flights', status: false, b2c: '2', currency: 'USD', env: 'Production', color: 'bg-[#4285f4]' },
   
   // Internal stay inventory
-  { id: 101, name: 'Stays', provider: 'Internal', category: 'Stays', status: true, b2c: '0', b2b: '0', currency: 'NGN', env: 'Production', color: 'bg-rose-400' },
-  { id: 102, name: 'Booking', provider: 'Booking.com', category: 'Stays', status: true, b2c: '0', b2b: '0', currency: 'USD', env: 'Production', color: 'bg-[#003580]' },
-  { id: 103, name: 'Travelport', provider: 'Travelport', category: 'Stays', status: true, b2c: '3', b2b: '2', currency: 'USD', env: 'Production', color: 'bg-[#89d6d2]' },
-  { id: 104, name: 'Hotelbeds', provider: 'Hotelbeds', category: 'Stays', status: true, b2c: '3', b2b: '2', currency: 'NGN', env: 'Production', color: 'bg-[#0c1e3e]' },
-  { id: 105, name: 'Amadeus', provider: 'Amadeus', category: 'Stays', status: false, b2c: '10', b2b: '5', currency: 'USD', env: 'Development', color: 'bg-[#005eb8]' },
-  { id: 106, name: 'Hotelston', provider: 'Hotelston', category: 'Stays', status: false, b2c: '3', b2b: '2', currency: 'USD', env: 'Production', color: 'bg-[#7bb342]' },
-  { id: 107, name: 'Ratehawk', provider: 'Ratehawk', category: 'Stays', status: false, b2c: '3', b2b: '2', currency: 'USD', env: 'Production', color: 'bg-[#f4a01c]' },
-  { id: 108, name: 'Agoda', provider: 'Agoda', category: 'Stays', status: false, b2c: '3', b2b: '2', currency: 'USD', env: 'Production', color: 'bg-white border border-gray-200 text-gray-800' },
-  { id: 109, name: 'Stuba', provider: 'Stuba', category: 'Stays', status: false, b2c: '3', b2b: '2', currency: 'USD', env: 'Production', color: 'bg-[#182a30]' },
+  { id: 101, name: 'Stays', provider: 'Internal', category: 'Stays', status: true, b2c: '0', currency: 'NGN', env: 'Production', color: 'bg-rose-400' },
+  { id: 102, name: 'Booking', provider: 'Booking.com', category: 'Stays', status: true, b2c: '0', currency: 'USD', env: 'Production', color: 'bg-[#003580]' },
+  { id: 103, name: 'Travelport', provider: 'Travelport', category: 'Stays', status: true, b2c: '3', currency: 'USD', env: 'Production', color: 'bg-[#89d6d2]' },
+  { id: 104, name: 'Hotelbeds', provider: 'Hotelbeds', category: 'Stays', status: true, b2c: '3', currency: 'NGN', env: 'Production', color: 'bg-[#0c1e3e]' },
+  { id: 105, name: 'Amadeus', provider: 'Amadeus', category: 'Stays', status: false, b2c: '10', currency: 'USD', env: 'Development', color: 'bg-[#005eb8]' },
+  { id: 106, name: 'Hotelston', provider: 'Hotelston', category: 'Stays', status: false, b2c: '3', currency: 'USD', env: 'Production', color: 'bg-[#7bb342]' },
+  { id: 107, name: 'Ratehawk', provider: 'Ratehawk', category: 'Stays', status: false, b2c: '3', currency: 'USD', env: 'Production', color: 'bg-[#f4a01c]' },
+  { id: 108, name: 'Agoda', provider: 'Agoda', category: 'Stays', status: false, b2c: '3', currency: 'USD', env: 'Production', color: 'bg-white border border-gray-200 text-gray-800' },
+  { id: 109, name: 'Stuba', provider: 'Stuba', category: 'Stays', status: false, b2c: '3', currency: 'USD', env: 'Production', color: 'bg-[#182a30]' },
 
   // Tours
-  { id: 201, name: 'Toursbms', provider: 'Toursbms', category: 'Tours', status: true, b2c: '10', b2b: '5', currency: 'NGN', env: 'Production', color: 'bg-blue-300' },
-  { id: 202, name: 'Tours', provider: 'Internal', category: 'Tours', status: true, b2c: '5', b2b: '10', currency: 'NGN', env: 'Production', color: 'bg-rose-400' },
-  { id: 203, name: 'Viator', provider: 'Viator', category: 'Tours', status: false, b2c: '10', b2b: '5', currency: 'NGN', env: 'Production', color: 'bg-[#008768]' },
-  { id: 204, name: 'Tiqets', provider: 'Tiqets', category: 'Tours', status: false, b2c: '10', b2b: '5', currency: 'USD', env: 'Production', color: 'bg-[#00b4a7]' },
+  { id: 201, name: 'Toursbms', provider: 'Toursbms', category: 'Tours', status: true, b2c: '10', currency: 'NGN', env: 'Production', color: 'bg-blue-300' },
+  { id: 202, name: 'Tours', provider: 'Internal', category: 'Tours', status: true, b2c: '5', currency: 'NGN', env: 'Production', color: 'bg-rose-400' },
+  { id: 203, name: 'Viator', provider: 'Viator', category: 'Tours', status: false, b2c: '10', currency: 'NGN', env: 'Production', color: 'bg-[#008768]' },
+  { id: 204, name: 'Tiqets', provider: 'Tiqets', category: 'Tours', status: false, b2c: '10', currency: 'USD', env: 'Production', color: 'bg-[#00b4a7]' },
 
   // Visa & Umrah
-  { id: 301, name: 'Visa', provider: 'Internal', category: 'Visa', status: true, b2c: '0', b2b: '0', currency: 'NGN', env: 'Production', color: 'bg-gray-800' },
-  { id: 401, name: 'Umrah', provider: 'Internal', category: 'Umrah', status: true, b2c: '0', b2b: '0', currency: 'NGN', env: 'Production', color: 'bg-emerald-600' },
+  { id: 301, name: 'Visa', provider: 'Internal', category: 'Visa', status: true, b2c: '0', currency: 'NGN', env: 'Production', color: 'bg-gray-800' },
+  { id: 401, name: 'Umrah', provider: 'Internal', category: 'Umrah', status: true, b2c: '0', currency: 'NGN', env: 'Production', color: 'bg-emerald-600' },
 ];
 
 const categoryTypes = [
@@ -68,8 +70,26 @@ export default function Modules() {
   const [activeCategory, setActiveCategory] = useState('Flights');
   const [editingId, setEditingId] = useState<number | null>(null);
   const [configTab, setConfigTab] = useState<'api' | 'markup'>('api');
+  const [pricingByModule, setPricingByModule] = useState<Record<number, DefaultFlightPricing>>({});
 
   const activeModule = modules.find(m => m.id === editingId);
+  const isFlightModule = activeModule?.category === 'Flights';
+  const defaultPricing = activeModule ? pricingByModule[activeModule.id] ?? readDefaultFlightPricing(activeModule.id, {
+    markupTypeB2C: 'percentage', markupValueB2C: Number(activeModule.b2c),
+    baseCurrency: activeModule.category === 'Flights' ? 'NGN' : activeModule.currency, taxType: 'percentage', taxValue: 0, minimumMarginPercent: 0,
+  }) : null;
+  const updateDefaultPricing = (updates: Partial<DefaultFlightPricing>) => {
+    if (!activeModule || !defaultPricing) return;
+    const next = { ...defaultPricing, ...updates };
+    setPricingByModule(current => ({ ...current, [activeModule.id]: next }));
+    writeDefaultFlightPricing(activeModule.id, next);
+  };
+  const markupSummary = (module: Module) => {
+    const pricing = readDefaultFlightPricing(module.id, {
+      markupTypeB2C: 'percentage', markupValueB2C: Number(module.b2c), baseCurrency: 'NGN', taxType: 'percentage', taxValue: 0, minimumMarginPercent: 0,
+    });
+    return pricing.markupTypeB2C === 'percentage' ? `${pricing.markupValueB2C}%` : `${pricing.baseCurrency} ${pricing.markupValueB2C.toFixed(2)}`;
+  };
   const filteredModules = modules.filter(m => m.category === activeCategory);
   const activeCount = filteredModules.filter(m => m.status).length;
   const totalCount = filteredModules.length;
@@ -91,7 +111,7 @@ export default function Modules() {
   // --- CONFIGURATION VIEW ---
   if (activeModule) {
     return (
-      <div className="space-y-6 max-w-6xl animate-in fade-in duration-300">
+      <div className="w-full max-w-none space-y-6 pb-24 animate-in fade-in duration-300">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div className="flex items-center gap-4">
             <button onClick={() => setEditingId(null)} className="p-2 bg-gray-700 text-white rounded-lg hover:bg-gray-800 transition-colors">
@@ -131,8 +151,8 @@ export default function Modules() {
           </button>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 space-y-6">
+        <div className="grid grid-cols-1 gap-6 2xl:grid-cols-5">
+          <div className="min-w-0 space-y-6 2xl:col-span-4">
             
             {/* TAB: API Credentials */}
             {configTab === 'api' && (
@@ -165,6 +185,7 @@ export default function Modules() {
                     </button>
                   </div>
                 </div>
+
               </>
             )}
 
@@ -178,37 +199,27 @@ export default function Modules() {
                   <div className="p-6 space-y-5">
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Markup Type B2B</label>
-                        <select className="w-full bg-white border border-gray-200 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary-500">
-                          <option>Percentage (%)</option><option>Fixed Amount</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Markup Value</label>
-                        <input type="text" defaultValue={activeModule.b2b} className="w-full bg-white border border-gray-200 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary-500" />
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Markup Type B2C</label>
-                        <select className="w-full bg-white border border-gray-200 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary-500">
-                          <option>Percentage (%)</option><option>Fixed Amount</option>
+                        <select value={defaultPricing?.markupTypeB2C} onChange={event => updateDefaultPricing({ markupTypeB2C: event.target.value as DefaultFlightPricing['markupTypeB2C'] })} className="w-full bg-white border border-gray-200 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary-500">
+                          <option value="percentage">Percentage (%)</option><option value="fixed">Fixed Amount</option>
                         </select>
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Markup Value</label>
-                        <input type="text" defaultValue={activeModule.b2c} className="w-full bg-white border border-gray-200 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary-500" />
+                        <input type="number" min="0" max={defaultPricing?.markupTypeB2C === 'percentage' ? 100 : undefined} value={defaultPricing?.markupValueB2C ?? 0} onChange={event => updateDefaultPricing({ markupValueB2C: Math.min(defaultPricing?.markupTypeB2C === 'percentage' ? 100 : Infinity, Math.max(0, Number(event.target.value))) })} className="w-full bg-white border border-gray-200 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary-500" />
                       </div>
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Base Currency</label>
-                      <select className="w-full bg-white border border-gray-200 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary-500">
+                      <select value={defaultPricing?.baseCurrency} onChange={event => updateDefaultPricing({ baseCurrency: event.target.value })} className="w-full bg-white border border-gray-200 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary-500">
                         <option value="NGN">NGN - Nigerian Naira</option>
                         <option value="USD">USD - United States Dollar</option>
                         <option value="GBP">GBP - British Pound</option>
                         <option value="EUR">EUR - Euro</option>
+                        <option value="CAD">CAD - Canadian Dollar</option>
                       </select>
                     </div>
+                    {isFlightModule && <label className="block text-sm font-medium text-gray-700">Minimum margin warning (%)<input type="number" min="0" max="100" value={defaultPricing?.minimumMarginPercent ?? 0} onChange={event => updateDefaultPricing({ minimumMarginPercent: Math.min(100, Math.max(0, Number(event.target.value))) })} className="mt-1 w-full bg-white border border-gray-200 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary-500" /></label>}
                   </div>
                 </div>
 
@@ -219,30 +230,23 @@ export default function Modules() {
                   <div className="p-6 grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Tax Type</label>
-                      <select className="w-full bg-white border border-gray-200 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary-500">
-                        <option>Percentage (%)</option><option>Fixed Amount</option>
+                      <select value={defaultPricing?.taxType} onChange={event => updateDefaultPricing({ taxType: event.target.value as DefaultFlightPricing['taxType'] })} className="w-full bg-white border border-gray-200 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary-500">
+                        <option value="percentage">Percentage (%)</option><option value="fixed">Fixed Amount</option>
                       </select>
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Tax value</label>
-                      <input type="text" defaultValue="0" className="w-full bg-white border border-gray-200 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary-500" />
+                      <input type="number" min="0" max={defaultPricing?.taxType === 'percentage' ? 100 : undefined} value={defaultPricing?.taxValue ?? 0} onChange={event => updateDefaultPricing({ taxValue: Math.min(defaultPricing?.taxType === 'percentage' ? 100 : Infinity, Math.max(0, Number(event.target.value))) })} className="w-full bg-white border border-gray-200 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary-500" />
                     </div>
                   </div>
                 </div>
+                {isFlightModule && defaultPricing && <AmadeusMarkupRules moduleId={activeModule.id} currency={defaultPricing.baseCurrency} defaults={defaultPricing} />}
               </>
             )}
 
-            <div className="flex justify-between items-center pt-4">
-              <button onClick={() => setEditingId(null)} className="flex items-center gap-2 bg-white border border-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50">
-                <ArrowLeft size={16} /> Back to Modules
-              </button>
-              <button className="flex items-center gap-2 bg-primary-600 text-white px-6 py-2.5 rounded-lg text-sm font-medium hover:bg-primary-700 shadow-sm">
-                <Save size={16} /> Save Configuration
-              </button>
-            </div>
           </div>
 
-          <div className="space-y-6">
+          <div className="space-y-6 2xl:col-span-1">
             <div className="bg-gray-50 rounded-xl border border-gray-200 p-6">
               <h3 className="text-sm font-bold text-gray-800 flex items-center gap-2 mb-4">
                 <Info size={16} className="text-gray-500" /> Module Information
@@ -271,6 +275,19 @@ export default function Modules() {
             </div>
           </div>
         </div>
+
+        <footer className="fixed bottom-0 left-[var(--admin-sidebar-offset)] right-0 z-40 border-t border-gray-200 bg-white/95 px-8 py-3 shadow-[0_-4px_10px_rgba(15,23,42,0.05)] backdrop-blur">
+          <div className="grid grid-cols-1 gap-6 2xl:grid-cols-5">
+            <div className="flex items-center justify-between 2xl:col-span-4">
+              <button onClick={() => setEditingId(null)} className="flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
+                <ArrowLeft size={16} /> Back to Modules
+              </button>
+              <button className="flex items-center gap-2 rounded-lg bg-primary-600 px-6 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-primary-700">
+                <Save size={16} /> Save Configuration
+              </button>
+            </div>
+          </div>
+        </footer>
       </div>
     );
   }
@@ -331,9 +348,8 @@ export default function Modules() {
                 </button>
               </div>
 
-              <div className="grid grid-cols-3 gap-2 mb-6">
-                <div><p className="text-[10px] text-gray-400 uppercase font-semibold">Markup B2C</p><p className="text-sm font-medium text-gray-800">percentage {mod.b2c}%</p></div>
-                <div><p className="text-[10px] text-gray-400 uppercase font-semibold">Markup B2B</p><p className="text-sm font-medium text-gray-800">percentage {mod.b2b}%</p></div>
+              <div className="grid grid-cols-2 gap-2 mb-6">
+                <div><p className="text-[10px] text-gray-400 uppercase font-semibold">Markup B2C</p><p className="text-sm font-medium text-gray-800">{markupSummary(mod)}</p></div>
                 <div><p className="text-[10px] text-gray-400 uppercase font-semibold">Currency</p><p className="text-sm font-medium text-gray-800">{mod.currency}</p></div>
               </div>
             </div>
