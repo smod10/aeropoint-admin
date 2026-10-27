@@ -72,7 +72,7 @@ export default function Modules() {
   const [pricingByModule, setPricingByModule] = useState<Record<number, DefaultFlightPricing>>({});
 
   const activeModule = modules.find(m => m.id === editingId);
-  const isFlightModule = activeModule?.category === 'Flights';
+  const _isFlightModule = activeModule?.category === 'Flights';
   const defaultPricing = activeModule ? pricingByModule[activeModule.id] ?? readDefaultFlightPricing(activeModule.id, {
     markupTypeB2C: 'percentage', markupValueB2C: Number(activeModule.b2c),
     baseCurrency: activeModule.category === 'Flights' ? 'NGN' : activeModule.currency, taxType: 'percentage', taxValue: 0, minimumMarginPercent: 0,

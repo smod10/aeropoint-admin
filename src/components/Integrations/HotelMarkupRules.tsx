@@ -1,14 +1,12 @@
 import { useMemo, useState } from 'react';
-import Papa from 'papaparse';
 // XLSX import removed - CSV only
-import { Copy, Download, Edit2, Plus, Search, Trash2, Upload, X } from 'lucide-react';
+import { Download, Edit2, Plus, Save, Search, Trash2, Upload, X } from 'lucide-react';
 import { readHotelMarkupRules, writeHotelMarkupRules } from '../../utils/amadeusMarkupRules';
 import { calculateHotelPrice, pricingBelowMinimumMargin } from '../../utils/hotelMarkupPricing';
 import type { HotelPricingQuery } from '../../utils/hotelMarkupPricing';
 import type { DefaultHotelPricing, HotelMarkupRule, HotelPriceBreakdown } from '../../types/markupRule';
 
 type RuleDraft = Omit<HotelMarkupRule, 'id' | 'createdAt' | 'updatedAt'>;
-type DealImportPreview = { rules: HotelMarkupRule[]; errors: string[]; warnings: string[] };
 
 const inputClass = 'w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-100';
 const labelClass = 'block text-xs font-medium text-gray-600';
@@ -56,8 +54,8 @@ function matchesRule(rule: HotelMarkupRule, query: HotelPricingQuery): boolean {
   if (!rule.isActive) return false;
   if (rule.validFrom && date < rule.validFrom) return false;
   if (rule.validTo && date > rule.validTo) return false;
-  if (rule.city && !locationMatches(rule.city, query.city)) return false;
-  if (rule.country && !locationMatches(rule.country, query.country)) return false;
+  if (rule.city && !locationMatches(rule.city, query.city ?? null)) return false;
+  if (rule.country && !locationMatches(rule.country, query.country ?? null)) return false;
   if (rule.accommodationType && query.accommodationType && rule.accommodationType.toLowerCase() !== query.accommodationType.toLowerCase()) return false;
   if (rule.minStars != null && (query.stars ?? 0) < rule.minStars) return false;
   if (rule.maxStars != null && (query.stars ?? 999) > rule.maxStars) return false;
@@ -106,7 +104,7 @@ export default function HotelMarkupRules() {
   const closeEditor = () => { setEditorOpen(false); setEditingId(null); setDraft(blankDraft()); };
   const openEditor = (existing?: HotelMarkupRule) => {
     setEditingId(existing?.id ?? null);
-    setDraft(existing ? { ...existing, id: undefined as any, createdAt: undefined as any, updatedAt: undefined as any } : blankDraft());
+    setDraft(existing ? (({ id: _id, createdAt: _ca, updatedAt: _ua, ...rest }) => rest)(existing) : blankDraft());
     setEditorOpen(true);
   };
   const deleteRule = (id: string) => { if (!window.confirm('Delete this hotel markup rule?')) return; saveRules(rules.filter(r => r.id !== id)); };
@@ -123,7 +121,6 @@ export default function HotelMarkupRules() {
   const handleDraftChange = (key: keyof RuleDraft, value: unknown) => { setDraft(current => ({ ...current, [key]: value })); };
   const formattedRules = filtered.map(rule => ({ ...rule, cityLabel: rule.city?.label ?? 'Any city', countryLabel: rule.country?.label ?? 'Any country', accommodationLabel: rule.accommodationType ?? 'Any type', starsLabel: rule.minStars && rule.maxStars ? `${rule.minStars}-${rule.maxStars}★` : rule.minStars ? `${rule.minStars}★+` : rule.maxStars ? `Up to ${rule.maxStars}★` : 'Any stars', boardLabel: rule.boardType ?? 'Any board', }));
 
-  const loadRules = () => { setRules(readHotelMarkupRules(1)); };
   const saveRules = (next: HotelMarkupRule[]) => { setRules(next); writeHotelMarkupRules(1, next); };
   return (
     <div className="space-y-6">

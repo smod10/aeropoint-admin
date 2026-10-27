@@ -56,7 +56,7 @@ function blankDraft(): AirlineDealDraft {
     flightNumber: '', departureTime: '', arrivalTime: '', stops: 0, baggage: '', travelStartDate: '', travelEndDate: '',
     fares: { adult: { baseFare: undefined, taxes: undefined }, child: { baseFare: undefined, taxes: undefined }, infant: { baseFare: undefined, taxes: undefined } },
     currency: 'NGN', seatsAvailable: 1, salesStartDate: '', salesEndDate: '', bookingCutOffHours: 24, image: '', featured: false,
-    displayOrder: 0, internalNotes: '', image: '', imageAlt: '', fareConditions: { notes: '' }, status: 'Draft', outboundJourney: blankJourney(), minimumConnectionMinutes: 60, schedule: blankSchedule(),
+    displayOrder: 0, internalNotes: '', imageAlt: '', fareConditions: { notes: '' }, status: 'Draft', outboundJourney: blankJourney(), minimumConnectionMinutes: 60, schedule: blankSchedule(),
   };
 }
 
@@ -565,7 +565,7 @@ export default function AirlineDeals() {
             <td className="px-4 py-3">{deal.airline}</td>
             <td className="px-4 py-3">{deal.routes.map(route => `${route.origin} → ${route.destination}`).join(' · ')}</td>
             <td className="px-4 py-3">{deal.travelStartDate} – {deal.travelEndDate}</td>
-            <td className="px-4 py-3 font-semibold text-gray-900">{money(deal.schedule?.defaultAdultPrice ?? deal.fares.adult.baseFare + deal.fares.adult.taxes, deal.currency)}</td>
+            <td className="px-4 py-3 font-semibold text-gray-900">{money(deal.schedule?.defaultAdultPrice ?? (deal.fares.adult.baseFare ?? 0) + (deal.fares.adult.taxes ?? 0), deal.currency)}</td>
             <td className="px-4 py-3">{deal.seatsAvailable}</td>
             <td className="px-4 py-3"><div className="flex flex-col items-start gap-1"><span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${statusClass(deal.status)}`}>{deal.status}</span>{getMissingDealDetails(deal).length > 0 && <span title={`Required to activate: ${getMissingDealDetails(deal).join(', ')}`} className="inline-flex rounded-full bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-800">Missing details</span>}</div></td>
             <td className="px-4 py-3 text-center"><button type="button" role="switch" aria-checked={deal.featured} aria-label={`${deal.featured ? 'Remove from' : 'Feature on'} website: ${deal.title}`} onClick={() => setDeals(updateAirlineDeal(deal.id, { featured: !deal.featured }))} className={`inline-flex h-6 w-10 items-center rounded-full p-0.5 transition-colors ${deal.featured ? 'bg-primary-600' : 'bg-gray-300'}`}><span className={`h-5 w-5 rounded-full bg-white shadow transition-transform ${deal.featured ? 'translate-x-4' : ''}`} /></button></td>

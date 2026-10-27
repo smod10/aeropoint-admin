@@ -55,7 +55,7 @@ export default function PackageEdit() {
       let bestScore = -1;
 
       Object.entries(sectionRefs.current).forEach(([key, ref]) => {
-        const el = ref?.current;
+        const el = ref;
         if (!el) return;
         const rect = el.getBoundingClientRect();
         const elTop = rect.top + scrollY;
