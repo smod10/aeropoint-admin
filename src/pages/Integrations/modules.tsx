@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plane, Building2, Flag, FileText, Moon, Ship, Smartphone, Car, Settings, FileCode2, ArrowLeft, Key, Percent, Info, Save } from 'lucide-react';
-import AmadeusMarkupRules from '../../components/Integrations/AmadeusMarkupRules';
 import { readDefaultFlightPricing, writeDefaultFlightPricing } from '../../utils/amadeusMarkupRules';
 import type { DefaultFlightPricing } from '../../types/markupRule';
 
@@ -31,16 +30,16 @@ const initialModules: Module[] = [
   { id: 60, name: 'Sabre', provider: 'Sabre', category: 'Flights', status: false, b2c: '5', currency: 'USD', env: 'Development', color: 'bg-[#e50000]' },
   { id: 65, name: 'Google Flights', provider: 'Google Flights', category: 'Flights', status: false, b2c: '2', currency: 'USD', env: 'Production', color: 'bg-[#4285f4]' },
   
-  // Internal stay inventory
-  { id: 101, name: 'Stays', provider: 'Internal', category: 'Stays', status: true, b2c: '0', currency: 'NGN', env: 'Production', color: 'bg-rose-400' },
-  { id: 102, name: 'Booking', provider: 'Booking.com', category: 'Stays', status: true, b2c: '0', currency: 'USD', env: 'Production', color: 'bg-[#003580]' },
-  { id: 103, name: 'Travelport', provider: 'Travelport', category: 'Stays', status: true, b2c: '3', currency: 'USD', env: 'Production', color: 'bg-[#89d6d2]' },
-  { id: 104, name: 'Hotelbeds', provider: 'Hotelbeds', category: 'Stays', status: true, b2c: '3', currency: 'NGN', env: 'Production', color: 'bg-[#0c1e3e]' },
-  { id: 105, name: 'Amadeus', provider: 'Amadeus', category: 'Stays', status: false, b2c: '10', currency: 'USD', env: 'Development', color: 'bg-[#005eb8]' },
-  { id: 106, name: 'Hotelston', provider: 'Hotelston', category: 'Stays', status: false, b2c: '3', currency: 'USD', env: 'Production', color: 'bg-[#7bb342]' },
-  { id: 107, name: 'Ratehawk', provider: 'Ratehawk', category: 'Stays', status: false, b2c: '3', currency: 'USD', env: 'Production', color: 'bg-[#f4a01c]' },
-  { id: 108, name: 'Agoda', provider: 'Agoda', category: 'Stays', status: false, b2c: '3', currency: 'USD', env: 'Production', color: 'bg-white border border-gray-200 text-gray-800' },
-  { id: 109, name: 'Stuba', provider: 'Stuba', category: 'Stays', status: false, b2c: '3', currency: 'USD', env: 'Production', color: 'bg-[#182a30]' },
+  // Internal hotel inventory
+  { id: 101, name: 'Hotels', provider: 'Internal', category: 'Hotels', status: true, b2c: '0', currency: 'NGN', env: 'Production', color: 'bg-rose-400' },
+  { id: 102, name: 'Booking', provider: 'Booking.com', category: 'Hotels', status: true, b2c: '0', currency: 'USD', env: 'Production', color: 'bg-[#003580]' },
+  { id: 103, name: 'Travelport', provider: 'Travelport', category: 'Hotels', status: true, b2c: '3', currency: 'USD', env: 'Production', color: 'bg-[#89d6d2]' },
+  { id: 104, name: 'Hotelbeds', provider: 'Hotelbeds', category: 'Hotels', status: true, b2c: '3', currency: 'NGN', env: 'Production', color: 'bg-[#0c1e3e]' },
+  { id: 105, name: 'Amadeus', provider: 'Amadeus', category: 'Hotels', status: false, b2c: '10', currency: 'USD', env: 'Development', color: 'bg-[#005eb8]' },
+  { id: 106, name: 'Hotelston', provider: 'Hotelston', category: 'Hotels', status: false, b2c: '3', currency: 'USD', env: 'Production', color: 'bg-[#7bb342]' },
+  { id: 107, name: 'Ratehawk', provider: 'Ratehawk', category: 'Hotels', status: false, b2c: '3', currency: 'USD', env: 'Production', color: 'bg-[#f4a01c]' },
+  { id: 108, name: 'Agoda', provider: 'Agoda', category: 'Hotels', status: false, b2c: '3', currency: 'USD', env: 'Production', color: 'bg-white border border-gray-200 text-gray-800' },
+  { id: 109, name: 'Stuba', provider: 'Stuba', category: 'Hotels', status: false, b2c: '3', currency: 'USD', env: 'Production', color: 'bg-[#182a30]' },
 
   // Tours
   { id: 201, name: 'Toursbms', provider: 'Toursbms', category: 'Tours', status: true, b2c: '10', currency: 'NGN', env: 'Production', color: 'bg-blue-300' },
@@ -55,7 +54,7 @@ const initialModules: Module[] = [
 
 const categoryTypes = [
   { id: 'Flights', icon: Plane },
-  { id: 'Stays', icon: Building2 },
+  { id: 'Hotels', icon: Building2 },
   { id: 'Tours', icon: Flag },
   { id: 'Visa', icon: FileText },
   { id: 'Umrah', icon: Moon },
@@ -219,7 +218,6 @@ export default function Modules() {
                         <option value="CAD">CAD - Canadian Dollar</option>
                       </select>
                     </div>
-                    {isFlightModule && <label className="block text-sm font-medium text-gray-700">Minimum margin warning (%)<input type="number" min="0" max="100" value={defaultPricing?.minimumMarginPercent ?? 0} onChange={event => updateDefaultPricing({ minimumMarginPercent: Math.min(100, Math.max(0, Number(event.target.value))) })} className="mt-1 w-full bg-white border border-gray-200 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary-500" /></label>}
                   </div>
                 </div>
 
@@ -240,7 +238,6 @@ export default function Modules() {
                     </div>
                   </div>
                 </div>
-                {isFlightModule && defaultPricing && <AmadeusMarkupRules moduleId={activeModule.id} currency={defaultPricing.baseCurrency} defaults={defaultPricing} />}
               </>
             )}
 

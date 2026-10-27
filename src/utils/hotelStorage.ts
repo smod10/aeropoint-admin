@@ -12,7 +12,7 @@ export const supportedCurrencies: Currency[] = ['NGN', 'USD', 'GBP', 'EUR', 'CAD
 type StoredRoom = Partial<HotelRoom> & { id: string; name: string };
 type StoredHotel = Partial<Omit<HotelListing, 'rooms'>> & { id: string; name: string; rooms?: StoredRoom[] };
 
-// Names used before amenities were managed in Stay Settings.
+// Names used before amenities were managed in Hotel Settings.
 const amenitySynonyms: Record<string, string> = { 'wi-fi': 'Free WiFi', wifi: 'Free WiFi', gym: 'Gym/Fitness Center', 'airport transfer': 'Airport Shuttle' };
 const canonicalAmenity = (name: string) => amenitySynonyms[name.trim().toLowerCase()] ?? name;
 
@@ -109,7 +109,7 @@ function demoHotel(slug: string, name: string, category: string, city: string, s
     amenities,
     rooms,
     currency: 'USD',
-    description: `<p>Demonstration record used to test Stay Management. Details, rates and availability are sample values, not supplier data.</p>`,
+    description: `<p>Demonstration record used to test Hotel Management. Details, rates and availability are sample values, not supplier data.</p>`,
     address: `${city} (demo address)`,
     status: 'Published',
     createdAt: '2026-10-17T09:00:00.000Z',

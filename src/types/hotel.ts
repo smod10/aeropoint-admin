@@ -44,7 +44,7 @@ export type HotelListing = {
   contactEmail: string;
   contactPhone: string;
   website: string;
-  // Accommodation type, one of the Accommodation settings in Stay Settings.
+  // Accommodation type, one of the Accommodation settings in Hotel Settings.
   category: string;
   stars: number;
   rating: number;
@@ -71,11 +71,11 @@ export type HotelListing = {
   importedAt?: string;
 };
 
-export type StaySettingKind = 'stayAmenity' | 'roomType' | 'roomAmenity' | 'accommodation' | 'board';
+export type HotelSettingKind = 'hotelAmenity' | 'roomType' | 'roomAmenity' | 'accommodation' | 'board';
 
-export type StaySetting = {
+export type HotelSetting = {
   id: string;
-  kind: StaySettingKind;
+  kind: HotelSettingKind;
   name: string;
   active: boolean;
   // Creation order; lists show newest first, forms show oldest first.

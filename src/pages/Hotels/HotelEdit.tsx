@@ -103,8 +103,8 @@ export default function HotelEdit() {
     <form onSubmit={handleSubmit} className="mx-auto max-w-5xl space-y-6">
       <header className="flex flex-col gap-4 border-b border-gray-200 pb-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
-          <Link to="/hotels" aria-label="Back to stay bookings" className="rounded-lg border border-gray-200 bg-white p-2 text-gray-600 hover:bg-gray-50"><ArrowLeft size={18} /></Link>
-          <div><p className="text-xs font-semibold uppercase tracking-wider text-primary-600">Stays / Stay booking</p><h1 className="mt-1 text-2xl font-bold text-gray-900">{isNew ? 'Create stay booking' : 'Edit stay booking'}</h1></div>
+          <Link to="/hotels" aria-label="Back to hotel bookings" className="rounded-lg border border-gray-200 bg-white p-2 text-gray-600 hover:bg-gray-50"><ArrowLeft size={18} /></Link>
+          <div><p className="text-xs font-semibold uppercase tracking-wider text-primary-600">Hotels / Hotel booking</p><h1 className="mt-1 text-2xl font-bold text-gray-900">{isNew ? 'Create hotel booking' : 'Edit hotel booking'}</h1></div>
         </div>
         <button type="submit" className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary-700"><Save size={16} /> Save booking</button>
       </header>

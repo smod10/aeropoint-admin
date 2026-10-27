@@ -74,7 +74,7 @@ function csvCell(value: string | number) {
 
 function buildReportFromBookings(dateFrom: string, dateTo: string, bookingType: BookingType, bookingStatus: BookingStatus, paymentStatus: PaymentStatus, currency: Currency, exchangeRates: Record<Currency, number>): ReportData {
   const bookings = mockBookings.filter(booking => {
-    const moduleType = booking.moduleType === 'stays' ? 'hotels' : booking.moduleType === 'umrah' ? 'tours' : booking.moduleType;
+    const moduleType = booking.moduleType === 'hotels' ? 'hotels' : booking.moduleType === 'umrah' ? 'tours' : booking.moduleType;
     const status = booking.booking.split('\n')[0].toLowerCase();
     const payment = booking.payment === 'PAID' ? 'paid' : booking.payment === 'REFUNDED' ? 'refunded' : 'pending';
     const date = booking.createdAt.slice(0, 10);

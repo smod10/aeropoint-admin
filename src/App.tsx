@@ -16,7 +16,7 @@ import BookingEdit from './pages/Bookings/BookingEdit';
 import InvoiceView from './pages/Bookings/InvoiceView';
 
 // Flights Module
-import FlightList from './pages/Flights/FlightList';
+import AirlineDeals from './pages/Flights/AirlineDeals';
 import FlightRecordView from './pages/Flights/FlightRecordView';
 import FlightEdit from './pages/Flights/FlightEdit';
 import FlightImport from './pages/Flights/FlightImport';
@@ -63,7 +63,8 @@ import HotelInventory from './pages/Hotels/HotelInventory';
 import HotelRateCalendar from './pages/Hotels/HotelRateCalendar';
 import HotelListingEdit from './pages/Hotels/HotelListingEdit';
 import PublicHotels from './pages/Hotels/PublicHotels';
-import StayManagement from './pages/Stays/StayManagement';
+import HotelSettings from './pages/Hotels/HotelSettings';
+import HotelMarkupRules from './components/Integrations/HotelMarkupRules';
 import PaymentList from './pages/Payments/PaymentList';
 import Modules from './pages/Integrations/modules';
 import MediaLibrary from './pages/Media/MediaLibrary';
@@ -91,7 +92,9 @@ export default function App() {
             <Route path="bookings/invoice/:id" element={<InvoiceView />} />
             
             {/* Flights */}
-            <Route path="flights" element={<FlightList />} />
+            <Route path="flights/deals" element={<AirlineDeals />} />
+            <Route path="flights/deals/new" element={<AirlineDeals />} />
+            <Route path="flights/deals/:id/edit" element={<AirlineDeals />} />
             <Route path="flights/import" element={<FlightImport />} />
             <Route path="flights/view/:id" element={<FlightRecordView />} />
             <Route path="flights/edit/:id" element={<FlightEdit />} />
@@ -141,7 +144,8 @@ export default function App() {
             <Route path="hotels/inventory/:hotelId" element={<HotelInventory />} />
             <Route path="hotels/rates/:hotelId" element={<HotelRateCalendar />} />
             <Route path="hotels/edit/:id" element={<HotelListingEdit />} />
-            <Route path="stays/settings" element={<StayManagement />} />
+            <Route path="hotels/settings" element={<HotelSettings />} />
+            <Route path="hotels/markup" element={<HotelMarkupRules />} />
             <Route path="payments" element={<PaymentList />} />
             <Route path="modules" element={<Modules />} /> 
             <Route path="media" element={<MediaLibrary />} />

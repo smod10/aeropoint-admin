@@ -4,6 +4,7 @@ import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { ArrowLeft, Save, UserRound } from 'lucide-react';
 import { mockPackages } from '../../data/mockPackages';
 import { mockUsers } from '../../data/mockUsers';
+import { generateDealDepartures, getAirlineDeals, getCustomerSearchDepartures } from '../../services/airlineDealsService';
 import { findManagedBooking, saveManagedBooking } from '../../utils/bookingStorage';
 import { readHotelListings } from '../../utils/hotelStorage';
 import { canManageTeam, getCurrentActorRole } from '../../utils/accountAccess';
@@ -13,7 +14,7 @@ type Customer = { id: number; firstName: string; lastName: string; email: string
 type Field = { key: string; label: string; type?: string; required?: boolean; options?: string[]; rows?: number };
 
 const typeLabels: Record<BookingType, string> = {
-  flights: 'Flight', stays: 'Stay', tours: 'Tour / Package', visa: 'Visa', umrah: 'Umrah',
+  flights: 'Flight', hotels: 'Hotel', tours: 'Tour / Package', visa: 'Visa', umrah: 'Umrah',
 };
 
 const fieldsByType: Record<BookingType, Field[]> = {
@@ -23,13 +24,15 @@ const fieldsByType: Record<BookingType, Field[]> = {
     { key: 'to', label: 'Destination city / airport', required: true },
     { key: 'flightNumber', label: 'Flight number' },
     { key: 'pnr', label: 'PNR' },
+    { key: 'airlineDealId', label: 'Airline deal (optional)' },
     { key: 'departureDate', label: 'Departure date', type: 'date', required: true },
+    { key: 'passengerCount', label: 'Passengers', type: 'number' },
     { key: 'returnDate', label: 'Return date', type: 'date' },
     { key: 'baggage', label: 'Baggage allowance', options: ['Cabin only', '1 checked bag', '2 checked bags', 'Other'] },
     { key: 'specialRequests', label: 'Special requests', rows: 3 },
   ],
-  stays: [
-    { key: 'hotel', label: 'Stay / property', required: true },
+  hotels: [
+    { key: 'hotel', label: 'Hotel', required: true },
     { key: 'room', label: 'Room type', required: true },
     { key: 'bookingReference', label: 'Booking reference' },
     { key: 'checkIn', label: 'Check-in', type: 'date', required: true },
@@ -88,6 +91,7 @@ export default function BookingCreate() {
   const editId = searchParams.get('edit');
   const existing = editId ? findManagedBooking(editId) : undefined;
   const customers = useMemo(readCustomers, []);
+  const airlineDeals = useMemo(() => getAirlineDeals(), []);
   const [customerMode, setCustomerMode] = useState<'existing' | 'new' | 'guest'>(existing?.guestBooking ? 'guest' : existing?.customerId ? 'existing' : 'existing');
   const [customerSearch, setCustomerSearch] = useState('');
   const [customerId, setCustomerId] = useState<number | null>(existing?.customerId ?? null);
@@ -109,6 +113,15 @@ export default function BookingCreate() {
   const packages = mockPackages.filter(item => bookingType === 'umrah' ? item.module === 'umrah' : item.module === 'tour');
   const hotels = readHotelListings().filter(hotel => hotel.status === 'Published');
   const activeFields = fieldsByType[bookingType] ?? fieldsByType.flights;
+  const selectedDeal = airlineDeals.find(deal => deal.id === details.airlineDealId);
+  const linkedDealDepartures = selectedDeal
+    ? selectedDeal.status === 'Active'
+      ? getCustomerSearchDepartures(selectedDeal)
+      : selectedDeal.schedule
+        ? generateDealDepartures(selectedDeal.schedule, { seatsAvailable: selectedDeal.seatsAvailable, adultPrice: selectedDeal.schedule.defaultAdultPrice }).filter(departure => !departure.closed && departure.seatsAvailable > 0)
+        : []
+    : [];
+  const selectedDeparture = linkedDealDepartures.find(departure => departure.date === details.departureDate);
 
   const selectCustomer = (id: number) => {
     const customer = customers.find(item => item.id === id);
@@ -155,7 +168,21 @@ export default function BookingCreate() {
   const renderField = (field: Field) => {
     const packagesForType = packages.map(item => item.title);
     const selectedHotel = hotels.find(hotel => hotel.name === details.hotel);
-    const options = field.key === 'package' ? packagesForType : field.key === 'hotel' ? hotels.map(item => item.name) : field.key === 'room' && bookingType === 'stays' ? selectedHotel?.rooms?.map(room => room.name) ?? [] : field.options;
+    const options = field.key === 'package' ? packagesForType : field.key === 'hotel' ? hotels.map(item => item.name) : field.key === 'room' && bookingType === 'hotels' ? selectedHotel?.rooms?.map(room => room.name) ?? [] : field.options;
+    if (field.key === 'passengerCount' && !details.airlineDealId) return null;
+    if (field.key === 'airlineDealId') return <label key={field.key} className="text-sm font-medium text-gray-700">{field.label}<select value={details.airlineDealId || ''} onChange={event => {
+      const dealId = event.target.value;
+      const deal = airlineDeals.find(item => item.id === dealId);
+      setDetails(current => ({
+        ...current,
+        airlineDealId: dealId,
+        departureDate: '',
+        passengerCount: dealId ? current.passengerCount || '1' : '',
+        ...(deal?.routes[0] ? { from: deal.routes[0].origin, to: deal.routes[0].destination, flightNumber: deal.flightNumber } : {}),
+      }));
+    }} className={inputClass}><option value="">Not linked to an airline deal</option>{airlineDeals.filter(deal => deal.status === 'Active' || deal.id === details.airlineDealId).map(deal => <option key={deal.id} value={deal.id}>{deal.title} · {deal.routes.map(route => `${route.origin} → ${route.destination}`).join(' · ')}</option>)}</select><span className="mt-1 block text-xs font-normal text-gray-500">Linking this booking lets the deal schedule account for seats already sold.</span></label>;
+    if (field.key === 'departureDate' && details.airlineDealId) return <label key={field.key} className="text-sm font-medium text-gray-700">{field.label} *<select required value={details.departureDate || ''} onChange={event => updateDetail(field.key, event.target.value)} className={inputClass}><option value="">Choose departure</option>{linkedDealDepartures.map(departure => <option key={departure.date} value={departure.date}>{departure.date} · {departure.seatsAvailable} seats available</option>)}</select></label>;
+    if (field.key === 'passengerCount') return <label key={field.key} className="text-sm font-medium text-gray-700">{field.label} *<input required min="1" max={selectedDeparture?.seatsAvailable} step="1" type="number" value={details.passengerCount || '1'} onChange={event => updateDetail(field.key, event.target.value)} className={inputClass} />{selectedDeparture && <span className="mt-1 block text-xs font-normal text-gray-500">Up to {selectedDeparture.seatsAvailable} seats currently available.</span>}</label>;
     return (
       <label key={field.key} className={`text-sm font-medium text-gray-700 ${field.rows ? 'sm:col-span-2' : ''}`}>
         {field.label}{field.required && ' *'}
@@ -171,7 +198,7 @@ export default function BookingCreate() {
     );
   };
 
-  if (!['flights', 'stays', 'tours', 'visa', 'umrah'].includes(bookingType)) {
+  if (!['flights', 'hotels', 'tours', 'visa', 'umrah'].includes(bookingType)) {
     return <div className="rounded-lg border border-gray-200 bg-white p-8 text-center text-gray-600">Choose a supported booking type.</div>;
   }
   if (!canManage) return <div role="alert" className="rounded-lg border border-red-200 bg-white p-8 text-center text-gray-600">You do not have permission to create or edit bookings.</div>;

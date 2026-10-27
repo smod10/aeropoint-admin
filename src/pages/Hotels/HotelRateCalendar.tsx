@@ -36,7 +36,7 @@ export default function HotelRateCalendar() {
   const [message, setMessage] = useState('');
 
   if (!hotel) {
-    return <div className="rounded-lg border border-gray-200 bg-white p-8 text-center text-gray-600">Stay listing not found.</div>;
+    return <div className="rounded-lg border border-gray-200 bg-white p-8 text-center text-gray-600">Hotel listing not found.</div>;
   }
 
   const visibleRooms = hotel.rooms.filter(room => roomFilter === 'all' || room.id === roomFilter);

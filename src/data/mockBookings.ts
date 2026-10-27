@@ -44,39 +44,39 @@ export const mockBookings = [
     details: { provider: 'Kenya Airways', code: 'KQ100', class: 'Economy', from: 'NBO', fromName: 'Jomo Kenyatta International', to: 'LHR', toName: 'London Heathrow', depTime: '11:25 PM', arrTime: '06:30 AM', date: '20-07-2026', duration: '9:05', type: 'Non-stop', baggage: '1x 23kg Checked, 1x 7kg Cabin' }
   },
 
-  // ─── STAYS (HOTELS) ─────────────────────────────────────────────
+  // ─── HOTELS ─────────────────────────────────────────────
   {
-    id: 4, invoice: '3AF56D63', moduleType: 'stays', moduleName: 'Booking.com\nStays', booking: 'CONFIRMED', payment: 'PAID', price: '340.00', earning: '34.00', user: 'Sarah Jenkins\nsarah.j@example.com', ref: 'BK-99482', createdAt: '2026-07-13 14:12 PM',
+    id: 4, invoice: '3AF56D63', moduleType: 'hotels', moduleName: 'Booking.com\nHotels', booking: 'CONFIRMED', payment: 'PAID', price: '340.00', earning: '34.00', user: 'Sarah Jenkins\nsarah.j@example.com', ref: 'BK-99482', createdAt: '2026-07-13 14:12 PM',
     passengers: [{ name: 'Mrs. Sarah Jenkins', type: 'Adult', nationality: 'United Kingdom', document: 'Confirmed' }],
     ancillaries: [{ name: 'Airport Transfer', price: '50.00' }],
     details: { hotel: 'Atlantis The Palm', stars: 5, location: 'Crescent Rd, Dubai, UAE', checkIn: '22-07-2026 (15:00)', checkOut: '26-07-2026 (11:00)', nights: 4, room: 'Ocean King Room', board: 'Breakfast Included', guests: '2 Adults' }
   },
   {
-    id: 7, invoice: '64333665', moduleType: 'stays', moduleName: 'Hotelbeds\nStays', booking: 'PENDING', payment: 'UNPAID', price: '420.94', earning: '42.24', user: 'David Chen\ndavid.chen@example.com', ref: 'Pending', createdAt: '2026-07-11 20:05 PM',
+    id: 7, invoice: '64333665', moduleType: 'hotels', moduleName: 'Hotelbeds\nHotels', booking: 'PENDING', payment: 'UNPAID', price: '420.94', earning: '42.24', user: 'David Chen\ndavid.chen@example.com', ref: 'Pending', createdAt: '2026-07-11 20:05 PM',
     passengers: [{ name: 'Mr. David Chen', type: 'Adult', nationality: 'Canada', document: 'Pending' }],
     ancillaries: [],
     details: { hotel: 'The Savoy', stars: 5, location: 'Strand, London, UK', checkIn: '01-08-2026 (15:00)', checkOut: '03-08-2026 (12:00)', nights: 2, room: 'Luxury Suite', board: 'Room Only', guests: '1 Adult' }
   },
   {
-    id: 20, invoice: 'S1102847', moduleType: 'stays', moduleName: 'Booking.com\nStays', booking: 'CONFIRMED', payment: 'PAID', price: '180.00', earning: '18.00', user: 'Zainab Hassan\nzainab.h@example.com', ref: 'BK-11283', createdAt: '2026-07-07 10:30 AM',
+    id: 20, invoice: 'S1102847', moduleType: 'hotels', moduleName: 'Booking.com\nHotels', booking: 'CONFIRMED', payment: 'PAID', price: '180.00', earning: '18.00', user: 'Zainab Hassan\nzainab.h@example.com', ref: 'BK-11283', createdAt: '2026-07-07 10:30 AM',
     passengers: [{ name: 'Ms. Zainab Hassan', type: 'Adult', nationality: 'Nigeria', document: 'Confirmed' }],
     ancillaries: [],
     details: { hotel: 'Movenpick Hotel Abuja', stars: 4, location: 'Abuja, Nigeria', checkIn: '20-07-2026 (14:00)', checkOut: '23-07-2026 (12:00)', nights: 3, room: 'Deluxe King', board: 'Bed & Breakfast', guests: '1 Adult' }
   },
   {
-    id: 21, invoice: 'S2213958', moduleType: 'stays', moduleName: 'Hotelbeds\nStays', booking: 'CONFIRMED', payment: 'PAID', price: '950.00', earning: '95.00', user: 'Kolade Adebayo\nkolade.a@travelagency.com', ref: 'HB-55491', createdAt: '2026-07-06 16:00 PM',
+    id: 21, invoice: 'S2213958', moduleType: 'hotels', moduleName: 'Hotelbeds\nHotels', booking: 'CONFIRMED', payment: 'PAID', price: '950.00', earning: '95.00', user: 'Kolade Adebayo\nkolade.a@travelagency.com', ref: 'HB-55491', createdAt: '2026-07-06 16:00 PM',
     passengers: [{ name: 'Mr. Kolade Adebayo', type: 'Adult', nationality: 'Nigeria', document: 'Confirmed' }, { name: 'Mrs. Kolade Adebayo', type: 'Adult', nationality: 'Nigeria', document: 'Confirmed' }],
     ancillaries: [{ name: 'Spa Package (x2)', price: '120.00' }],
     details: { hotel: 'Burj Al Arab', stars: 7, location: 'Jumeirah St, Dubai, UAE', checkIn: '28-07-2026 (15:00)', checkOut: '02-08-2026 (12:00)', nights: 5, room: 'Duplex Ocean Suite', board: 'Full Board', guests: '2 Adults' }
   },
   {
-    id: 22, invoice: 'S3324069', moduleType: 'stays', moduleName: 'Booking.com\nStays', booking: 'CANCELLED', payment: 'REFUNDED', price: '260.00', earning: '0.00', user: 'Blessing Obi\nblessing.o@example.com', ref: 'BK-78801', createdAt: '2026-07-05 09:20 AM',
+    id: 22, invoice: 'S3324069', moduleType: 'hotels', moduleName: 'Booking.com\nHotels', booking: 'CANCELLED', payment: 'REFUNDED', price: '260.00', earning: '0.00', user: 'Blessing Obi\nblessing.o@example.com', ref: 'BK-78801', createdAt: '2026-07-05 09:20 AM',
     passengers: [{ name: 'Ms. Blessing Obi', type: 'Adult', nationality: 'Nigeria', document: 'Cancelled' }],
     ancillaries: [],
     details: { hotel: 'Sheraton Abuja Hotel', stars: 4, location: 'Ladi Kwali St, Abuja, Nigeria', checkIn: '12-07-2026 (14:00)', checkOut: '15-07-2026 (12:00)', nights: 3, room: 'Superior Room', board: 'Room Only', guests: '1 Adult' }
   },
   {
-    id: 23, invoice: 'S4435170', moduleType: 'stays', moduleName: 'Hotelbeds\nStays', booking: 'PENDING', payment: 'UNPAID', price: '300.00', earning: '30.00', user: 'Oluwaseun Babatunde\nseun.b@example.com', ref: 'Pending', createdAt: '2026-07-14 10:05 AM',
+    id: 23, invoice: 'S4435170', moduleType: 'hotels', moduleName: 'Hotelbeds\nHotels', booking: 'PENDING', payment: 'UNPAID', price: '300.00', earning: '30.00', user: 'Oluwaseun Babatunde\nseun.b@example.com', ref: 'Pending', createdAt: '2026-07-14 10:05 AM',
     passengers: [{ name: 'Mr. Oluwaseun Babatunde', type: 'Adult', nationality: 'Nigeria', document: 'Pending' }],
     ancillaries: [{ name: 'Late Check-out (14:00)', price: '30.00' }],
     details: { hotel: 'Radisson Blu Anchorage Hotel', stars: 5, location: '1A Ozumba Mbadiwe, Lagos, Nigeria', checkIn: '25-07-2026 (15:00)', checkOut: '28-07-2026 (12:00)', nights: 3, room: 'Business Class Room', board: 'Breakfast Included', guests: '1 Adult' }
@@ -167,3 +167,5 @@ export const mockBookings = [
   },
 
 ];
+
+

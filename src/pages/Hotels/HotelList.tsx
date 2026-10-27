@@ -122,7 +122,7 @@ export default function HotelList() {
       {/* Header Actions */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-800">Stay Reservations</h2>
+          <h2 className="text-2xl font-bold text-gray-800">Hotel Reservations</h2>
           <p className="text-sm text-gray-500 mt-1">Manage accommodation bookings and guest details.</p>
         </div>
         <div className="flex gap-2">
@@ -130,7 +130,7 @@ export default function HotelList() {
             <Download size={16} /> Export Data
           </button>
           <button onClick={() => navigate('/hotels/edit/new')} className="flex items-center gap-2 bg-primary-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary-700 shadow-sm">
-            <Plus size={16} /> Create Stay Booking
+            <Plus size={16} /> Create Hotel Booking
           </button>
         </div>
       </div>
@@ -141,7 +141,7 @@ export default function HotelList() {
           <Search className="text-gray-400 absolute ml-3" size={18} />
           <input 
             type="text" 
-            placeholder="Search by Booking ID, Guest, or Stay..." 
+            placeholder="Search by Booking ID, Guest, or Hotel..." 
             className="w-full bg-gray-50 border border-gray-200 rounded-lg pl-10 pr-4 py-2 text-sm focus:ring-2 focus:ring-primary-500 outline-none transition-all"
           />
         </div>
@@ -167,7 +167,7 @@ export default function HotelList() {
               <tr>
                 <th className="px-6 py-4 font-medium">Booking ID</th>
                 <th className="px-6 py-4 font-medium">Guest</th>
-                <th className="px-6 py-4 font-medium">Stay & Room</th>
+                <th className="px-6 py-4 font-medium">Hotel & Room</th>
                 <th className="px-6 py-4 font-medium">Check-in / Out</th>
                 <th className="px-6 py-4 font-medium">Status</th>
                 <th className="px-6 py-4 font-medium text-right">Action</th>
@@ -252,12 +252,12 @@ export default function HotelList() {
               </div>
             </div>
 
-            {/* Stay Details */}
+            {/* Hotel Details */}
             <div>
               <h3 className="text-sm font-semibold text-gray-900 mb-3 border-b border-gray-100 pb-2">Accommodation</h3>
               <div className="space-y-3">
                 <div className="grid grid-cols-2 items-center">
-                  <span className="text-gray-500 flex items-center gap-1.5"><MapPin size={14}/> Stay</span>
+                  <span className="text-gray-500 flex items-center gap-1.5"><MapPin size={14}/> Hotel</span>
                   <span className="font-medium text-gray-900">{selectedBooking.hotel}</span>
                 </div>
                 {selectedBooking.address && <div className="grid grid-cols-2 items-center">

@@ -1,0 +1,16 @@
+﻿src/components/Integrations/HotelMarkupRules.tsx(161,5): error TS2657: JSX expressions must have one parent element.
+src/components/Integrations/HotelMarkupRules.tsx(197,17): error TS2657: JSX expressions must have one parent element.
+src/components/Integrations/HotelMarkupRules.tsx(205,392): error TS1005: ':' expected.
+src/components/Integrations/HotelMarkupRules.tsx(205,400): error TS17002: Expected corresponding JSX closing tag for 'td'.
+src/components/Integrations/HotelMarkupRules.tsx(205,549): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+src/components/Integrations/HotelMarkupRules.tsx(205,552): error TS17002: Expected corresponding JSX closing tag for 'tr'.
+src/components/Integrations/HotelMarkupRules.tsx(207,17): error TS1005: ')' expected.
+src/components/Integrations/HotelMarkupRules.tsx(207,19): error TS17002: Expected corresponding JSX closing tag for 'tbody'.
+src/components/Integrations/HotelMarkupRules.tsx(208,17): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+src/components/Integrations/HotelMarkupRules.tsx(210,15): error TS17002: Expected corresponding JSX closing tag for 'table'.
+src/components/Integrations/HotelMarkupRules.tsx(211,13): error TS17002: Expected corresponding JSX closing tag for 'div'.
+src/components/Integrations/HotelMarkupRules.tsx(257,7): error TS1005: ')' expected.
+src/components/Integrations/HotelMarkupRules.tsx(282,5): error TS1128: Declaration or statement expected.
+src/components/Integrations/HotelMarkupRules.tsx(283,3): error TS1109: Expression expected.
+src/pages/Bookings/BookingList.tsx(102,51): error TS1005: ':' expected.
+src/pages/Bookings/BookingList.tsx(103,5): error TS1128: Declaration or statement expected.

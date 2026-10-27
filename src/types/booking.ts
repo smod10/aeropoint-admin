@@ -1,4 +1,4 @@
-export type BookingType = 'flights' | 'stays' | 'tours' | 'visa' | 'umrah';
+export type BookingType = 'flights' | 'hotels' | 'tours' | 'visa' | 'umrah';
 
 export type ManagedBooking = {
   id: string;

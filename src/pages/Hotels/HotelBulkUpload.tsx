@@ -2,7 +2,7 @@ import { useMemo, useRef, useState } from 'react';
 import Papa from 'papaparse';
 import { Download, FileUp, X } from 'lucide-react';
 import { createBlankHotel, createBlankRoom, hotelDuplicateKey, readHotelListings, supportedCurrencies, writeHotelListings } from '../../utils/hotelStorage';
-import { readActiveStayNames } from '../../utils/stayStorage';
+import { readActiveHotelNames } from '../../utils/hotelSettings';
 import { plainTextToHtml, sanitizeHtml } from '../../utils/richText';
 import { findDestination } from '../../data/destinations';
 import type { Currency } from '../../context/CurrencyContext';
@@ -28,10 +28,10 @@ export default function HotelBulkUpload({ onClose, onImported }: Props) {
   const [rows, setRows] = useState<Row[]>([]);
   const [error, setError] = useState('');
   const settings = useMemo(() => ({
-    accommodation: readActiveStayNames('accommodation'),
-    amenities: readActiveStayNames('stayAmenity'),
-    roomTypes: readActiveStayNames('roomType'),
-    boards: readActiveStayNames('board'),
+    accommodation: readActiveHotelNames('accommodation'),
+    amenities: readActiveHotelNames('hotelAmenity'),
+    roomTypes: readActiveHotelNames('roomType'),
+    boards: readActiveHotelNames('board'),
   }), []);
 
   const checked = useMemo<Checked[]>(() => {
@@ -46,7 +46,7 @@ export default function HotelBulkUpload({ onClose, onImported }: Props) {
       if (!name) errors.push('Name is required.');
       if (!city) errors.push('City is required.');
       const type = row.accommodation_type?.trim();
-      if (type && !lookup(settings.accommodation, type)) errors.push(`Accommodation type "${type}" is not set up in Stay Settings.`);
+      if (type && !lookup(settings.accommodation, type)) errors.push(`Accommodation type "${type}" is not set up in Hotel Settings.`);
       const stars = toNumber(row.stars ?? '');
       if (stars !== undefined && (!Number.isInteger(stars) || stars < 1 || stars > 5)) errors.push('Stars must be a whole number from 1 to 5.');
       const rating = toNumber(row.rating ?? '');
@@ -55,16 +55,16 @@ export default function HotelBulkUpload({ onClose, onImported }: Props) {
       if (currency && !supportedCurrencies.includes(currency as Currency)) errors.push(`Currency "${currency}" has no admin exchange rate.`);
       if (row.email?.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(row.email.trim())) errors.push('Email is not valid.');
       for (const amenity of (row.amenities ?? '').split(';').map(item => item.trim()).filter(Boolean)) {
-        if (!lookup(settings.amenities, amenity)) errors.push(`Amenity "${amenity}" is not set up in Stay Settings.`);
+        if (!lookup(settings.amenities, amenity)) errors.push(`Amenity "${amenity}" is not set up in Hotel Settings.`);
       }
 
       const hasRoom = roomFields.some(field => row[field]?.trim());
       if (hasRoom) {
         const roomType = row.room_type?.trim();
         if (!roomType) errors.push('Room type is required when room details are given.');
-        else if (!lookup(settings.roomTypes, roomType)) errors.push(`Room type "${roomType}" is not set up in Stay Settings.`);
+        else if (!lookup(settings.roomTypes, roomType)) errors.push(`Room type "${roomType}" is not set up in Hotel Settings.`);
         const board = row.board?.trim();
-        if (board && !lookup(settings.boards, board)) errors.push(`Board "${board}" is not set up in Stay Settings.`);
+        if (board && !lookup(settings.boards, board)) errors.push(`Board "${board}" is not set up in Hotel Settings.`);
         const price = toNumber(row.price ?? '');
         if (price === undefined || !Number.isFinite(price) || price < 0) errors.push('Room price must be a number of zero or more.');
         const guests = toNumber(row.max_guests ?? '');
@@ -178,7 +178,7 @@ export default function HotelBulkUpload({ onClose, onImported }: Props) {
     <div className="fixed inset-0 z-[70] flex items-center justify-center bg-gray-950/40 p-4" role="presentation" onMouseDown={event => { if (event.target === event.currentTarget) onClose(); }}>
       <section role="dialog" aria-modal="true" aria-labelledby="bulk-upload-title" className="flex max-h-[90vh] w-full max-w-5xl flex-col rounded-lg bg-white shadow-xl">
         <header className="flex items-start justify-between gap-4 border-b border-gray-100 px-6 py-4">
-          <div><h2 id="bulk-upload-title" className="text-lg font-semibold text-gray-900">Upload Hotels in Bulk</h2><p className="mt-1 text-sm text-gray-500">Upload a CSV file. Rows are checked against Stay Settings before anything is saved. Imported hotels are created as drafts.</p></div>
+          <div><h2 id="bulk-upload-title" className="text-lg font-semibold text-gray-900">Upload Hotels in Bulk</h2><p className="mt-1 text-sm text-gray-500">Upload a CSV file. Rows are checked against Hotel Settings before anything is saved. Imported hotels are created as drafts.</p></div>
           <button onClick={onClose} aria-label="Close" className="rounded p-1 text-gray-500 hover:bg-gray-100"><X size={18} /></button>
         </header>
 

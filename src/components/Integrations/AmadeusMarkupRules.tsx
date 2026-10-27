@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import Papa from 'papaparse';
-import * as XLSX from 'xlsx';
+// XLSX import removed - CSV only
 import { Copy, Download, Edit2, Plus, Search, Trash2, Upload, X } from 'lucide-react';
 import { getAvailableAirlines } from '../../data/airlines';
 import { getAvailableAirports } from '../../data/airports';
@@ -389,33 +389,19 @@ export default function AmadeusMarkupRules({ moduleId, currency, defaults }: { m
 
   const parseDealFile = async (file: File) => {
     const extension = file.name.split('.').pop()?.toLowerCase();
-    if (extension === 'csv') {
-      Papa.parse<Record<string, unknown>>(file, {
-        header: true,
-        skipEmptyLines: true,
-        complete: result => parseDealRows(result.data),
-        error: parseError => setDealImportPreview({ rules: [], errors: [parseError.message], warnings: [] }),
-      });
+    if (extension !== 'csv') {
+      setDealImportPreview({ rules: [], errors: ['Please upload a .csv file.'], warnings: [] });
       return;
     }
-    if (extension === 'xlsx' || extension === 'xls') {
-      try {
-        const workbook = XLSX.read(await file.arrayBuffer(), { type: 'array', cellDates: true });
-        const sheet = workbook.Sheets[workbook.SheetNames[0]];
-        if (!sheet) {
-          setDealImportPreview({ rules: [], errors: ['The workbook has no sheets.'], warnings: [] });
-          return;
-        }
-        parseDealRows(XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { defval: '' }));
-      } catch (parseError) {
-        setDealImportPreview({ rules: [], errors: [parseError instanceof Error ? parseError.message : 'Could not read the workbook.'], warnings: [] });
-      }
-      return;
-    }
-    setDealImportPreview({ rules: [], errors: ['Choose a .csv, .xlsx, or .xls file.'], warnings: [] });
+    Papa.parse<Record<string, unknown>>(file, {
+      header: true,
+      skipEmptyLines: true,
+      complete: result => parseDealRows(result.data),
+      error: parseError => setDealImportPreview({ rules: [], errors: [parseError.message], warnings: [] }),
+    });
   };
 
-  const exportDeals = (format: 'csv' | 'xlsx') => {
+  const exportDeals = (format: 'csv') => {
     const fields = ['rule_id', 'airline_code', 'origin', 'origin_type', 'destination', 'destination_type', 'bidirectional', 'cabin', 'discount_type', 'discount_value', 'markup_type', 'markup_value_b2c', 'pass_through_percent', 'valid_from', 'valid_to', 'priority', 'is_active', 'source', 'notes', 'route_order'];
     const rows = rules.flatMap(rule => (rule.routes.length ? rule.routes : [{ origin: null, destination: null }]).map((route, routeIndex) => ({
       rule_id: rule.id,
@@ -449,11 +435,7 @@ export default function AmadeusMarkupRules({ moduleId, currency, defaults }: { m
       URL.revokeObjectURL(link.href);
       return;
     }
-    const worksheet = rows.length ? XLSX.utils.json_to_sheet(rows, { header: fields }) : XLSX.utils.aoa_to_sheet([fields]);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Airline deals');
-    XLSX.writeFile(workbook, `${filename}.xlsx`);
-  };
+      };
 
   const previewRule: AirlineMarkupRule = { ...draft, id: editingId ?? 'draft-preview', createdAt: '', updatedAt: '' };
   const previewRoute = draft.routes[0];
@@ -481,9 +463,8 @@ export default function AmadeusMarkupRules({ moduleId, currency, defaults }: { m
       <div className="flex flex-wrap items-center gap-2">
         <div className="relative min-w-56 flex-1"><Search size={15} className="absolute left-3 top-2.5 text-gray-400" /><input aria-label="Search airline rules" value={search} onChange={event => setSearch(event.target.value)} placeholder="Search airline..." className={`${inputClass} pl-9`} /></div>
         <select aria-label="Filter rules by status" value={activeFilter} onChange={event => setActiveFilter(event.target.value as typeof activeFilter)} className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700"><option value="all">All statuses</option><option value="active">Active</option><option value="inactive">Inactive</option></select>
-        <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50"><Upload size={14} /> Import CSV/Excel<input aria-label="Upload airline deals" type="file" accept=".csv,.xlsx,.xls,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel" className="sr-only" onChange={event => { const file = event.target.files?.[0]; if (file) void parseDealFile(file); event.target.value = ''; }} /></label>
+        <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50"><Upload size={14} /> Import CSV<input aria-label="Upload airline deals" type="file" accept=".csv,text/csv" className="sr-only" onChange={event => { const file = event.target.files?.[0]; if (file) void parseDealFile(file); event.target.value = ''; }} /></label>
         <button onClick={() => exportDeals('csv')} className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50"><Download size={14} /> Download CSV</button>
-        <button onClick={() => exportDeals('xlsx')} className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50"><Download size={14} /> Download Excel</button>
       </div>
       {dealImportPreview && <div className="space-y-2 rounded-lg border border-blue-100 bg-blue-50/50 p-3 text-xs">
         <div className="flex flex-wrap items-center justify-between gap-2"><div><p className="font-semibold text-gray-800">Import preview: {dealImportPreview.rules.length} valid deal{dealImportPreview.rules.length === 1 ? '' : 's'}, {dealImportPreview.errors.length} error{dealImportPreview.errors.length === 1 ? '' : 's'}</p><p className="mt-0.5 text-gray-500">Repeated rule_id rows are grouped into route lists. Imported deals use source MANUAL.</p></div><div className="flex gap-2"><button onClick={() => { if (dealImportPreview.rules.length) persist([...dealImportPreview.rules, ...rules]); setDealImportPreview(null); }} disabled={!dealImportPreview.rules.length} className="rounded bg-primary-600 px-3 py-1.5 font-semibold text-white hover:bg-primary-700 disabled:opacity-50">Import valid deals</button><button onClick={() => setDealImportPreview(null)} className="rounded border border-gray-200 bg-white px-3 py-1.5 text-gray-600">Dismiss</button></div></div>

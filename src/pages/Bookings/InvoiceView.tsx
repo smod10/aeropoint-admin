@@ -91,8 +91,8 @@ export default function InvoiceView() {
             </div>
           )}
 
-          {/* --- STAYS (HOTEL) DETAILS --- */}
-          {booking.moduleType === 'stays' && (
+          {/* --- HOTEL DETAILS --- */}
+          {booking.moduleType === 'hotels' && (
             <div className="bg-white rounded-xl shadow-soft border border-gray-100 p-6">
               <h3 className="text-sm font-bold text-gray-800 flex items-center gap-2 mb-6 pb-2 border-b border-gray-100"><Building2 size={16} className="text-gray-500" /> Accommodation Details</h3>
               <div className="mb-6">

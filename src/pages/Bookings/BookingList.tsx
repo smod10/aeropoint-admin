@@ -28,7 +28,7 @@ type BookingRow = {
 
 const creationTypes: { type: BookingType; label: string; path: string }[] = [
   { type: 'flights', label: 'Flight', path: 'flights' },
-  { type: 'stays', label: 'Stay', path: 'stays' },
+  { type: 'hotels', label: 'Hotel', path: 'hotels' },
   { type: 'tours', label: 'Tour / Package', path: 'tours' },
   { type: 'umrah', label: 'Tours: Umrah package', path: 'umrah' },
   { type: 'visa', label: 'Visa', path: 'visa' },
@@ -81,7 +81,7 @@ export default function BookingList() {
       id: booking.bookingId,
       invoice: booking.bookingId,
       moduleType: booking.bookingType,
-      moduleName: `${booking.bookingType === 'stays' ? 'Stay' : booking.bookingType.charAt(0).toUpperCase() + booking.bookingType.slice(1)}\nManual booking`,
+      moduleName: `${booking.bookingType === 'hotels' ? 'Hotel' : booking.bookingType.charAt(0).toUpperCase() + booking.bookingType.slice(1)}\nManual booking`,
       booking: booking.bookingStatus.toUpperCase(),
       payment: booking.paymentStatus.toUpperCase(),
       price: String(booking.amount),
@@ -99,7 +99,7 @@ export default function BookingList() {
   const filteredBookings = selectedModuleType
     ? bookings.filter(booking => selectedModuleType === 'tours'
       ? booking.moduleType === 'tours' || booking.moduleType === 'umrah'
-      : booking.moduleType === (selectedModuleType === 'hotels' ? 'stays' : selectedModuleType))
+      : booking.moduleType === selectedModuleType)
     : bookings;
   const referenceColumnLabel = selectedModuleType && selectedModuleType !== 'flights' ? 'Booking Ref.' : 'PNR';
 
@@ -327,7 +327,7 @@ export default function BookingList() {
                     </td>}
 
                     {visibleColumns.customer && <td className="px-4 py-3"><div className="font-bold text-gray-900">{b.user.split('\n')[0]}</div><div className="text-xs text-gray-500">{b.user.split('\n')[1] || 'Guest booking'}</div></td>}
-                    {visibleColumns.module && <td className="px-4 py-3"><div className="font-bold capitalize text-gray-800">{b.moduleType === 'stays' ? 'Stay' : b.moduleType === 'umrah' ? 'Tours' : b.moduleType}</div><div className="text-xs text-gray-500">{b.moduleName.split('\n')[1]}</div></td>}
+                    {visibleColumns.module && <td className="px-4 py-3"><div className="font-bold capitalize text-gray-800">{b.moduleType === 'hotels' ? 'Hotel' : b.moduleType === 'umrah' ? 'Tours' : b.moduleType}</div><div className="text-xs text-gray-500">{b.moduleName.split('\n')[1]}</div></td>}
                     {visibleColumns.createdAt && <td className="px-4 py-3 text-gray-800 text-sm font-medium">{b.createdAt}</td>}
                     {visibleColumns.price && <td className="px-4 py-3"><div className="font-bold text-gray-900">{convertFromAndFormat(Number(b.price), b.currency as 'NGN' | 'USD' | 'GBP' | 'EUR' | 'CAD')}</div></td>}
                     {visibleColumns.payment && <td className="px-4 py-3"><span className={`px-2.5 py-1 text-[10px] uppercase font-bold rounded border ${b.payment === 'PAID' ? 'bg-emerald-100 text-emerald-700 border-emerald-200' : b.payment === 'REFUNDED' ? 'bg-purple-100 text-purple-700 border-purple-200' : 'bg-gray-50 text-gray-600 border-gray-200'}`}>{b.payment}</span></td>}

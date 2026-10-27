@@ -2,16 +2,16 @@ import { useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { BedDouble, Building2, Columns, Edit2, Plus, Search, Settings, Trash2, Utensils, Waves, Wifi } from 'lucide-react';
 import { canManageTeam, getCurrentActorRole } from '../../utils/accountAccess';
-import { addStaySetting, isStaySettingNameTaken, readStaySettings, removeStaySettings, stayUsageCount, updateStaySetting } from '../../utils/stayStorage';
+import { addHotelSetting, isHotelSettingNameTaken, readHotelSettings, removeHotelSettings, hotelUsageCount, updateHotelSetting } from '../../utils/hotelSettings';
 import SlideOver from '../../components/Shared/SlideOver';
 import ToggleSwitch from '../../components/Shared/ToggleSwitch';
-import type { StaySetting, StaySettingKind } from '../../types/hotel';
+import type { HotelSetting, HotelSettingKind } from '../../types/hotel';
 
 type ColumnKey = 'status' | 'name' | 'usedBy';
 type SearchField = 'all' | 'name' | 'status';
 
-const tabs: { kind: StaySettingKind; label: string; icon: ReactNode; usedFor: string }[] = [
-  { kind: 'stayAmenity', label: 'Stay Amenity', icon: <Waves size={16} />, usedFor: 'Amenity checkboxes on the hotel form' },
+const tabs: { kind: HotelSettingKind; label: string; icon: ReactNode; usedFor: string }[] = [
+  { kind: 'hotelAmenity', label: 'Hotel Amenity', icon: <Waves size={16} />, usedFor: 'Amenity checkboxes on the hotel form' },
   { kind: 'roomType', label: 'Room Type', icon: <BedDouble size={16} />, usedFor: 'Room type when adding rooms to a hotel' },
   { kind: 'roomAmenity', label: 'Room Amenity', icon: <Wifi size={16} />, usedFor: 'Room facilities on the room form' },
   { kind: 'accommodation', label: 'Accommodation', icon: <Building2 size={16} />, usedFor: 'Accommodation type on the hotel form' },
@@ -20,16 +20,16 @@ const tabs: { kind: StaySettingKind; label: string; icon: ReactNode; usedFor: st
 
 const columnLabels: Record<ColumnKey, string> = { status: 'Status', name: 'Name', usedBy: 'Used by hotels' };
 
-export default function StayManagement() {
+export default function HotelSettings() {
   const canManage = canManageTeam(getCurrentActorRole());
-  const [kind, setKind] = useState<StaySettingKind>('stayAmenity');
+  const [kind, setKind] = useState<HotelSettingKind>('hotelAmenity');
   const [version, setVersion] = useState(0);
   const [search, setSearch] = useState('');
   const [field, setField] = useState<SearchField>('all');
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [columnMenuOpen, setColumnMenuOpen] = useState(false);
   const [visible, setVisible] = useState<Record<ColumnKey, boolean>>({ status: true, name: true, usedBy: false });
-  const [editing, setEditing] = useState<StaySetting | 'new'>();
+  const [editing, setEditing] = useState<HotelSetting | 'new'>();
   const [form, setForm] = useState({ name: '', active: true });
   const [formError, setFormError] = useState('');
   const [message, setMessage] = useState('');
@@ -37,8 +37,8 @@ export default function StayManagement() {
   const tab = tabs.find(item => item.kind === kind)!;
   // `version` is bumped after every change so the list is re-read from storage.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  const records = useMemo(() => readStaySettings(kind), [kind, version]);
-  const usage = useMemo(() => new Map(records.map(record => [record.id, stayUsageCount(record)])), [records]);
+  const records = useMemo(() => readHotelSettings(kind), [kind, version]);
+  const usage = useMemo(() => new Map(records.map(record => [record.id, hotelUsageCount(record)])), [records]);
   const refresh = () => setVersion(current => current + 1);
 
   const filtered = records.filter(record => {
@@ -51,14 +51,14 @@ export default function StayManagement() {
   });
   const allSelected = filtered.length > 0 && filtered.every(record => selected.has(record.id));
 
-  const switchTab = (next: StaySettingKind) => {
+  const switchTab = (next: HotelSettingKind) => {
     setKind(next);
     setSelected(new Set());
     setSearch('');
     setMessage('');
   };
 
-  const openForm = (record: StaySetting | 'new') => {
+  const openForm = (record: HotelSetting | 'new') => {
     setEditing(record);
     setForm(record === 'new' ? { name: '', active: true } : { name: record.name, active: record.active });
     setFormError('');
@@ -69,18 +69,18 @@ export default function StayManagement() {
     if (!name) return setFormError('Name is required.');
     if (name.length > 60) return setFormError('Name must be 60 characters or fewer.');
     const currentId = editing && editing !== 'new' ? editing.id : undefined;
-    if (isStaySettingNameTaken(kind, name, currentId)) return setFormError(`${tab.label} "${name}" already exists.`);
-    if (editing === 'new') addStaySetting(kind, name, form.active);
-    else if (currentId) updateStaySetting(currentId, { name, active: form.active });
+    if (isHotelSettingNameTaken(kind, name, currentId)) return setFormError(`${tab.label} "${name}" already exists.`);
+    if (editing === 'new') addHotelSetting(kind, name, form.active);
+    else if (currentId) updateHotelSetting(currentId, { name, active: form.active });
     setMessage(editing === 'new' ? `Added "${name}".` : `Updated "${name}".`);
     setEditing(undefined);
     refresh();
   };
 
-  const remove = (targets: StaySetting[]) => {
+  const remove = (targets: HotelSetting[]) => {
     const label = targets.length === 1 ? `"${targets[0].name}"` : `${targets.length} settings`;
     if (!window.confirm(`Delete ${label}?`)) return;
-    const result = removeStaySettings(targets.map(target => target.id));
+    const result = removeHotelSettings(targets.map(target => target.id));
     setSelected(new Set());
     setMessage([
       result.removed ? `Deleted ${result.removed}.` : '',
@@ -142,7 +142,7 @@ export default function StayManagement() {
               {filtered.map((record, index) => <tr key={record.id} className="hover:bg-gray-50/60">
                 <td className="px-4 py-3"><input type="checkbox" aria-label={`Select ${record.name}`} checked={selected.has(record.id)} onChange={() => toggleRow(record.id)} className="rounded border-gray-300" /></td>
                 <td className="px-4 py-3 text-gray-500">{index + 1}</td>
-                {visible.status && <td className="px-4 py-3"><ToggleSwitch checked={record.active} disabled={!canManage} label={`${record.name} active`} onChange={active => { updateStaySetting(record.id, { active }); refresh(); }} /></td>}
+                {visible.status && <td className="px-4 py-3"><ToggleSwitch checked={record.active} disabled={!canManage} label={`${record.name} active`} onChange={active => { updateHotelSetting(record.id, { active }); refresh(); }} /></td>}
                 {visible.name && <td className="px-4 py-3 text-gray-800">{record.name}</td>}
                 {visible.usedBy && <td className="px-4 py-3 text-gray-600">{usage.get(record.id) ?? 0}</td>}
                 <td className="border-l border-gray-100 px-4 py-3"><div className="flex justify-end gap-1.5">{canManage ? <><button onClick={() => openForm(record)} aria-label={`Edit ${record.name}`} title="Edit" className={iconButton}><Edit2 size={15} /></button><button onClick={() => remove([record])} aria-label={`Delete ${record.name}`} title="Delete" className={`${iconButton} hover:text-red-600`}><Trash2 size={15} /></button></> : <span className="text-xs text-gray-400">View only</span>}</div></td>

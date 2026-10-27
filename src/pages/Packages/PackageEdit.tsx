@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { 
   ArrowLeft, Info, DollarSign, MapPin, Calendar, 
@@ -40,6 +40,50 @@ export default function PackageEdit() {
   });
 
   const [activeTab, setActiveTab] = useState<'general' | 'pricing' | 'location' | 'itinerary' | 'inclusions' | 'gallery' | 'seo' | 'translations'>('general');
+
+  // Section refs for scrollspy active tracking
+  const sectionRefs = useRef<Record<string, HTMLDivElement | null>>({
+    general: null, pricing: null, location: null, itinerary: null,
+    inclusions: null, gallery: null, seo: null, translations: null,
+  });
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollY = window.scrollY;
+      const innerHeight = window.innerHeight;
+      let active: string | null = null;
+      let bestScore = -1;
+
+      Object.entries(sectionRefs.current).forEach(([key, ref]) => {
+        const el = ref?.current;
+        if (!el) return;
+        const rect = el.getBoundingClientRect();
+        const elTop = rect.top + scrollY;
+        const elBottom = elTop + rect.offsetHeight;
+        // Score: section is in view, closer to top of viewport is better
+        const inView = rect.top <= innerHeight * 0.4 && rect.bottom >= innerHeight * 0.2;
+        if (inView) {
+          const score = innerHeight - Math.abs(rect.top - innerHeight * 0.3);
+          if (score > bestScore) {
+            bestScore = score;
+            active = key;
+          }
+        }
+        // Fallback: first section that starts at or above viewport top
+        if (!active && elTop <= scrollY + 80 && elBottom > scrollY + 80) {
+          active = key;
+        }
+      });
+
+      if (active && activeTab !== active) {
+        setActiveTab(active as typeof activeTab);
+      }
+    };
+
+    handleScroll();
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [activeTab]);
 
   // Itinerary State
   const [itineraryDays, setItineraryDays] = useState([{ day: 1, title: '', description: '', location: '', lat: '', lng: '' }]);

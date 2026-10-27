@@ -36,11 +36,11 @@ export default function HotelInventory() {
   return (
     <div className="space-y-6">
       <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-3"><button onClick={() => navigate('/hotels')} aria-label="Back to hotels" className="rounded-lg border border-gray-200 bg-white p-2 text-gray-600 hover:bg-gray-50"><ArrowLeft size={18} /></button><div><p className="text-xs font-semibold uppercase tracking-wider text-primary-600">Stay inventory</p><h1 className="mt-1 text-2xl font-bold text-gray-900">Room inventory</h1><p className="mt-1 text-sm text-gray-500">{selectedListing?.name || 'Availability and rates across registered properties.'}</p></div></div>
+        <div className="flex items-center gap-3"><button onClick={() => navigate('/hotels')} aria-label="Back to hotels" className="rounded-lg border border-gray-200 bg-white p-2 text-gray-600 hover:bg-gray-50"><ArrowLeft size={18} /></button><div><p className="text-xs font-semibold uppercase tracking-wider text-primary-600">Hotel inventory</p><h1 className="mt-1 text-2xl font-bold text-gray-900">Room inventory</h1><p className="mt-1 text-sm text-gray-500">{selectedListing?.name || 'Availability and rates across registered properties.'}</p></div></div>
         {canManage && selectedListing && <button onClick={() => navigate(`/hotels/edit/${selectedListing.id}`)} className="rounded-lg bg-primary-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary-700">Edit hotel</button>}
       </header>
 
-      {hotelId && !selectedListing && <div className="rounded-lg border border-gray-200 bg-white p-8 text-center text-gray-600">Stay listing not found.</div>}
+      {hotelId && !selectedListing && <div className="rounded-lg border border-gray-200 bg-white p-8 text-center text-gray-600">Hotel listing not found.</div>}
 
       <section className="grid gap-3 sm:grid-cols-3">
         <article className="rounded-lg border border-gray-200 bg-white p-4"><p className="text-xs font-semibold uppercase text-gray-500">Properties</p><p className="mt-2 text-2xl font-semibold text-gray-900">{hotels.length}</p></article>
