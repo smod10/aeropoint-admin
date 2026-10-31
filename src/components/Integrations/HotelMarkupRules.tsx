@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 // XLSX import removed - CSV only
 import { Download, Edit2, Plus, Save, Search, Trash2, Upload, X } from 'lucide-react';
-import { readHotelMarkupRules, writeHotelMarkupRules } from '../../utils/amadeusMarkupRules';
+import { writeHotelMarkupRules } from '../../utils/amadeusMarkupRules';
 import { calculateHotelPrice, pricingBelowMinimumMargin } from '../../utils/hotelMarkupPricing';
 import type { HotelPricingQuery } from '../../utils/hotelMarkupPricing';
 import type { DefaultHotelPricing, HotelMarkupRule, HotelPriceBreakdown } from '../../types/markupRule';

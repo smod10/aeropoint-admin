@@ -59,7 +59,7 @@ export default function PackageEdit() {
         if (!el) return;
         const rect = el.getBoundingClientRect();
         const elTop = rect.top + scrollY;
-        const elBottom = elTop + rect.offsetHeight;
+        const elBottom = rect.bottom + scrollY;
         // Score: section is in view, closer to top of viewport is better
         const inView = rect.top <= innerHeight * 0.4 && rect.bottom >= innerHeight * 0.2;
         if (inView) {
