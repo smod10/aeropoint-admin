@@ -29,12 +29,8 @@ const currencies = ['NGN', 'USD', 'GBP', 'EUR', 'CAD'];
 const cabins = ['Economy', 'Premium Economy', 'Business', 'First'];
 const weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-function blankBaggageAllowance(): DealBaggageAllowance {
-  return { included: false };
-}
-
 function blankSegment(): DealSegment {
-  return { id: `segment-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, airline: '', flightNumber: '', operatingAirline: '', origin: '', destination: '', departureTime: '', departureDayOffset: 0, arrivalTime: '', arrivalDayOffset: 0, departureTerminal: '', arrivalTerminal: '', aircraft: '', cabin: 'Economy', cabinBaggage: blankBaggageAllowance(), checkedBaggage: blankBaggageAllowance(), baggage: '' };
+  return { id: `segment-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, airline: '', flightNumber: '', operatingAirline: '', origin: '', destination: '', departureTime: '', departureDayOffset: 0, arrivalTime: '', arrivalDayOffset: 0, departureTerminal: '', arrivalTerminal: '', aircraft: '', cabin: 'Economy', baggage: '' };
 }
 
 function blankJourney(): DealJourney {
@@ -58,6 +54,39 @@ function blankDraft(): AirlineDealDraft {
     currency: 'NGN', seatsAvailable: 1, salesStartDate: '', salesEndDate: '', bookingCutOffHours: 24, image: '', featured: false,
     displayOrder: 0, internalNotes: '', imageAlt: '', fareConditions: { notes: '' }, status: 'Draft', outboundJourney: blankJourney(), minimumConnectionMinutes: 60, schedule: blankSchedule(),
   };
+}
+
+async function compressDealImage(file: File): Promise<string> {
+  const image = await createImageBitmap(file);
+  try {
+    let scale = Math.min(1, 1600 / Math.max(image.width, image.height));
+    let quality = 0.82;
+    let blob: Blob | null = null;
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.max(1, Math.round(image.width * scale));
+      canvas.height = Math.max(1, Math.round(image.height * scale));
+      const context = canvas.getContext('2d');
+      if (!context) throw new Error('Image processing is unavailable in this browser.');
+      context.fillStyle = '#fff';
+      context.fillRect(0, 0, canvas.width, canvas.height);
+      context.drawImage(image, 0, 0, canvas.width, canvas.height);
+      blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/jpeg', quality));
+      if (!blob) throw new Error('Unable to process this image. Choose a different image file.');
+      if (blob.size <= 1024 * 1024) break;
+      scale *= 0.8;
+      quality = Math.max(0.5, quality - 0.08);
+    }
+    if (!blob || blob.size > 1024 * 1024) throw new Error('Unable to compress this image below 1 MB. Choose a smaller image.');
+    return await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => typeof reader.result === 'string' ? resolve(reader.result) : reject(new Error('Unable to read the processed image.'));
+      reader.onerror = () => reject(new Error('Unable to read the processed image.'));
+      reader.readAsDataURL(blob);
+    });
+  } finally {
+    image.close();
+  }
 }
 
 function formatDuration(minutes: number | null): string {
@@ -196,14 +225,13 @@ function FareFields({ passenger, fare, currency, onChange, errors }: { passenger
   </div>;
 }
 
-function BaggageFields({ label, value, onChange }: { label: string; value?: DealBaggageAllowance; onChange: (value: DealBaggageAllowance) => void }) {
-  const allowance = value ?? blankBaggageAllowance();
+function BaggageFields({ label, value, onChange }: { label: string; value?: DealBaggageAllowance; onChange: (value: DealBaggageAllowance | undefined) => void }) {
   return <fieldset className="rounded-lg border border-gray-200 p-3">
     <legend className="px-1 text-xs font-medium text-gray-600">{label} <span className="text-[10px] text-gray-400">Required for Active</span></legend>
-    <label className="flex items-center gap-2 text-xs text-gray-700"><input type="checkbox" checked={allowance.included} onChange={event => onChange(event.target.checked ? { included: true } : { included: false })} className="rounded border-gray-300 text-primary-600 focus:ring-primary-500" />Included</label>
-    {allowance.included && <div className="mt-3 grid grid-cols-2 gap-3">
-      <label className={labelClass}>Pieces<input type="number" min="1" step="1" value={allowance.pieces ?? ''} onChange={event => onChange({ ...allowance, pieces: event.target.value === '' ? undefined : Number(event.target.value) })} className={inputClass} /></label>
-      <label className={labelClass}>Weight (kg)<input type="number" min="0.1" step="0.1" value={allowance.weightKg ?? ''} onChange={event => onChange({ ...allowance, weightKg: event.target.value === '' ? undefined : Number(event.target.value) })} className={inputClass} /></label>
+    <label className={labelClass}>Allowance<select value={value ? value.included ? 'included' : 'not-included' : ''} onChange={event => onChange(event.target.value === 'included' ? { included: true } : event.target.value === 'not-included' ? { included: false } : undefined)} className={inputClass}><option value="">Choose allowance</option><option value="included">Included</option><option value="not-included">Not included</option></select></label>
+    {value?.included && <div className="mt-3 grid grid-cols-2 gap-3">
+      <label className={labelClass}>Pieces<input type="number" min="1" step="1" value={value.pieces ?? ''} onChange={event => onChange({ ...value, pieces: event.target.value === '' ? undefined : Number(event.target.value) })} className={inputClass} /></label>
+      <label className={labelClass}>Weight (kg)<input type="number" min="0.1" step="0.1" value={value.weightKg ?? ''} onChange={event => onChange({ ...value, weightKg: event.target.value === '' ? undefined : Number(event.target.value) })} className={inputClass} /></label>
     </div>}
   </fieldset>;
 }
@@ -214,7 +242,7 @@ function JourneyEditor({ label, journey, departureDate, minimumConnectionMinutes
   const updateSegment = (index: number, key: keyof DealSegment, value: string | number) => {
     onChange({ segments: journey.segments.map((segment, segmentIndex) => segmentIndex === index ? { ...segment, [key]: value } : segment) });
   };
-  const updateSegmentBaggage = (index: number, key: 'cabinBaggage' | 'checkedBaggage', value: DealBaggageAllowance) => {
+  const updateSegmentBaggage = (index: number, key: 'cabinBaggage' | 'checkedBaggage', value: DealBaggageAllowance | undefined) => {
     onChange({ segments: journey.segments.map((segment, segmentIndex) => segmentIndex === index ? { ...segment, [key]: value } : segment) });
   };
   const moveSegment = (index: number, direction: -1 | 1) => {
@@ -424,11 +452,17 @@ function SearchResultPreview({ draft, date, minimumConnectionMinutes }: { draft:
   return <section className="space-y-3 rounded-lg border border-gray-200 p-4">
     <div className="flex items-center justify-between"><div><h3 className="text-sm font-semibold text-gray-900">Preview as search result</h3><p className="mt-1 text-xs text-gray-500">Customer-facing offer preview</p></div><span className="rounded bg-amber-100 px-2 py-1 text-[10px] font-semibold uppercase text-amber-800">Special offer</span></div>
     <div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
-      {draft.image && <img src={draft.image} alt="" className="h-36 w-full object-cover" />}
+      {draft.image && <img src={draft.image} alt={draft.imageAlt || draft.title || 'Deal image'} className="h-36 w-full object-cover" />}
       <div className="space-y-4 p-4">
         <div className="flex flex-wrap items-start justify-between gap-3"><div><h4 className="font-semibold text-gray-900">{draft.title || 'Your deal title'}</h4><p className="mt-1 text-xs text-gray-500">{getDealAirportLabel(first?.origin ?? '') ?? first?.origin ?? 'Origin'} <ArrowRight size={12} className="mx-1 inline" /> {getDealAirportLabel(last?.destination ?? '') ?? last?.destination ?? 'Destination'} · {draft.tripType}</p></div><div className="text-right"><p className="text-xs text-gray-500">From</p><p className="text-lg font-bold text-gray-900">{money(adultPrice, draft.currency)}</p><p className="text-[11px] text-gray-500">per adult · taxes included</p></div></div>
         {renderJourney('Outbound', outbound, date, outboundMetrics)}
         {draft.tripType === 'Return' && returnJourney && returnMetrics && renderJourney('Return', returnJourney, returnDate, returnMetrics)}
+        {(draft.fareConditions?.refundable || draft.fareConditions?.changesAllowed || draft.fareConditions?.notes?.trim()) && <section className="space-y-2 rounded-lg bg-gray-50 p-3 text-xs text-gray-700">
+          <h5 className="font-semibold text-gray-900">Fare conditions</h5>
+          {draft.fareConditions.refundable && <p>Refundable: {draft.fareConditions.refundable === 'with-fee' ? `With a fee${draft.fareConditions.refundFee !== undefined ? ` (${money(draft.fareConditions.refundFee, draft.currency)})` : ''}` : draft.fareConditions.refundable === 'yes' ? 'Yes' : 'No'}</p>}
+          {draft.fareConditions.changesAllowed && <p>Changes: {draft.fareConditions.changesAllowed === 'with-fee' ? `Allowed with a fee${draft.fareConditions.changeFee !== undefined ? ` (${money(draft.fareConditions.changeFee, draft.currency)})` : ''}` : draft.fareConditions.changesAllowed === 'yes' ? 'Allowed' : 'Not allowed'}</p>}
+          {draft.fareConditions.notes?.trim() && <p>{draft.fareConditions.notes}</p>}
+        </section>}
         <div className="flex items-center justify-between border-t border-gray-100 pt-3"><p className="text-xs text-gray-500">{draft.description || 'Deal description'}{date ? ` · Depart ${date}` : ''}</p><button type="button" disabled className="rounded-lg bg-primary-600 px-4 py-2 text-xs font-semibold text-white opacity-60">Book now</button></div>
       </div>
     </div>
@@ -507,38 +541,58 @@ export default function AirlineDeals() {
     const outboundSegments = draft.outboundJourney?.segments ?? [];
     const firstSegment = outboundSegments[0];
     const lastSegment = outboundSegments[outboundSegments.length - 1];
-    const updated = saveAirlineDeal({
-      ...draft,
-      airline: firstSegment?.airline ?? draft.airline,
-      cabin: firstSegment?.cabin ?? draft.cabin,
-      routes: outboundSegments.map(segment => ({ origin: segment.origin, destination: segment.destination })),
-      flightNumber: firstSegment?.flightNumber ?? draft.flightNumber,
-      departureTime: firstSegment?.departureTime ?? draft.departureTime,
-      arrivalTime: lastSegment?.arrivalTime ?? draft.arrivalTime,
-      stops: Math.max(0, outboundSegments.length - 1),
-      baggage: Array.from(new Set(outboundSegments.flatMap(segment => describeSegmentBaggage(segment)))).join(' · '),
-      travelStartDate: draft.schedule?.dateRangeStart ?? '',
-      travelEndDate: draft.schedule?.dateRangeEnd ?? '',
-      seatsAvailable: draft.seatsAvailable,
-      schedule: draft.schedule ?? blankSchedule(),
-    }, editingDeal?.id);
-    setDeals(updated);
-    setNotice(editingDeal ? 'Deal updated.' : 'Deal created.');
-    navigate('/flights/deals');
+    try {
+      const updated = saveAirlineDeal({
+        ...draft,
+        airline: firstSegment?.airline ?? draft.airline,
+        cabin: firstSegment?.cabin ?? draft.cabin,
+        routes: outboundSegments.map(segment => ({ origin: segment.origin, destination: segment.destination })),
+        flightNumber: firstSegment?.flightNumber ?? draft.flightNumber,
+        departureTime: firstSegment?.departureTime ?? draft.departureTime,
+        arrivalTime: lastSegment?.arrivalTime ?? draft.arrivalTime,
+        stops: Math.max(0, outboundSegments.length - 1),
+        baggage: Array.from(new Set(outboundSegments.flatMap(segment => describeSegmentBaggage(segment)))).join(' · '),
+        travelStartDate: draft.schedule?.dateRangeStart ?? '',
+        travelEndDate: draft.schedule?.dateRangeEnd ?? '',
+        seatsAvailable: draft.seatsAvailable,
+        schedule: draft.schedule ?? blankSchedule(),
+      }, editingDeal?.id);
+      setDeals(updated);
+      setNotice(editingDeal ? 'Deal updated.' : 'Deal created.');
+      navigate('/flights/deals');
+    } catch (error) {
+      const quotaExceeded = error instanceof DOMException && (error.name === 'QuotaExceededError' || error.name === 'NS_ERROR_DOM_QUOTA_REACHED');
+      setNotice(quotaExceeded
+        ? 'Browser storage is full. Your deal is still in the form; remove stored data or reduce image size, then save again.'
+        : error instanceof Error ? error.message : 'Unable to save this deal. Your form values are still available.');
+    }
   };
-  const handleImage = (file?: File) => {
+  const handleImage = async (file?: File) => {
     if (!file) return;
     if (!file.type.startsWith('image/')) { setErrors(current => ({ ...current, image: 'Choose an image file.' })); return; }
-    if (file.size > 5 * 1024 * 1024) { setErrors(current => ({ ...current, image: 'Image must be 5 MB or smaller.' })); return; }
-    const reader = new FileReader();
-    reader.onload = () => { updateDraft('image', String(reader.result ?? '')); setErrors(current => { const next = { ...current }; delete next.image; return next; }); };
-    reader.readAsDataURL(file);
+    if (file.size > 2 * 1024 * 1024) { setErrors(current => ({ ...current, image: 'Image file must be 2 MB or smaller.' })); return; }
+    try {
+      updateDraft('image', await compressDealImage(file));
+      setErrors(current => { const next = { ...current }; delete next.image; return next; });
+    } catch (error) {
+      setErrors(current => ({ ...current, image: error instanceof Error ? error.message : 'Unable to process this image.' }));
+    }
   };
   const handleDelete = (deal: AirlineDeal) => {
     if (!window.confirm(`Delete “${deal.title}”?`)) return;
     setDeals(deleteAirlineDeal(deal.id));
     setNotice('Deal deleted.');
   };
+  const toggleDealStatus = (deal: AirlineDeal) => {
+    const status = deal.status === 'Active' ? 'Paused' : 'Active';
+    try {
+      setDeals(updateAirlineDeal(deal.id, { status }));
+      setNotice(status === 'Active' ? 'Deal activated.' : 'Deal paused.');
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : 'Unable to update deal status.');
+    }
+  };
+  const noticeIsError = /storage is full|Complete these details|Unable to save/i.test(notice);
 
   return <div className="space-y-6 animate-in fade-in duration-300">
     {!isEditor && <>
@@ -551,7 +605,7 @@ export default function AirlineDeals() {
       </div>
     </div>
 
-    {notice && <div role="status" className="flex items-center justify-between rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm text-emerald-800">{notice}<button type="button" onClick={() => setNotice('')} aria-label="Dismiss message"><X size={15} /></button></div>}
+    {notice && <div role={noticeIsError ? 'alert' : 'status'} className={`flex items-center justify-between rounded-lg border px-4 py-2.5 text-sm ${noticeIsError ? 'border-amber-200 bg-amber-50 text-amber-900' : 'border-emerald-200 bg-emerald-50 text-emerald-800'}`}>{notice}<button type="button" onClick={() => setNotice('')} aria-label="Dismiss message"><X size={15} /></button></div>}
 
     <div className="overflow-hidden rounded-xl border border-gray-100 bg-white shadow-soft">
       <div className="overflow-x-auto"><table className="w-full min-w-[1050px] text-left text-sm text-gray-600">
@@ -572,7 +626,7 @@ export default function AirlineDeals() {
             <td className="px-4 py-3"><div className="flex justify-end gap-1">
               <button type="button" onClick={() => openEdit(deal)} title="Edit deal" aria-label={`Edit ${deal.title}`} className="inline-flex h-8 w-8 items-center justify-center rounded border border-gray-200 text-gray-500 hover:text-primary-600"><Edit2 size={14} /></button>
               <button type="button" onClick={() => { setDeals(duplicateAirlineDeal(deal.id)); setNotice('Deal duplicated as a draft.'); }} title="Duplicate deal" aria-label={`Duplicate ${deal.title}`} className="inline-flex h-8 w-8 items-center justify-center rounded border border-gray-200 text-gray-500 hover:text-primary-600"><Copy size={14} /></button>
-              <button type="button" disabled={!['Active', 'Paused'].includes(deal.status)} onClick={() => setDeals(updateAirlineDeal(deal.id, { status: deal.status === 'Active' ? 'Paused' : 'Active' }))} title={deal.status === 'Active' ? 'Pause deal' : 'Resume deal'} aria-label={`${deal.status === 'Active' ? 'Pause' : 'Resume'} ${deal.title}`} className="inline-flex h-8 w-8 items-center justify-center rounded border border-gray-200 text-gray-500 hover:text-amber-700 disabled:cursor-not-allowed disabled:opacity-35"><Pause size={14} /></button>
+              <button type="button" disabled={!['Active', 'Paused'].includes(deal.status)} onClick={() => toggleDealStatus(deal)} title={deal.status === 'Active' ? 'Pause deal' : 'Resume deal'} aria-label={`${deal.status === 'Active' ? 'Pause' : 'Resume'} ${deal.title}`} className="inline-flex h-8 w-8 items-center justify-center rounded border border-gray-200 text-gray-500 hover:text-amber-700 disabled:cursor-not-allowed disabled:opacity-35"><Pause size={14} /></button>
               <button type="button" onClick={() => handleDelete(deal)} title="Delete deal" aria-label={`Delete ${deal.title}`} className="inline-flex h-8 w-8 items-center justify-center rounded border border-gray-200 text-gray-500 hover:text-red-600"><Trash2 size={14} /></button>
             </div></td>
           </tr>)}

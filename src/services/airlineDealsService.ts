@@ -128,12 +128,13 @@ export function getMissingDealDetails(deal: Pick<AirlineDeal, 'image' | 'imageAl
   const segments = [deal.outboundJourney, deal.returnJourney].flatMap(journey => journey?.segments ?? []);
   segments.forEach((segment, index) => {
     const segmentName = `segment ${index + 1}`;
-    const allowanceIsComplete = (allowance?: DealBaggageAllowance) => allowance !== undefined && (
-      !allowance.included
-        ? allowance.pieces === undefined && allowance.weightKg === undefined
-        : (allowance.pieces !== undefined && Number.isInteger(allowance.pieces) && allowance.pieces > 0)
-          || (allowance.weightKg !== undefined && Number.isFinite(allowance.weightKg) && allowance.weightKg > 0)
-    );
+    const allowanceIsComplete = (allowance?: DealBaggageAllowance) => {
+      if (!allowance) return false;
+      if (!allowance.included) return allowance.pieces === undefined && allowance.weightKg === undefined;
+      const piecesAreValid = allowance.pieces === undefined || (Number.isInteger(allowance.pieces) && allowance.pieces > 0);
+      const weightIsValid = allowance.weightKg === undefined || (Number.isFinite(allowance.weightKg) && allowance.weightKg > 0);
+      return piecesAreValid && weightIsValid && (allowance.pieces !== undefined || allowance.weightKg !== undefined);
+    };
     if (!allowanceIsComplete(segment.cabinBaggage)) missing.push(`${segmentName} cabin baggage`);
     if (!allowanceIsComplete(segment.checkedBaggage)) missing.push(`${segmentName} checked baggage`);
   });
@@ -474,14 +475,26 @@ export function getAirlineDeals(): AirlineDeal[] {
 
 export function saveAirlineDeal(draft: AirlineDealDraft, id?: string): AirlineDeal[] {
   const deals = getAirlineDeals();
-  const now = new Date().toISOString();
   const existing = id ? deals.find(deal => deal.id === id) : undefined;
+  const now = new Date().toISOString();
   const nextDeal: AirlineDeal = { ...draft, id: existing?.id ?? makeId(), createdAt: existing?.createdAt ?? now, updatedAt: now };
+  if (nextDeal.status === 'Active') {
+    const missing = getMissingDealDetails(nextDeal);
+    if (missing.length) throw new Error(`Complete these details before saving this Active deal: ${missing.join(', ')}.`);
+  }
   return saveDeals(existing ? deals.map(deal => deal.id === id ? nextDeal : deal) : [nextDeal, ...deals]);
 }
 
 export function updateAirlineDeal(id: string, updates: Partial<AirlineDeal>): AirlineDeal[] {
-  return saveDeals(getAirlineDeals().map(deal => deal.id === id ? { ...deal, ...updates, updatedAt: new Date().toISOString() } : deal));
+  const deals = getAirlineDeals();
+  const existing = deals.find(deal => deal.id === id);
+  if (existing) {
+    const nextDeal = { ...existing, ...updates };
+    if (nextDeal.status !== 'Active') return saveDeals(deals.map(deal => deal.id === id ? { ...nextDeal, updatedAt: new Date().toISOString() } : deal));
+    const missing = getMissingDealDetails(nextDeal);
+    if (missing.length) throw new Error(`Complete these details before activating: ${missing.join(', ')}.`);
+  }
+  return saveDeals(deals.map(deal => deal.id === id ? { ...deal, ...updates, updatedAt: new Date().toISOString() } : deal));
 }
 
 export function duplicateAirlineDeal(id: string): AirlineDeal[] {

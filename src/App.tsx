@@ -14,6 +14,7 @@ import BookingCreate from './pages/Bookings/BookingCreate';
 import BookingDetails from './pages/Bookings/BookingDetails';
 import BookingEdit from './pages/Bookings/BookingEdit';
 import InvoiceView from './pages/Bookings/InvoiceView';
+import DealBookings from './pages/Bookings/DealBookings';
 
 // Flights Module
 import AirlineDeals from './pages/Flights/AirlineDeals';
@@ -85,6 +86,8 @@ export default function App() {
             {/* Bookings */}
             <Route path="bookings" element={<BookingList />} />
             <Route path="bookings/type/:moduleType" element={<BookingList />} />
+            <Route path="bookings/deals" element={<DealBookings />} />
+            <Route path="bookings/deals/:id" element={<DealBookings />} />
             <Route path="bookings/create" element={<BookingCreate />} />
             <Route path="bookings/create/:bookingType" element={<BookingCreate />} />
             <Route path="bookings/view/:id" element={<BookingDetails />} />

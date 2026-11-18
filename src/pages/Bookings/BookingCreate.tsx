@@ -90,7 +90,7 @@ export default function BookingCreate() {
   const bookingType = (routeType || 'flights') as BookingType;
   const editId = searchParams.get('edit');
   const existing = editId ? findManagedBooking(editId) : undefined;
-  const customers = useMemo(readCustomers, []);
+  const customers = useMemo(() => readCustomers(), []);
   const airlineDeals = useMemo(() => getAirlineDeals(), []);
   const [customerMode, setCustomerMode] = useState<'existing' | 'new' | 'guest'>(existing?.guestBooking ? 'guest' : existing?.customerId ? 'existing' : 'existing');
   const [customerSearch, setCustomerSearch] = useState('');
@@ -145,6 +145,9 @@ export default function BookingCreate() {
       localStorage.setItem('aeropoint-booking-customers', JSON.stringify(savedCustomers));
     }
     const bookingId = existing?.bookingId ?? makeBookingId();
+    const ticketingDeadline = selectedDeal && details.departureDate
+      ? new Date(new Date(`${details.departureDate}T23:59:00.000Z`).getTime() - selectedDeal.bookingCutOffHours * 60 * 60 * 1000).toISOString()
+      : existing?.ticketingDeadline;
     const booking: ManagedBooking = {
       id: existing?.id ?? bookingId,
       bookingId,
@@ -158,8 +161,30 @@ export default function BookingCreate() {
       currency,
       bookingStatus,
       paymentStatus,
+      ...(selectedDeal ? {
+        dealId: selectedDeal.id,
+        passengerCount: Math.max(1, Number(details.passengerCount) || 1),
+        ticketingStatus: existing?.ticketingStatus ?? 'Pending ticketing',
+        bookingReference: existing?.bookingReference ?? details.pnr ?? '',
+        ticketNumbers: existing?.ticketNumbers ?? [],
+        eTicketFiles: existing?.eTicketFiles ?? [],
+        ...(ticketingDeadline ? { ticketingDeadline } : {}),
+        ticketingActivity: existing?.ticketingActivity ?? [],
+      } : existing?.dealId ? {
+        dealId: existing.dealId,
+        passengerCount: existing.passengerCount,
+        ticketingStatus: existing.ticketingStatus,
+        bookingReference: existing.bookingReference,
+        ticketNumbers: existing.ticketNumbers,
+        eTicketFiles: existing.eTicketFiles,
+        ticketingDeadline: existing.ticketingDeadline,
+        ticketedBy: existing.ticketedBy,
+        ticketedAt: existing.ticketedAt,
+        cannotTicketReason: existing.cannotTicketReason,
+        ticketingActivity: existing.ticketingActivity,
+      } : {}),
       createdAt: existing?.createdAt ?? new Date().toISOString(),
-      details: Object.fromEntries(Object.entries({ ...details, documentNames }).filter(([, value]) => value.trim())),
+      details: Object.fromEntries(Object.entries({ ...details, ...(selectedDeal ? { dealTitle: selectedDeal.title } : {}), documentNames }).filter(([, value]) => value.trim())),
     };
     saveManagedBooking(booking);
     navigate(`/bookings/view/${booking.bookingId}`);

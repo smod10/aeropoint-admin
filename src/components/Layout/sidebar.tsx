@@ -17,6 +17,7 @@ const navItems = [
     subItems: [
       { name: 'All Bookings', path: '/bookings' },
       { name: 'Flights Bookings', path: '/bookings/type/flights' },
+      { name: 'Deal Bookings', path: '/bookings/deals' },
       { name: 'Hotel Bookings', path: '/bookings/type/hotels' },
       { name: 'Tours Bookings', path: '/bookings/type/tours' },
       { name: 'Visa Bookings', path: '/bookings/type/visa' }

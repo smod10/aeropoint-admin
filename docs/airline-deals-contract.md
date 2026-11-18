@@ -2,7 +2,7 @@
 
 This document defines an app-independent contract for exchanging airline deals, deal bookings, and normalized flight results. It has no imports or runtime dependency on either React app.
 
-`Deal` below reflects the current admin `AirlineDeal` model. `DealBooking` and `NormalizedFlightResult` are proposed shared shapes: neither app currently defines these contracts end to end.
+`Deal` below reflects the admin `AirlineDeal` model. The customer app has a local deal type and fixture adapter that mirror the baggage and fare-condition fields, but there is no shared runtime API. `DealBooking` remains a proposed shape.
 
 ```ts
 export type DealStatus = 'Draft' | 'Active' | 'Paused' | 'Expired';
@@ -10,10 +10,38 @@ export type DealTripType = 'One-way' | 'Return';
 export type DealExceptionType = 'single-date' | 'date-range' | 'weekday-range';
 export type PassengerType = 'adult' | 'child' | 'infant';
 export type DealBookingStatus = 'Pending ticketing' | 'Ticketed' | 'Cannot ticket';
+export interface DealETicketFile {
+  name: string;
+  mimeType: string;
+  dataUrl: string; // Local demo storage only; production should use a protected file service.
+}
+
+export interface DealTicketingActivity {
+  fromStatus: DealBookingStatus;
+  toStatus: DealBookingStatus;
+  actor: string;
+  at: string; // ISO 8601 status-change timestamp.
+}
 
 export interface DealFare {
-  baseFare: number; // Fare amount before taxes, in the deal currency.
-  taxes: number; // Tax and fee amount, in the deal currency.
+  baseFare?: number; // Fare amount before taxes, in the deal currency; required for Active deals.
+  taxes?: number; // Tax and fee amount, in the deal currency; required for Active deals.
+}
+
+export interface DealBaggageAllowance {
+  included: boolean; // Explicitly states whether the allowance is included.
+  pieces?: number; // Positive whole number; may be supplied with or without weightKg.
+  weightKg?: number; // Positive weight; may be supplied with or without pieces.
+}
+
+export type DealFareConditionType = 'yes' | 'no' | 'with-fee';
+
+export interface DealFareConditions {
+  refundable?: DealFareConditionType;
+  refundFee?: number; // Required when refundable is 'with-fee'.
+  changesAllowed?: DealFareConditionType;
+  changeFee?: number; // Required when changesAllowed is 'with-fee'.
+  notes?: string; // Customer-facing fare notes.
 }
 
 export interface DealSegment {
@@ -27,10 +55,13 @@ export interface DealSegment {
   departureDayOffset: number; // Calendar days after the journey departure date.
   arrivalTime: string; // Local arrival time in HH:mm format at the destination airport.
   arrivalDayOffset: number; // Calendar days after the journey departure date.
-  departureTerminal: string; // Departure terminal, or empty when not provided.
-  arrivalTerminal: string; // Arrival terminal, or empty when not provided.
+  departureTerminal?: string; // Optional departure terminal.
+  arrivalTerminal?: string; // Optional arrival terminal.
+  aircraft?: string; // Optional aircraft type.
   cabin: string; // Cabin name for this segment.
-  baggage: string; // Included baggage allowance for this segment.
+  baggage: string; // Legacy included baggage summary for this segment.
+  cabinBaggage?: DealBaggageAllowance; // Optional explicitly supplied cabin baggage allowance.
+  checkedBaggage?: DealBaggageAllowance; // Optional explicitly supplied checked baggage allowance.
 }
 
 export interface DealJourney {
@@ -85,7 +116,9 @@ export interface Deal {
   salesStartDate: string; // First date the deal can be purchased.
   salesEndDate: string; // Last date the deal can be purchased.
   bookingCutOffHours: number; // Minimum hours before departure that booking is allowed.
-  image: string; // Customer-facing image URL or empty string.
+  image: string; // Customer-facing image URL/data URL or empty string while a Draft is incomplete.
+  imageAlt?: string; // Accessible image description; required for Active deals.
+  fareConditions?: DealFareConditions; // Required to activate; fee amounts are required for 'with-fee'.
   featured: boolean; // Whether the deal is eligible for featured placement.
   displayOrder: number; // Preferred ascending display order.
   internalNotes: string; // Admin-only notes; never display to customers.
@@ -128,11 +161,14 @@ export interface DealBooking {
   amountPaid: number; // Amount successfully paid and recorded.
   bookingStatus: 'Pending' | 'Confirmed' | 'Completed' | 'Cancelled'; // Existing admin booking lifecycle state.
   paymentStatus: 'Pending' | 'Paid' | 'Refunded'; // Payment state, separate from ticketing state.
-  bookingReference: string | null; // Airline PNR or supplier booking reference, when ticketed.
+  bookingReference: string; // Airline PNR or supplier booking reference.
   ticketNumbers: string[]; // Issued e-ticket numbers; empty until ticketed.
-  eTicketUrl: string | null; // E-ticket document URL, when uploaded.
+  eTicketFiles: DealETicketFile[]; // Uploaded e-ticket files; one or more may be attached.
   ticketingDeadline: string; // ISO 8601 timestamp by which ticketing must be completed.
+  ticketedBy?: string; // Admin actor who marked the booking Ticketed.
+  ticketedAt?: string; // ISO 8601 timestamp when the booking was ticketed.
   cannotTicketReason?: string; // Admin explanation when status is Cannot ticket.
+  ticketingActivity: DealTicketingActivity[]; // Audit entries for ticketing status changes.
   createdAt: string; // ISO 8601 booking creation timestamp.
   updatedAt: string; // ISO 8601 last-update timestamp.
 }
@@ -158,6 +194,8 @@ export interface NormalizedFlightResult {
 }
 ```
 
+Draft deals may omit image/alt text, baggage allowances, passenger fare amounts, and fare conditions. An Active deal must provide an image and alt text, an explicit cabin and checked baggage choice for every segment, base fare and taxes for adult/child/infant, and refund/change conditions (including any applicable fee). Aircraft and terminal fields remain optional. Customer displays should omit baggage or fare-condition sections when those values are absent; never replace missing values with assumed allowances or rules. Admin image uploads reject files above 2 MB and compress accepted images to at most 1 MB before storing their data URLs. If browser storage is full, the deal remains in the open form and an error is shown; e-ticket files are also stored as local data URLs in this demo.
+
 ## Notes
 
 - Times are local to the airport identified by the segment endpoint. Day offsets are relative to that journey's departure date.
@@ -165,4 +203,4 @@ export interface NormalizedFlightResult {
 - Exception precedence is single date, date range, weekday range, then defaults. A closed exception removes that departure from customer search.
 - `NormalizedFlightResult` matches the existing customer search-result data shape. Its `stops`, total `duration`, and optional `layovers` are calculated from the deal's segments and airport time zones. The React `onBookNow` callback is UI behavior and is not part of the data contract.
 - The customer card's existing data shape has no deal badge field. Deal-specific presentation metadata, such as a `Special offer` label, must be supplied separately by the adapter/UI rather than changing this base result contract.
-- `DealBooking` is a proposed contract, not an existing admin type. The current admin has a generic `ManagedBooking` with free-form `details`; it does not yet model deal ticketing fields or the three deal ticketing statuses.
+- `DealBooking` describes the deal-booking fields now modeled in the admin's `ManagedBooking`. Ticketing status and payment status are separate. Ticketing completion requires a PNR and one non-empty ticket number per passenger; a Cannot ticket outcome requires a reason. Status changes are appended to the ticketing activity log with actor and timestamp. The current demo persists uploaded image and e-ticket data URLs in browser localStorage; a production integration should use a protected file service.
