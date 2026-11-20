@@ -1,6 +1,9 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import { AlertTriangle, ArrowDown, ArrowLeft, ArrowRight, ArrowUp, CalendarDays, ChevronLeft, ChevronRight, Clock3, Copy, Edit2, Pause, Plane, Plus, Search, Trash2, X } from 'lucide-react';
+import { AlertTriangle, ArrowDown, ArrowLeft, ArrowRight, ArrowUp, CalendarDays, ChevronLeft, ChevronRight, Clock3, Copy, Download, Edit2, Pause, Plane, Plus, Search, Trash2, X } from 'lucide-react';
+import { paginate, type PaginationResult } from '../../utils/pagination';
+import PaginationControls from '../../components/Shared/PaginationControls';
+import { generateCSV, downloadCSV, formatDateForFilename, type CSVColumn } from '../../utils/csvExport';
 import {
   deleteAirlineDeal,
   calculateJourneyMetrics,
@@ -477,6 +480,8 @@ export default function AirlineDeals() {
   const routeDeal = routeDealId ? deals.find(deal => deal.id === routeDealId) ?? null : null;
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<'All' | DealStatus>('All');
+  const [pageSize, setPageSize] = useState(() => parseInt(localStorage.getItem('aeropoint-deals-page-size') || '10', 10));
+  const [currentPage, setCurrentPage] = useState(1);
   const [editingDeal, setEditingDeal] = useState<AirlineDeal | null>(() => routeDeal);
   const [draft, setDraft] = useState<AirlineDealDraft>(() => routeDeal ? {
     ...routeDeal,
@@ -492,12 +497,51 @@ export default function AirlineDeals() {
   const selectedPreviewDate = scheduleDates.includes(previewDate) ? previewDate : scheduleDates[0] ?? '';
   const isEditor = location.pathname !== '/flights/deals' && location.pathname !== '/flights/deals/';
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, statusFilter]);
+
   const visibleDeals = useMemo(() => {
     const needle = search.trim().toLowerCase();
     return deals.filter(deal => (statusFilter === 'All' || deal.status === statusFilter)
       && (!needle || `${deal.title} ${deal.airline} ${deal.flightNumber} ${deal.routes.map(route => `${getDealAirportLabel(route.origin) ?? route.origin} ${getDealAirportLabel(route.destination) ?? route.destination}`).join(' ')}`.toLowerCase().includes(needle)))
       .sort((left, right) => left.displayOrder - right.displayOrder || left.title.localeCompare(right.title));
   }, [deals, search, statusFilter]);
+
+  const paginationResult = useMemo<PaginationResult<AirlineDeal>>(() => {
+    return paginate(visibleDeals, currentPage, pageSize);
+  }, [visibleDeals, currentPage, pageSize]);
+
+  const handlePageSizeChange = (newSize: number) => {
+    setPageSize(newSize);
+    localStorage.setItem('aeropoint-deals-page-size', String(newSize));
+    setCurrentPage(1);
+  };
+
+  const handleExportCSV = () => {
+    if (!visibleDeals.length) return;
+
+    try {
+      const columns: CSVColumn<AirlineDeal>[] = [
+        { header: 'Title', getValue: (deal) => deal.title },
+        { header: 'Airline', getValue: (deal) => deal.airline },
+        { header: 'Route', getValue: (deal) => deal.routes.map(r => `${r.origin}→${r.destination}`).join('; ') },
+        { header: 'Travel Dates', getValue: (deal) => `${deal.travelStartDate} – ${deal.travelEndDate}` },
+        { header: 'Price From', getValue: (deal) => deal.schedule?.defaultAdultPrice ?? (deal.fares.adult.baseFare ?? 0) + (deal.fares.adult.taxes ?? 0) },
+        { header: 'Seats Left', getValue: (deal) => deal.seatsAvailable },
+        { header: 'Status', getValue: (deal) => deal.status },
+        { header: 'Featured', getValue: (deal) => deal.featured ? 'Yes' : 'No' },
+        { header: 'Missing Details', getValue: (deal) => getMissingDealDetails(deal).join('; ') },
+      ];
+
+      const csv = generateCSV(visibleDeals, columns);
+      const filename = `airline-deals-${formatDateForFilename()}.csv`;
+      downloadCSV(csv, filename);
+      setNotice('Deals exported successfully.');
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : 'Unable to export deals.');
+    }
+  };
 
   const openNew = () => { setEditingDeal(null); setDraft(blankDraft()); setErrors({}); setPreviewDate(''); navigate('/flights/deals/new'); };
   const openEdit = (deal: AirlineDeal) => {
@@ -601,6 +645,7 @@ export default function AirlineDeals() {
       <div className="flex flex-wrap items-center gap-2">
         <label className="relative"><Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" /><input value={search} onChange={event => setSearch(event.target.value)} type="search" placeholder="Search deals" className="w-full rounded-lg border border-gray-200 py-2 pl-9 pr-3 text-sm outline-none focus:border-primary-500 sm:w-52" /></label>
         <select value={statusFilter} onChange={event => setStatusFilter(event.target.value as 'All' | DealStatus)} aria-label="Filter deals by status" className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 outline-none focus:border-primary-500"><option value="All">All statuses</option>{statuses.map(status => <option key={status}>{status}</option>)}</select>
+        <button type="button" onClick={handleExportCSV} disabled={!visibleDeals.length} title="Export filtered deals to CSV" className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"><Download size={16} /> Export</button>
         <button type="button" onClick={openNew} className="inline-flex items-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700"><Plus size={16} /> Add deal</button>
       </div>
     </div>
@@ -613,7 +658,7 @@ export default function AirlineDeals() {
           <th className="px-4 py-4">Image</th><th className="px-4 py-4">Deal</th><th className="px-4 py-4">Airline</th><th className="px-4 py-4">Route</th><th className="px-4 py-4">Travel dates</th><th className="px-4 py-4">Price from</th><th className="px-4 py-4">Default seats</th><th className="px-4 py-4">Status</th><th className="px-4 py-4 text-center">Featured</th><th className="px-4 py-4 text-right">Actions</th>
         </tr></thead>
         <tbody className="divide-y divide-gray-50">
-          {visibleDeals.map(deal => <tr key={deal.id} className="align-middle hover:bg-gray-50/60">
+          {paginationResult.items.map(deal => <tr key={deal.id} className="align-middle hover:bg-gray-50/60">
             <td className="px-4 py-3">{deal.image ? <img src={deal.image} alt={deal.imageAlt || deal.title} className="h-12 w-16 rounded-md object-cover" /> : <div className="flex h-12 w-16 items-center justify-center rounded-md bg-gray-100 text-gray-400"><Plane size={18} /></div>}</td>
             <td className="max-w-56 px-4 py-3"><span className="block truncate font-semibold text-gray-900" title={deal.title}>{deal.title}</span><span className="text-xs text-gray-500">{deal.flightNumber} · {deal.cabin}</span></td>
             <td className="px-4 py-3">{deal.airline}</td>
@@ -630,10 +675,18 @@ export default function AirlineDeals() {
               <button type="button" onClick={() => handleDelete(deal)} title="Delete deal" aria-label={`Delete ${deal.title}`} className="inline-flex h-8 w-8 items-center justify-center rounded border border-gray-200 text-gray-500 hover:text-red-600"><Trash2 size={14} /></button>
             </div></td>
           </tr>)}
-          {!visibleDeals.length && <tr><td colSpan={10} className="px-4 py-14 text-center text-sm text-gray-500">No deals match these filters.</td></tr>}
         </tbody>
       </table></div>
     </div>
+
+    <PaginationControls
+      currentPage={paginationResult.currentPage}
+      pageCount={paginationResult.pageCount}
+      totalCount={paginationResult.totalCount}
+      pageSize={paginationResult.pageSize}
+      onPageChange={setCurrentPage}
+      onPageSizeChange={handlePageSizeChange}
+    />
     </>}
 
     {isEditor && <div className="mx-auto w-full max-w-6xl space-y-6">

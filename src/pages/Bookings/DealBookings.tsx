@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { ArrowLeft, Clock3, FileText, TicketCheck } from 'lucide-react';
+import { ArrowLeft, Clock3, Download, FileText, TicketCheck, X } from 'lucide-react';
 import { canManageTeam, getCurrentActorRole } from '../../utils/accountAccess';
 import { readManagedBookings, updateDealTicketing } from '../../utils/bookingStorage';
+import { generateCSV, downloadCSV, formatDateForFilename, type CSVColumn } from '../../utils/csvExport';
 import type { DealTicketingStatus, ETicketFile, ManagedBooking } from '../../types/booking';
 
 const inputClass = 'mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-800 outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-100';
@@ -132,6 +133,7 @@ export default function DealBookings() {
   const canManage = canManageTeam(getCurrentActorRole());
   const [bookings, setBookings] = useState<ManagedBooking[]>(readManagedBookings);
   const [statusFilter, setStatusFilter] = useState<'All' | DealTicketingStatus>('All');
+  const [notice, setNotice] = useState('');
   const [now, setNow] = useState(0);
   const booking = id ? bookings.find(item => item.bookingId === id && isDealBooking(item)) : undefined;
 
@@ -149,13 +151,41 @@ export default function DealBookings() {
     .filter(item => statusFilter === 'All' || (item.ticketingStatus ?? 'Pending ticketing') === statusFilter)
     .sort((left, right) => (left.ticketingDeadline ?? '').localeCompare(right.ticketingDeadline ?? '')), [bookings, statusFilter]);
 
+  const handleExportCSV = () => {
+    if (!filteredBookings.length) return;
+
+    try {
+      const columns: CSVColumn<ManagedBooking>[] = [
+        { header: 'Booking ID', getValue: (item) => item.bookingId },
+        { header: 'Deal', getValue: (item) => item.details.dealTitle ?? 'Airline deal' },
+        { header: 'Customer Name', getValue: (item) => item.customerName },
+        { header: 'Passengers', getValue: (item) => passengerCountOf(item) },
+        { header: 'Payment Status', getValue: (item) => item.paymentStatus },
+        { header: 'Ticketing Status', getValue: (item) => item.ticketingStatus ?? 'Pending ticketing' },
+        { header: 'Ticketing Deadline', getValue: (item) => item.ticketingDeadline ?? 'Not set' },
+        { header: 'Booking Reference', getValue: (item) => item.bookingReference ?? '' },
+        { header: 'Amount Paid', getValue: (item) => `${item.amount} ${item.currency}` },
+      ];
+
+      const csv = generateCSV(filteredBookings, columns);
+      const filename = `deal-bookings-${formatDateForFilename()}.csv`;
+      downloadCSV(csv, filename);
+      setNotice('Bookings exported successfully.');
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : 'Unable to export bookings.');
+    }
+  };
+
 
   if (id && !booking) return <div role="alert" className="rounded-lg border border-amber-200 bg-amber-50 p-5 text-sm text-amber-900">Deal booking not found.</div>;
 
   if (booking) return <DealBookingDetails key={booking.bookingId} booking={booking} canManage={canManage} now={now} onSaved={updated => setBookings(current => current.map(item => item.bookingId === updated.bookingId ? updated : item))} />;
 
   return <div className="space-y-6">
-    <header className="flex flex-col gap-3 rounded-xl border border-gray-100 bg-white p-6 shadow-soft sm:flex-row sm:items-center sm:justify-between"><div><h1 className="text-xl font-bold text-gray-900">Deal Bookings</h1><p className="mt-1 text-sm text-gray-500">{filteredBookings.length} deal bookings</p></div><label className="text-sm font-medium text-gray-600">Ticketing status<select value={statusFilter} onChange={event => setStatusFilter(event.target.value as 'All' | DealTicketingStatus)} className="ml-2 rounded-lg border border-gray-200 bg-white px-3 py-2"><option>All</option>{statuses.map(status => <option key={status}>{status}</option>)}</select></label></header>
+    <header className="flex flex-col gap-3 rounded-xl border border-gray-100 bg-white p-6 shadow-soft sm:flex-row sm:items-center sm:justify-between"><div><h1 className="text-xl font-bold text-gray-900">Deal Bookings</h1><p className="mt-1 text-sm text-gray-500">{filteredBookings.length} deal bookings</p></div><div className="flex flex-wrap items-center gap-3"><label className="text-sm font-medium text-gray-600">Ticketing status<select value={statusFilter} onChange={event => setStatusFilter(event.target.value as 'All' | DealTicketingStatus)} className="ml-2 rounded-lg border border-gray-200 bg-white px-3 py-2"><option>All</option>{statuses.map(status => <option key={status}>{status}</option>)}</select></label><button type="button" onClick={handleExportCSV} disabled={!filteredBookings.length} title="Export filtered bookings to CSV" className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"><Download size={16} /> Export</button></div></header>
+
+    {notice && <div role="status" className={`flex items-center justify-between rounded-lg border px-4 py-2.5 text-sm ${notice.includes('successfully') ? 'border-emerald-200 bg-emerald-50 text-emerald-800' : 'border-amber-200 bg-amber-50 text-amber-900'}`}>{notice}<button type="button" onClick={() => setNotice('')} aria-label="Dismiss message"><X size={15} /></button></div>}
+
     <section className="overflow-hidden rounded-xl border border-gray-100 bg-white shadow-soft"><div className="overflow-x-auto"><table className="w-full min-w-[850px] text-left text-sm text-gray-600"><thead className="border-b border-gray-100 bg-gray-50 text-xs uppercase text-gray-500"><tr><th className="px-4 py-3">Booking</th><th className="px-4 py-3">Deal</th><th className="px-4 py-3">Customer</th><th className="px-4 py-3">Payment</th><th className="px-4 py-3">Ticketing</th><th className="px-4 py-3">Deadline</th></tr></thead><tbody className="divide-y divide-gray-100">{filteredBookings.map(item => {
       const status = item.ticketingStatus ?? 'Pending ticketing';
       const deadline = deadlineText(item.ticketingDeadline, now);
