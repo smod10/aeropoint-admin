@@ -1,9 +1,8 @@
 import { useMemo, useState, useEffect } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import { AlertTriangle, ArrowDown, ArrowLeft, ArrowRight, ArrowUp, CalendarDays, ChevronLeft, ChevronRight, Clock3, Copy, Download, Edit2, Pause, Plane, Plus, Search, Trash2, X } from 'lucide-react';
+import { AlertTriangle, ArrowDown, ArrowLeft, ArrowRight, ArrowUp, CalendarDays, ChevronLeft, ChevronRight, Clock3, Copy, Edit2, Pause, Plane, Plus, Search, Trash2, X } from 'lucide-react';
 import { paginate, type PaginationResult } from '../../utils/pagination';
 import PaginationControls from '../../components/Shared/PaginationControls';
-import { generateCSV, downloadCSV, formatDateForFilename, type CSVColumn } from '../../utils/csvExport';
 import {
   deleteAirlineDeal,
   calculateJourneyMetrics,
@@ -518,28 +517,18 @@ export default function AirlineDeals() {
     setCurrentPage(1);
   };
 
-  const handleExportCSV = () => {
-    if (!visibleDeals.length) return;
-
+  const handleDelete = (deal: AirlineDeal) => {
+    if (!window.confirm(`Delete “${deal.title}”?`)) return;
+    setDeals(deleteAirlineDeal(deal.id));
+    setNotice('Deal deleted.');
+  };
+  const toggleDealStatus = (deal: AirlineDeal) => {
+    const status = deal.status === 'Active' ? 'Paused' : 'Active';
     try {
-      const columns: CSVColumn<AirlineDeal>[] = [
-        { header: 'Title', getValue: (deal) => deal.title },
-        { header: 'Airline', getValue: (deal) => deal.airline },
-        { header: 'Route', getValue: (deal) => deal.routes.map(r => `${r.origin}→${r.destination}`).join('; ') },
-        { header: 'Travel Dates', getValue: (deal) => `${deal.travelStartDate} – ${deal.travelEndDate}` },
-        { header: 'Price From', getValue: (deal) => deal.schedule?.defaultAdultPrice ?? (deal.fares.adult.baseFare ?? 0) + (deal.fares.adult.taxes ?? 0) },
-        { header: 'Seats Left', getValue: (deal) => deal.seatsAvailable },
-        { header: 'Status', getValue: (deal) => deal.status },
-        { header: 'Featured', getValue: (deal) => deal.featured ? 'Yes' : 'No' },
-        { header: 'Missing Details', getValue: (deal) => getMissingDealDetails(deal).join('; ') },
-      ];
-
-      const csv = generateCSV(visibleDeals, columns);
-      const filename = `airline-deals-${formatDateForFilename()}.csv`;
-      downloadCSV(csv, filename);
-      setNotice('Deals exported successfully.');
+      setDeals(updateAirlineDeal(deal.id, { status }));
+      setNotice(status === 'Active' ? 'Deal activated.' : 'Deal paused.');
     } catch (error) {
-      setNotice(error instanceof Error ? error.message : 'Unable to export deals.');
+      setNotice(error instanceof Error ? error.message : 'Unable to update deal status.');
     }
   };
 
@@ -622,20 +611,6 @@ export default function AirlineDeals() {
       setErrors(current => ({ ...current, image: error instanceof Error ? error.message : 'Unable to process this image.' }));
     }
   };
-  const handleDelete = (deal: AirlineDeal) => {
-    if (!window.confirm(`Delete “${deal.title}”?`)) return;
-    setDeals(deleteAirlineDeal(deal.id));
-    setNotice('Deal deleted.');
-  };
-  const toggleDealStatus = (deal: AirlineDeal) => {
-    const status = deal.status === 'Active' ? 'Paused' : 'Active';
-    try {
-      setDeals(updateAirlineDeal(deal.id, { status }));
-      setNotice(status === 'Active' ? 'Deal activated.' : 'Deal paused.');
-    } catch (error) {
-      setNotice(error instanceof Error ? error.message : 'Unable to update deal status.');
-    }
-  };
   const noticeIsError = /storage is full|Complete these details|Unable to save/i.test(notice);
 
   return <div className="space-y-6 animate-in fade-in duration-300">
@@ -645,7 +620,6 @@ export default function AirlineDeals() {
       <div className="flex flex-wrap items-center gap-2">
         <label className="relative"><Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" /><input value={search} onChange={event => setSearch(event.target.value)} type="search" placeholder="Search deals" className="w-full rounded-lg border border-gray-200 py-2 pl-9 pr-3 text-sm outline-none focus:border-primary-500 sm:w-52" /></label>
         <select value={statusFilter} onChange={event => setStatusFilter(event.target.value as 'All' | DealStatus)} aria-label="Filter deals by status" className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 outline-none focus:border-primary-500"><option value="All">All statuses</option>{statuses.map(status => <option key={status}>{status}</option>)}</select>
-        <button type="button" onClick={handleExportCSV} disabled={!visibleDeals.length} title="Export filtered deals to CSV" className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"><Download size={16} /> Export</button>
         <button type="button" onClick={openNew} className="inline-flex items-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700"><Plus size={16} /> Add deal</button>
       </div>
     </div>

@@ -74,12 +74,12 @@ export default function PaginationControls({
           disabled={currentPage === 1}
           aria-label="Previous page"
           title="Previous page"
-          className="inline-flex h-8 w-8 items-center justify-center text-gray-600 hover:text-gray-900 disabled:cursor-not-allowed disabled:opacity-50"
+          className="inline-flex h-8 w-8 items-center justify-center text-gray-600 hover:text-gray-900 disabled:cursor-not-allowed disabled:opacity-50 focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-primary-500"
         >
           <ChevronLeft size={20} />
         </button>
 
-        <span className="text-sm font-medium text-gray-700">
+        <span className="text-sm font-medium text-gray-700" aria-live="polite">
           Page {currentPage} of {pageCount}
         </span>
 
@@ -88,7 +88,7 @@ export default function PaginationControls({
           disabled={currentPage === pageCount}
           aria-label="Next page"
           title="Next page"
-          className="inline-flex h-8 w-8 items-center justify-center text-gray-600 hover:text-gray-900 disabled:cursor-not-allowed disabled:opacity-50"
+          className="inline-flex h-8 w-8 items-center justify-center text-gray-600 hover:text-gray-900 disabled:cursor-not-allowed disabled:opacity-50 focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-primary-500"
         >
           <ChevronRight size={20} />
         </button>
